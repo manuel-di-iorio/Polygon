@@ -10,10 +10,6 @@ function __polygon_cube_home(_ed) {
 }
 
 // Builds projected axis frame for the cube center.
-function __polygon_cube_frame(_cx, _cy, _R, _ex) {
-  return { cx: _cx, cy: _cy, R: _R, ex: _ex };
-}
-
 // Builds viewcube corners from the projected frame.
 function __polygon_cube_corners(_frame) {
   var _corners = [];
@@ -73,10 +69,7 @@ function __polygon_cone_tangents(_fx, _fy, _ux, _uy, _dx, _dy, _apex_x, _apex_y,
   var _t2 = [ _fx - _ux * _rb, _fy - _uy * _rb ];
   var _open = _rb * abs(_facing);
 
-  if (_open < 1.5) {
-    return [ _t1, _t2 ];
-  }
-
+  if (_open < 1.5)  return [ _t1, _t2 ];
   var _u0 = (_apex_x - _fx) * _ux + (_apex_y - _fy) * _uy;
   var _v0 = (_apex_x - _fx) * _dx + (_apex_y - _fy) * _dy;
   var _pu = _u0 / (_rb * _rb);
@@ -152,27 +145,18 @@ function __polygon_cube_cone(_frame, _axes, _fwd, _axis_i, _sign, _lite, _dark, 
 
 // Builds viewcube geometry and orientation data.
 function __polygon_viewcube(_ed) {
-  if (_ed.rt == undefined || _ed.rt.cam == undefined) {
-    return undefined;
-  }
-
-  if (_ed.gw <= 0 || _ed.gh <= 0) {
-    return undefined;
-  }
-
+  if (_ed.rt == undefined || _ed.rt.cam == undefined)  return undefined;
+  if (_ed.gw <= 0 || _ed.gh <= 0)  return undefined;
   var _panel_w = _ed.gw;
 
-  if (variable_struct_exists(_ed, "svp") && is_struct(_ed.svp) && _ed.svp.w > 0) {
-    _panel_w = _ed.svp.w;
-  }
-
+  if (variable_struct_exists(_ed, "svp") && is_struct(_ed.svp) && _ed.svp.w > 0)  _panel_w = _ed.svp.w;
   var _cx = _panel_w - _ed.cube_off[0];
   var _cy = _ed.cube_off[1];
   var _R = 10;
-  var _basis = __polygon_quat_basis(_ed.rt.cam.getLocalRotation());
+  var _basis = __polygon_quat_basis_cached(_ed, _ed.rt.cam.getLocalRotation());
   var _right = _basis[0];
   var _up = _basis[1];
-  var _fwd = __polygon_view_forward(_ed);
+  var _fwd = __polygon_view_forward_cached(_ed);
   var _axes = [
     [ 1, 0, 0 ],
     [ 0, 1, 0 ],
@@ -188,7 +172,7 @@ function __polygon_viewcube(_ed) {
     ]);
   }
 
-  var _frame = __polygon_cube_frame(_cx, _cy, _R, _ex);
+  var _frame = { cx: _cx, cy: _cy, R: _R, ex: _ex };
   static _cone_lite = [
     make_colour_rgb(235, 90, 90),
     make_colour_rgb(110, 220, 110),
@@ -203,12 +187,7 @@ function __polygon_viewcube(_ed) {
   var _cone_rb = 6;
   var _cones = [];
 
-  for (var _g = 0; _g < 3; _g++) {
-    for (var _qi = 0; _qi < 2; _qi++) {
-      array_push(_cones, __polygon_cube_cone(_frame, _axes, _fwd, _g, _qi == 0 ? 1 : -1, _cone_lite, _cone_dark, _cone_len, _cone_rb));
-    }
-  }
-
+  for (var _g = 0; _g < 3; _g++)  for (var _qi = 0; _qi < 2; _qi++)  array_push(_cones, __polygon_cube_cone(_frame, _axes, _fwd, _g, _qi == 0 ? 1 : -1, _cone_lite, _cone_dark, _cone_len, _cone_rb));
   var _m = _R + _cone_len + 12;
   return {
     cx: _cx,
@@ -230,31 +209,19 @@ function __polygon_grow_pt(_pt, _cx, _cy, _amt) {
   var _dy = _pt[1] - _cy;
   var _len = sqrt(_dx * _dx + _dy * _dy);
 
-  if (_len > 0.001) {
-    return [ _pt[0] + (_dx / _len) * _amt, _pt[1] + (_dy / _len) * _amt ];
-  }
-
+  if (_len > 0.001)  return [ _pt[0] + (_dx / _len) * _amt, _pt[1] + (_dy / _len) * _amt ];
   return _pt;
 }
 
 // Finds axis cone under mouse cursor.
 function __polygon_viewcube_cone_at(_vc, _mx, _my) {
-  if (_vc == undefined) {
-    return undefined;
-  }
-
+  if (_vc == undefined)  return undefined;
   for (var _i = 0, _n = array_length(_vc.cones); _i < _n; _i++) {
     var _cone = _vc.cones[_i];
 
-    if (_cone.facing > 0.96) {
-      continue;
-    }
-
+    if (_cone.facing > 0.96)  continue;
     if (_cone.disk == true) {
-      if (point_distance(_mx, _my, _cone.c[0], _cone.c[1]) <= 10) {
-        return [ _cone.a, _cone.s ];
-      }
-
+      if (point_distance(_mx, _my, _cone.c[0], _cone.c[1]) <= 10)  return [ _cone.a, _cone.s ];
       continue;
     }
 
@@ -264,9 +231,7 @@ function __polygon_viewcube_cone_at(_vc, _mx, _my) {
     var _left = __polygon_grow_pt(_cone.lc, _ccx, _ccy, 3);
     var _right = __polygon_grow_pt(_cone.dc, _ccx, _ccy, 3);
 
-    if (__polygon_tri_hit(_mx, _my, _tip[0], _tip[1], _left[0], _left[1], _right[0], _right[1])) {
-      return [ _cone.a, _cone.s ];
-    }
+    if (__polygon_tri_hit(_mx, _my, _tip[0], _tip[1], _left[0], _left[1], _right[0], _right[1]))  return [ _cone.a, _cone.s ];
   }
 
   return undefined;
@@ -274,10 +239,7 @@ function __polygon_viewcube_cone_at(_vc, _mx, _my) {
 
 // Tests if point inside viewcube bounds.
 function __polygon_viewcube_box_at(_vc, _mx, _my) {
-  if (_vc == undefined) {
-    return false;
-  }
-
+  if (_vc == undefined)  return false;
   var _box = _vc.box;
   return _mx >= _box[0] && _mx <= _box[2] && _my >= _box[1] && _my <= _box[3];
 }
@@ -292,7 +254,7 @@ function __polygon_cube_hovered(_ed, _cone) {
 }
 
 // Draws the head-on disk variant of an axis cone.
-function __polygon_viewcube_disk(_ed, _cone, _hov) {
+function __polygon_viewcube_disk(_cone, _hov) {
   var _al = _cone.muted ? (_hov ? 0.75 : 0.35) : 1;
   var _lite = _hov ? merge_colour(_cone.lcol, c_white, 0.45) : _cone.lcol;
   var _n = 10;
@@ -311,7 +273,6 @@ function __polygon_viewcube_disk(_ed, _cone, _hov) {
     var _t0 = (_e / _n) * 2 * pi;
     var _t1 = ((_e + 1) / _n) * 2 * pi;
     __polygon_vp_line(
-      _ed,
       _cone.c[0] + cos(_t0) * 6,
       _cone.c[1] + sin(_t0) * 6,
       _cone.c[0] + cos(_t1) * 6,
@@ -323,11 +284,8 @@ function __polygon_viewcube_disk(_ed, _cone, _hov) {
 }
 
 // Draws the cone cap ellipse (only when the opening is wide enough).
-function __polygon_viewcube_cap(_ed, _cone, _al) {
-  if (_cone.r * abs(_cone.facing) < 1.5) {
-    return;
-  }
-
+function __polygon_viewcube_cap(_cone, _al) {
+  if (_cone.r * abs(_cone.facing) < 1.5)  return;
   var _ux = -_cone.dy * _cone.r;
   var _uy = _cone.dx * _cone.r;
   var _vx = _cone.dx * _cone.r * abs(_cone.facing);
@@ -356,24 +314,24 @@ function __polygon_viewcube_cap(_ed, _cone, _al) {
     var _ja = (_j / _seg) * _arc;
     var _nx = _cone.fc[0] + cos(_ja) * _ux + sin(_ja) * _vx;
     var _ny = _cone.fc[1] + cos(_ja) * _uy + sin(_ja) * _vy;
-    __polygon_vp_line(_ed, _qx, _qy, _nx, _ny, 1, _cone.dcol);
+    __polygon_vp_line(_qx, _qy, _nx, _ny, 1, _cone.dcol);
     _qx = _nx;
     _qy = _ny;
   }
 }
 
 // Draws axis cone gizmo.
-function __polygon_viewcube_cone(_ed, _cone, _hov) {
+function __polygon_viewcube_cone(_cone, _hov) {
   var _al = _cone.muted ? (_hov ? 0.75 : 0.35) : 1;
   var _lite = _hov ? merge_colour(_cone.lcol, c_white, 0.45) : _cone.lcol;
   var _dark = _hov ? _cone.lcol : _cone.dcol;
 
   if (_cone.disk == true) {
-    __polygon_viewcube_disk(_ed, _cone, _hov);
+    __polygon_viewcube_disk(_cone, _hov);
     return;
   }
 
-  __polygon_viewcube_cap(_ed, _cone, _al);
+  __polygon_viewcube_cap(_cone, _al);
 
   var _strips = 5;
   draw_primitive_begin(pr_trianglelist);
@@ -400,7 +358,6 @@ function __polygon_viewcube_cone(_ed, _cone, _hov) {
 
   draw_primitive_end();
   __polygon_vp_line(
-    _ed,
     _cone.apex[0],
     _cone.apex[1],
     _cone.lc[0],
@@ -409,7 +366,6 @@ function __polygon_viewcube_cone(_ed, _cone, _hov) {
     merge_colour(_lite, c_white, 0.5)
   );
   __polygon_vp_line(
-    _ed,
     _cone.apex[0],
     _cone.apex[1],
     _cone.dc[0],
@@ -420,17 +376,11 @@ function __polygon_viewcube_cone(_ed, _cone, _hov) {
 }
 
 // Renders interactive viewcube widget.
-function __polygon_viewcube_draw(_ed, _vp) {
-  if (!_ed.imgui.win_cube.open) {
-    return;
-  }
-
+function __polygon_viewcube_draw(_ed) {
+  if (!_ed.imgui.win_cube.open)  return;
   var _vc = __polygon_viewcube(_ed);
 
-  if (_vc == undefined) {
-    return;
-  }
-
+  if (_vc == undefined)  return;
   var _labels = [ "X", "Y", "Z" ];
   draw_set_halign(fa_center);
   draw_set_valign(fa_middle);
@@ -438,11 +388,8 @@ function __polygon_viewcube_draw(_ed, _vp) {
   for (var _b = 0, _ncone = array_length(_vc.cones); _b < _ncone; _b++) {
     var _back = _vc.cones[_b];
 
-    if (_back.front || _back.facing > 0.93) {
-      continue;
-    }
-
-    __polygon_viewcube_cone(_ed, _back, __polygon_cube_hovered(_ed, _back));
+    if (_back.front || _back.facing > 0.93)  continue;
+    __polygon_viewcube_cone(_back, __polygon_cube_hovered(_ed, _back));
   }
 
   var _faces = _vc.faces;
@@ -451,16 +398,10 @@ function __polygon_viewcube_draw(_ed, _vp) {
   for (var _k = 0, _nface = array_length(_faces); _k < _nface; _k++) {
     var _face = _faces[_k];
 
-    if (abs(_face.facing) <= 0.02) {
-      continue;
-    }
-
+    if (abs(_face.facing) <= 0.02)  continue;
     var _pts = [];
 
-    for (var _v = 0; _v < 4; _v++) {
-      array_push(_pts, _vc.corners[_face.idx[_v]]);
-    }
-
+    for (var _v = 0; _v < 4; _v++)  array_push(_pts, _vc.corners[_face.idx[_v]]);
     draw_primitive_begin(pr_trianglefan);
 
     for (var _w = 0; _w < 4; _w++) {
@@ -474,11 +415,8 @@ function __polygon_viewcube_draw(_ed, _vp) {
   for (var _n = 0, _nfront = array_length(_vc.cones); _n < _nfront; _n++) {
     var _front = _vc.cones[_n];
 
-    if (!_front.front || _front.facing > 0.93) {
-      continue;
-    }
-
-    __polygon_viewcube_cone(_ed, _front, __polygon_cube_hovered(_ed, _front));
+    if (!_front.front || _front.facing > 0.93)  continue;
+    __polygon_viewcube_cone(_front, __polygon_cube_hovered(_ed, _front));
 
     if (!_front.disk) {
       draw_set_color(c_white);

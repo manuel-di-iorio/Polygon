@@ -16,37 +16,17 @@ function __polygon_mat_inspector_close(_ed) {
 
 // Checks if the open material inspector no longer matches the selection.
 function __polygon_mat_inspector_stale(_ed) {
-  if (!variable_struct_exists(_ed, "mat_inspector_sel") || !is_array(_ed.mat_inspector_sel)) {
-    return true;
-  }
-
-  if (!variable_struct_exists(_ed, "mat_inspector_lib_sel")) {
-    return true;
-  }
-
-  if (array_length(_ed.mat_inspector_sel) != array_length(_ed.sel)) {
-    return true;
-  }
-
-  if (_ed.mat_inspector_lib_sel != _ed.lib_sel) {
-    return true;
-  }
-
-  for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++) {
-    if (!__polygon_node_same(_ed.mat_inspector_sel[_i], _ed.sel[_i])) {
-      return true;
-    }
-  }
-
+  if (!variable_struct_exists(_ed, "mat_inspector_sel") || !is_array(_ed.mat_inspector_sel))  return true;
+  if (!variable_struct_exists(_ed, "mat_inspector_lib_sel"))  return true;
+  if (array_length(_ed.mat_inspector_sel) != array_length(_ed.sel))  return true;
+  if (_ed.mat_inspector_lib_sel != _ed.lib_sel)  return true;
+  for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++)  if (!__polygon_node_same(_ed.mat_inspector_sel[_i], _ed.sel[_i]))  return true;
   return false;
 }
 
 // Draws the texture sub-inspector (with back navigation).
 function __polygon_imgui_tex_view(_ed) {
-  if (ImGui.Button("< Back to material")) {
-    _ed.tex_inspector = undefined;
-  }
-
+  if (ImGui.Button("< Back to material"))  _ed.tex_inspector = undefined;
   ImGui.Spacing();
   __polygon_imgui_tex_inspector(_ed);
   ImGui.End();
@@ -57,10 +37,7 @@ function __polygon_imgui_mat_view(_ed) {
   // Back is only offered when the material was opened from an
   // object/prefab inspector; generic entry points hide it.
   if (_ed[$ "mat_inspector_back"] == true) {
-    if (ImGui.Button("< Back to object")) {
-      __polygon_mat_inspector_close(_ed);
-    }
-
+    if (ImGui.Button("< Back to object"))  __polygon_mat_inspector_close(_ed);
     ImGui.Spacing();
   }
 
@@ -94,16 +71,10 @@ function __polygon_inspector_titles(_ed, _n, _skind, _stype) {
 function __polygon_inspector_asset_thumb(_ed, _node) {
   var _en = __polygon_registry_find(_ed, _node);
 
-  if (_en == undefined || !is_string(_en.asset) || !is_array(_ed.assets)) {
-    return -1;
-  }
-
+  if (_en == undefined || !is_string(_en.asset) || !is_array(_ed.assets))  return -1;
   var _entry = __polygon_asset_get(_ed, _en.asset);
 
-  if (_entry != undefined && variable_struct_exists(_entry, "thumb") && sprite_exists(_entry.thumb)) {
-    return _entry.thumb;
-  }
-
+  if (_entry != undefined && variable_struct_exists(_entry, "thumb") && sprite_exists(_entry.thumb))  return _entry.thumb;
   return -1;
 }
 
@@ -112,10 +83,7 @@ function __polygon_inspector_asset_thumb(_ed, _node) {
 function __polygon_imgui_instance_head(_ed, _node, _title, _type) {
   var _thumb = __polygon_inspector_asset_thumb(_ed, _node);
 
-  if (_thumb != -1) {
-    __polygon_imgui_inspector_asset_header(_title, _type, _thumb, 96);
-  }
-
+  if (_thumb != -1)  __polygon_imgui_inspector_asset_header(_title, _type, _thumb, 96);
   return __polygon_imgui_prefab_row(_ed, _node);
 }
 
@@ -128,10 +96,7 @@ function __polygon_imgui_plain_head(_title, _type) {
   ImGui.Text(_short);
   var _rh = ImGui.GetCursorScreenPosY() - _ry;
 
-  if (_rh <= 0) {
-    _rh = ImGui.GetTextLineHeight();
-  }
-
+  if (_rh <= 0)  _rh = ImGui.GetTextLineHeight();
   ImGui.SetCursorScreenPos(_rx, _ry);
   ImGui.InvisibleButton("##tip_title", max(0, _rw), max(1, _rh));
   var _hov = ImGui.IsItemHovered();
@@ -166,28 +131,14 @@ function __polygon_axis_visibility(_n, _skind, _stype) {
 
 // Draws the Transform section.
 function __polygon_imgui_transform_sec(_ed, _show) {
-  if (!_show[0] && !_show[1] && !_show[2]) {
-    return;
-  }
-
+  if (!_show[0] && !_show[1] && !_show[2])  return;
   ImGui.Spacing();
-  __polygon_imgui_sec_open(_ed);
+  __polygon_imgui_sec_open();
 
-  if (!ImGui.CollapsingHeader("Transform")) {
-    return;
-  }
-
-  if (_show[0]) {
-    __polygon_imgui_axis_row(_ed, 0, "Position");
-  }
-
-  if (_show[1]) {
-    __polygon_imgui_axis_row(_ed, 1, "Rotation");
-  }
-
-  if (_show[2]) {
-    __polygon_imgui_axis_row(_ed, 2, "Scale");
-  }
+  if (!ImGui.CollapsingHeader("Transform"))  return;
+  if (_show[0])  __polygon_imgui_axis_row(_ed, 0, "Position");
+  if (_show[1])  __polygon_imgui_axis_row(_ed, 1, "Rotation");
+  if (_show[2])  __polygon_imgui_axis_row(_ed, 2, "Scale");
 }
 
 // Draws one collapsing section with a body function.
@@ -196,64 +147,47 @@ function __polygon_imgui_transform_sec(_ed, _show) {
 function __polygon_imgui_prop_secs(_ed, _node, _en, _skind) {
   if (_skind == "light") {
     ImGui.Spacing();
-    __polygon_imgui_sec_open(_ed);
+    __polygon_imgui_sec_open();
 
-    if (ImGui.CollapsingHeader("Light")) {
-      __polygon_imgui_light_sec(_ed, _node, _en);
-    }
-
+    if (ImGui.CollapsingHeader("Light"))  __polygon_imgui_light_sec(_ed, _node, _en);
     if (_en.data.type == "directional") {
       ImGui.Spacing();
-      __polygon_imgui_sec_open(_ed);
+      __polygon_imgui_sec_open();
 
-      if (ImGui.CollapsingHeader("Shadows")) {
-        __polygon_imgui_light_shadow_sec(_ed, _node, _en);
-      }
+      if (ImGui.CollapsingHeader("Shadows"))  __polygon_imgui_light_shadow_sec(_ed, _node, _en);
     }
   } else if (_skind == "camera") {
     ImGui.Spacing();
-    __polygon_imgui_sec_open(_ed);
+    __polygon_imgui_sec_open();
 
-    if (ImGui.CollapsingHeader("Camera")) {
-      __polygon_imgui_camera_sec(_ed, _node, _en);
-    }
+    if (ImGui.CollapsingHeader("Camera"))  __polygon_imgui_camera_sec(_ed, _node, _en);
   } else if (_skind == "environment") {
     ImGui.Spacing();
-    __polygon_imgui_sec_open(_ed);
+    __polygon_imgui_sec_open();
 
-    if (ImGui.CollapsingHeader("Environment")) {
-      __polygon_imgui_env_sec(_ed, _node, _en);
-    }
+    if (ImGui.CollapsingHeader("Environment"))  __polygon_imgui_env_sec(_ed, _node, _en);
   }
 }
 
 // Draws asset instance sections (shadows, materials, animations).
 function __polygon_imgui_asset_secs(_ed, _node, _en) {
   ImGui.Spacing();
-  __polygon_imgui_sec_open(_ed);
+  __polygon_imgui_sec_open();
 
-  if (ImGui.CollapsingHeader("Shadows")) {
-    __polygon_imgui_asset_sec(_ed, _node, _en);
-  }
-
+  if (ImGui.CollapsingHeader("Shadows"))  __polygon_imgui_asset_sec(_ed, _node, _en);
   ImGui.Spacing();
-  __polygon_imgui_sec_open(_ed);
+  __polygon_imgui_sec_open();
 
   var _node_mats = __polygon_collect_node_mats(_node);
 
-  if (__polygon_imgui_section_meta("Materials", __polygon_imgui_mat_slot_meta(_node_mats))) {
-    __polygon_imgui_mat_rows(_ed, _node_mats);
-  }
-
+  if (__polygon_imgui_section_meta("Materials", __polygon_imgui_mat_slot_meta(_node_mats)))  __polygon_imgui_mat_rows(_ed, _node_mats);
   var _model = __polygon_imgui_node_model(_ed, _node);
 
   if (__polygon_imgui_anim_count(_model) > 0) {
     ImGui.Spacing();
-    __polygon_imgui_sec_open(_ed);
+    __polygon_imgui_sec_open();
 
-    if (__polygon_imgui_section_meta("Animations", string(__polygon_imgui_anim_count(_model)) + " clips")) {
-      __polygon_imgui_anim_sec(_ed, _node);
-    }
+    if (__polygon_imgui_section_meta("Animations", string(__polygon_imgui_anim_count(_model)) + " clips"))  __polygon_imgui_anim_sec(_ed, _node);
   }
 }
 
@@ -265,10 +199,7 @@ function __polygon_imgui_asset_secs(_ed, _node, _en) {
 function __polygon_inspector_light_subtype(_ed, _node) {
   var _en = __polygon_registry_find(_ed, _node);
 
-  if (_en != undefined && is_struct(_en.data) && is_string(_en.data.type)) {
-    return _en.data.type;
-  }
-
+  if (_en != undefined && is_struct(_en.data) && is_string(_en.data.type))  return _en.data.type;
   return undefined;
 }
 
@@ -281,9 +212,7 @@ function __polygon_imgui_sel_body(_ed, _n) {
   if (_n == 1) {
     _skind = __polygon_kind_of(_ed, _ed.sel[0]);
 
-    if (_skind == "light") {
-      _stype = __polygon_inspector_light_subtype(_ed, _ed.sel[0]);
-    }
+    if (_skind == "light")  _stype = __polygon_inspector_light_subtype(_ed, _ed.sel[0]);
   }
 
   var _titles = __polygon_inspector_titles(_ed, _n, _skind, _stype);
@@ -318,10 +247,7 @@ function __polygon_imgui_sel_body(_ed, _n) {
 function __polygon_imgui_inspector(_ed) {
   var _ui = _ed.imgui;
 
-  if (!_ui.win_insp.open) {
-    return;
-  }
-
+  if (!_ui.win_insp.open)  return;
   var _place = __polygon_imgui_place(_ed).insp;
 
   if (!__polygon_imgui_dock_fresh(_ed)) {
@@ -333,10 +259,7 @@ function __polygon_imgui_inspector(_ed) {
 
   var _flags = __polygon_imgui_panel_flags(_ed, "insp");
 
-  if (__polygon_imgui_lock_move(_ed)) {
-    _flags = _flags | ImGuiWindowFlags.NoMove;
-  }
-
+  if (__polygon_imgui_lock_move(_ed))  _flags = _flags | ImGuiWindowFlags.NoMove;
   if (!ImGui.Begin("Inspector", _ui.win_insp, _flags)) {
     __polygon_imgui_panel_save(_ed, "insp");
     ImGui.End();
@@ -346,10 +269,7 @@ function __polygon_imgui_inspector(_ed) {
   __polygon_imgui_panel_save(_ed, "insp");
   _ui.axis_values = undefined;
 
-  if (variable_struct_exists(_ed, "mat_inspector") && is_struct(_ed.mat_inspector) && __polygon_mat_inspector_stale(_ed)) {
-    __polygon_mat_inspector_close(_ed);
-  }
-
+  if (variable_struct_exists(_ed, "mat_inspector") && is_struct(_ed.mat_inspector) && __polygon_mat_inspector_stale(_ed))  __polygon_mat_inspector_close(_ed);
   if (variable_struct_exists(_ed, "tex_inspector") && is_struct(_ed.tex_inspector)) {
     __polygon_imgui_tex_view(_ed);
     return;
@@ -362,10 +282,7 @@ function __polygon_imgui_inspector(_ed) {
 
   var _n = array_length(_ed.sel);
 
-  if (_n > 0 && _ed.lib_sel != undefined) {
-    _ed.lib_sel = undefined;
-  }
-
+  if (_n > 0 && _ed.lib_sel != undefined)  _ed.lib_sel = undefined;
   if (_n == 0) {
     var _lib = __polygon_lib_sel_asset(_ed);
 

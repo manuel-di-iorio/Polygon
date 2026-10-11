@@ -8,15 +8,12 @@
 function __polygon_ang_diff(_a, _b) {
   var _d = abs(_a - _b) mod 360;
 
-  if (_d > 180) {
-    _d = 360 - _d;
-  }
-
+  if (_d > 180)  _d = 360 - _d;
   return _d;
 }
 
 // Collects rotation/scale/shadow overrides against spawn defaults.
-function __polygon_over_diffs(_ed, _node, _en, _entry) {
+function __polygon_over_diffs(_node, _en, _entry) {
   var _diffs = [];
   var _spawn = __polygon_spawn_t(_entry);
 
@@ -60,7 +57,7 @@ function __polygon_over_diffs(_ed, _node, _en, _entry) {
 // ---------------------------------------------------------------------------
 
 // Reverts one override kind to the asset prefab (no history here).
-function __polygon_over_revert(_ed, _node, _en, _entry, _kind) {
+function __polygon_over_revert(_node, _en, _entry, _kind) {
   var _spawn = __polygon_spawn_t(_entry);
   var _shadow = __polygon_spawn_shadow(_entry);
 
@@ -90,17 +87,13 @@ function __polygon_over_apply(_ed, _node, _en, _entry, _kind) {
         _spawn.rot = [ radtodeg(_euler[0]), radtodeg(_euler[1]), radtodeg(_euler[2]) ];
         _entry.thumb_rot = [ _spawn.rot[0], _spawn.rot[1], _spawn.rot[2] ];
 
-        if (is_array(_ed.thumb_queue) && !array_contains(_ed.thumb_queue, _entry)) {
-          array_push(_ed.thumb_queue, _entry);
-        }
+        if (is_array(_ed.thumb_queue) && !array_contains(_ed.thumb_queue, _entry))  array_push(_ed.thumb_queue, _entry);
       }
     }
   } else if (_kind == "sca" && _spawn != undefined) {
     var _sca = _node.getLocalScale();
 
-    if (_sca != undefined) {
-      _spawn.sca = [ max(_sca.x, 0.01), max(_sca.y, 0.01), max(_sca.z, 0.01) ];
-    }
+    if (_sca != undefined)  _spawn.sca = [ max(_sca.x, 0.01), max(_sca.y, 0.01), max(_sca.z, 0.01) ];
   } else if (_kind == "shad" && _shadow != undefined && is_struct(_en.data)) {
     _shadow.cast = _en.data.castShadows == true;
     _shadow.recv = _en.data.receiveShadows == true;
@@ -110,24 +103,17 @@ function __polygon_over_apply(_ed, _node, _en, _entry, _kind) {
 // Reverts one override with undo.
 function __polygon_over_revert_one(_ed, _node, _en, _entry, _kind) {
   var _before = __polygon_history_snap(_ed);
-  __polygon_over_revert(_ed, _node, _en, _entry, _kind);
+  __polygon_over_revert(_node, _en, _entry, _kind);
 
-  if (_before != undefined) {
-    __polygon_history_commit(_ed, _before);
-  }
+  if (_before != undefined)  __polygon_history_commit(_ed, _before);
 }
 
 // Reverts all overrides with undo.
 function __polygon_over_revert_all(_ed, _node, _en, _entry, _diffs) {
   var _before = __polygon_history_snap(_ed);
 
-  for (var _i = 0, _n = array_length(_diffs); _i < _n; _i++) {
-    __polygon_over_revert(_ed, _node, _en, _entry, _diffs[_i].kind);
-  }
-
-  if (_before != undefined) {
-    __polygon_history_commit(_ed, _before);
-  }
+  for (var _i = 0, _n = array_length(_diffs); _i < _n; _i++)  __polygon_over_revert(_node, _en, _entry, _diffs[_i].kind);
+  if (_before != undefined)  __polygon_history_commit(_ed, _before);
 }
 
 // ---------------------------------------------------------------------------
@@ -143,26 +129,14 @@ function __polygon_over_diff_row(_ed, _node, _en, _entry, _diff, _idx) {
   ImGui.SameLine(_avail - _btn_w * 2 - 8);
   ImGui.PushID(_idx * 2);
 
-  if (ImGui.Button("Revert", _btn_w, 0)) {
-    __polygon_over_revert_one(_ed, _node, _en, _entry, _diff.kind);
-  }
-
-  if (ImGui.IsItemHovered()) {
-    ImGui.SetTooltip("Revert " + _diff.label + " to spawn default");
-  }
-
+  if (ImGui.Button("Revert", _btn_w, 0))  __polygon_over_revert_one(_ed, _node, _en, _entry, _diff.kind);
+  if (ImGui.IsItemHovered())  ImGui.SetTooltip("Revert " + _diff.label + " to spawn default");
   ImGui.PopID();
   ImGui.SameLine();
   ImGui.PushID(_idx * 2 + 1);
 
-  if (ImGui.Button("Apply", _btn_w, 0)) {
-    __polygon_over_apply(_ed, _node, _en, _entry, _diff.kind);
-  }
-
-  if (ImGui.IsItemHovered()) {
-    ImGui.SetTooltip("Save current " + _diff.label + " as spawn default");
-  }
-
+  if (ImGui.Button("Apply", _btn_w, 0))  __polygon_over_apply(_ed, _node, _en, _entry, _diff.kind);
+  if (ImGui.IsItemHovered())  ImGui.SetTooltip("Save current " + _diff.label + " as spawn default");
   ImGui.PopID();
 }
 
@@ -175,32 +149,15 @@ function __polygon_over_combo(_ed, _node, _en, _entry, _diffs) {
   if (array_length(_diffs) == 0) {
     ImGui.TextDisabled("(no overrides)");
   } else if (ImGui.BeginCombo("##prefab_over", "Overrides (" + string(array_length(_diffs)) + ")")) {
-    for (var _d = 0, _n = array_length(_diffs); _d < _n; _d++) {
-      __polygon_over_diff_row(_ed, _node, _en, _entry, _diffs[_d], _d);
-    }
-
+    for (var _d = 0, _n = array_length(_diffs); _d < _n; _d++)  __polygon_over_diff_row(_ed, _node, _en, _entry, _diffs[_d], _d);
     ImGui.Separator();
 
-    if (ImGui.Button("Revert All", 0, 0)) {
-      __polygon_over_revert_all(_ed, _node, _en, _entry, _diffs);
-    }
-
-    if (ImGui.IsItemHovered()) {
-      ImGui.SetTooltip("Revert all overrides to prefab");
-    }
-
+    if (ImGui.Button("Revert All", 0, 0))  __polygon_over_revert_all(_ed, _node, _en, _entry, _diffs);
+    if (ImGui.IsItemHovered())  ImGui.SetTooltip("Revert all overrides to prefab");
     ImGui.SameLine();
 
-    if (ImGui.Button("Apply All", 0, 0)) {
-      for (var _a = 0, _na = array_length(_diffs); _a < _na; _a++) {
-        __polygon_over_apply(_ed, _node, _en, _entry, _diffs[_a].kind);
-      }
-    }
-
-    if (ImGui.IsItemHovered()) {
-      ImGui.SetTooltip("Save all current values as prefab");
-    }
-
+    if (ImGui.Button("Apply All", 0, 0))  for (var _a = 0, _na = array_length(_diffs); _a < _na; _a++)  __polygon_over_apply(_ed, _node, _en, _entry, _diffs[_a].kind);
+    if (ImGui.IsItemHovered())  ImGui.SetTooltip("Save all current values as prefab");
     ImGui.EndCombo();
   }
 
@@ -219,16 +176,8 @@ function __polygon_over_combo(_ed, _node, _en, _entry, _diffs) {
 
 // Finds the library index of an entry.
 function __polygon_asset_index(_ed, _entry) {
-  if (!is_array(_ed.assets)) {
-    return -1;
-  }
-
-  for (var _i = 0, _n = array_length(_ed.assets); _i < _n; _i++) {
-    if (_ed.assets[_i] == _entry) {
-      return _i;
-    }
-  }
-
+  if (!is_array(_ed.assets))  return -1;
+  for (var _i = 0, _n = array_length(_ed.assets); _i < _n; _i++)  if (_ed.assets[_i] == _entry)  return _i;
   return -1;
 }
 
@@ -237,17 +186,11 @@ function __polygon_asset_index(_ed, _entry) {
 function __polygon_imgui_prefab_row(_ed, _node) {
   var _en = __polygon_registry_find(_ed, _node);
 
-  if (_en == undefined || !is_string(_en.asset) || !is_array(_ed.assets)) {
-    return false;
-  }
-
+  if (_en == undefined || !is_string(_en.asset) || !is_array(_ed.assets))  return false;
   var _entry = __polygon_asset_get(_ed, _en.asset);
 
-  if (_entry == undefined) {
-    return false;
-  }
-
-  var _diffs = __polygon_over_diffs(_ed, _node, _en, _entry);
+  if (_entry == undefined)  return false;
+  var _diffs = __polygon_over_diffs(_node, _en, _entry);
   _ed.prefab_override_count = array_length(_diffs);
 
   ImGui.AlignTextToFramePadding();

@@ -19,19 +19,13 @@ function __polygon_base_name(_path) {
   var _base = is_string(_path) ? _path : "";
   var _at = max(string_last_pos("/", _base), string_last_pos("\\", _base));
 
-  if (_at > 0) {
-    _base = string_copy(_base, _at + 1, string_length(_base) - _at);
-  }
-
+  if (_at > 0)  _base = string_copy(_base, _at + 1, string_length(_base) - _at);
   return _base;
 }
 
 // Strips a trailing .json extension.
 function __polygon_strip_json(_name) {
-  if (string_length(_name) > 5 && string_lower(string_copy(_name, string_length(_name) - 4, 5)) == ".json") {
-    return string_copy(_name, 1, string_length(_name) - 5);
-  }
-
+  if (string_length(_name) > 5 && string_lower(string_copy(_name, string_length(_name) - 4, 5)) == ".json")  return string_copy(_name, 1, string_length(_name) - 5);
   return _name;
 }
 
@@ -44,10 +38,7 @@ function __polygon_scene_name(_ed) {
 
 // Sanitizes scene name for file use.
 function __polygon_sanitize_scene_name(_name) {
-  if (!is_string(_name)) {
-    return "";
-  }
-
+  if (!is_string(_name))  return "";
   static _banned = [ "/", "\\", ":", "*", "?", "\"", "<", ">", "|" ];
   var _src = string_trim(_name);
   var _out = "";
@@ -55,10 +46,7 @@ function __polygon_sanitize_scene_name(_name) {
   for (var _i = 1; _i <= string_length(_src); _i++) {
     var _ch = string_char_at(_src, _i);
 
-    if (array_contains(_banned, _ch) || ord(_ch) < 32) {
-      continue;
-    }
-
+    if (array_contains(_banned, _ch) || ord(_ch) < 32)  continue;
     _out += _ch;
   }
 
@@ -67,17 +55,11 @@ function __polygon_sanitize_scene_name(_name) {
   while (string_length(_out) > 0) {
     var _last = string_char_at(_out, string_length(_out));
 
-    if (_last != "." && _last != " ") {
-      break;
-    }
-
+    if (_last != "." && _last != " ")  break;
     _out = string_copy(_out, 1, string_length(_out) - 1);
   }
 
-  if (string_length(_out) > 64) {
-    _out = string_copy(_out, 1, 64);
-  }
-
+  if (string_length(_out) > 64)  _out = string_copy(_out, 1, 64);
   return _out;
 }
 
@@ -91,10 +73,7 @@ function __polygon_scene_list() {
     _guard++;
     var _name = __polygon_strip_json(__polygon_base_name(_found));
 
-    if (_name != "") {
-      array_push(_out, _name);
-    }
-
+    if (_name != "")  array_push(_out, _name);
     _found = file_find_next();
   }
 
@@ -121,10 +100,7 @@ function __polygon_scene_list() {
 
 // Opens the scene dialog in a mode (save/load).
 function __polygon_scene_dlg_open(_ed, _mode, _after = undefined) {
-  if (_ed == undefined || _ed.scene_dlg != undefined) {
-    return false;
-  }
-
+  if (_ed == undefined || _ed.scene_dlg != undefined)  return false;
   _ed.scene_dlg = {
     mode: _mode,
     name: __polygon_scene_name(_ed),
@@ -138,21 +114,9 @@ function __polygon_scene_dlg_open(_ed, _mode, _after = undefined) {
 }
 
 // Prompts scene name and saves scene.
-function __polygon_save_as(_ed, _after = undefined) {
-  return __polygon_scene_dlg_open(_ed, "save", _after);
-}
-
-// Opens load dialog for scenes folder.
-function __polygon_load_ask(_ed) {
-  return __polygon_scene_dlg_open(_ed, "load");
-}
-
 // Saves scene or prompts for name.
 function __polygon_save_or_ask(_ed, _after = undefined) {
-  if (_ed.scene_file == undefined || _ed.scene_file == "") {
-    return __polygon_save_as(_ed, _after);
-  }
-
+  if (_ed.scene_file == undefined || _ed.scene_file == "")  return __polygon_scene_dlg_open(_ed, "save", _after);
   return __polygon_save_scene(_ed);
 }
 
@@ -160,10 +124,7 @@ function __polygon_save_or_ask(_ed, _after = undefined) {
 function __polygon_scene_dlg_do_save(_ed) {
   var _dlg = _ed.scene_dlg;
 
-  if (_dlg == undefined) {
-    return;
-  }
-
+  if (_dlg == undefined)  return;
   var _clean = __polygon_sanitize_scene_name(_dlg.name);
 
   if (_clean == "") {
@@ -183,19 +144,14 @@ function __polygon_scene_dlg_do_save(_ed) {
   var _after = _dlg.after;
   _ed.scene_dlg = undefined;
 
-  if (_after != undefined && _after != "") {
-    __polygon_confirm_do(_ed, _after);
-  }
+  if (_after != undefined && _after != "")  __polygon_confirm_do(_ed, _after);
 }
 
 // Confirms load dialog.
 function __polygon_scene_dlg_do_load(_ed) {
   var _dlg = _ed.scene_dlg;
 
-  if (_dlg == undefined) {
-    return;
-  }
-
+  if (_dlg == undefined)  return;
   var _clean = __polygon_sanitize_scene_name(_dlg.name);
 
   if (_clean == "") {
@@ -234,7 +190,7 @@ function __polygon_confirm_do(_ed, _action) {
   if (_action == "new") {
     __polygon_new_scene(_ed);
   } else if (_action == "load") {
-    __polygon_load_ask(_ed);
+    __polygon_scene_dlg_open(_ed, "load");
   } else if (_action == "close") {
     __polygon_set_active(_ed, false);
   }
@@ -248,10 +204,7 @@ function __polygon_confirm_do(_ed, _action) {
 function __polygon_save_named(_ed, _name) {
   var _clean = __polygon_sanitize_scene_name(_name);
 
-  if (_clean == "") {
-    return false;
-  }
-
+  if (_clean == "")  return false;
   _ed.scene_file = __polygon_scene_file_for(_clean);
   return __polygon_save_scene(_ed);
 }
@@ -260,17 +213,11 @@ function __polygon_save_named(_ed, _name) {
 function __polygon_load_named(_ed, _name) {
   var _clean = __polygon_sanitize_scene_name(_name);
 
-  if (_clean == "") {
-    return false;
-  }
-
+  if (_clean == "")  return false;
   var _old = _ed.scene_file;
   _ed.scene_file = __polygon_scene_file_for(_clean);
 
-  if (__polygon_load_scene(_ed)) {
-    return true;
-  }
-
+  if (__polygon_load_scene(_ed))  return true;
   _ed.scene_file = _old;
   return false;
 }
@@ -279,16 +226,10 @@ function __polygon_load_named(_ed, _name) {
 function __polygon_delete_scene_named(_name) {
   var _clean = __polygon_sanitize_scene_name(_name);
 
-  if (_clean == "") {
-    return false;
-  }
-
+  if (_clean == "")  return false;
   var _path = __polygon_scenes_dir() + _clean + ".json";
 
-  if (!file_exists(_path)) {
-    return false;
-  }
-
+  if (!file_exists(_path))  return false;
   file_delete(_path);
   return true;
 }

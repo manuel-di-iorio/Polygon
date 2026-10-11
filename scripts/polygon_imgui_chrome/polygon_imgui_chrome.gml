@@ -32,10 +32,7 @@ function __polygon_draw_mode(_ed, _unlit) {
 
 // Draws gizmo tools and snap options toolbar.
 function __polygon_imgui_toolbar(_ed) {
-  if (!_ed.imgui.win_toolbar.open) {
-    return;
-  }
-
+  if (!_ed.imgui.win_toolbar.open)  return;
   ImGui.SetNextWindowPos(300, 34, _ed.imgui.cond);
   var _flags =
   ImGuiWindowFlags.NoTitleBar |
@@ -52,13 +49,8 @@ function __polygon_imgui_toolbar(_ed) {
   for (var _i = 0, _n = array_length(_tools); _i < _n; _i++) {
     var _t = _tools[_i];
 
-    if (_i > 0) {
-      ImGui.SameLine();
-    }
-
-    if (__polygon_imgui_icon_btn(_ed, _t[0], _t[1], _ed.giz.tool == _t[2], _t[3], _t[4], _t[5], _t[6])) {
-      _ed.giz.tool = _t[2];
-    }
+    if (_i > 0)  ImGui.SameLine();
+    if (__polygon_imgui_icon_btn(_t[0], _t[1], _ed.giz.tool == _t[2], _t[3], _t[4], _t[5], _t[6]))  _ed.giz.tool = _t[2];
   }
 
   __polygon_toolbar_sep();
@@ -72,13 +64,10 @@ function __polygon_imgui_toolbar(_ed) {
 
   __polygon_toolbar_sep();
 
-  if (__polygon_imgui_icon_btn(_ed, "##tb_snap", "Snap to increments (on/off)", _ed.snap_on, "Sn", "sprPolygonEditorIconSnap", 15, 15)) {
-    _ed.snap_on = !_ed.snap_on;
-  }
-
+  if (__polygon_imgui_icon_btn("##tb_snap", "Snap to increments (on/off)", _ed.snap_on, "Sn", "sprPolygonEditorIconSnap", 15, 15))  _ed.snap_on = !_ed.snap_on;
   ImGui.SameLine();
 
-  if (__polygon_imgui_icon_btn(_ed, "##tb_grid", "Show grid (on/off)", _ed.show_grid, "Gr", "sprPolygonEditorIconGrid", 15, 15)) {
+  if (__polygon_imgui_icon_btn("##tb_grid", "Show grid (on/off)", _ed.show_grid, "Gr", "sprPolygonEditorIconGrid", 15, 15)) {
     _ed.show_grid = !_ed.show_grid;
     // Apply now: grid_ensure also runs in step, but after the toggle the
     // flipped view key would consume the re-render on the stale scene.
@@ -89,22 +78,13 @@ function __polygon_imgui_toolbar(_ed) {
   __polygon_imgui_grid_snap(_ed);
   __polygon_toolbar_sep();
 
-  if (__polygon_imgui_icon_btn(_ed, "##tb_unlit", "Unlit Draw Mode", _ed.show_unlit == true, "Un", "sprPolygonEditorIconUnlit", 15, 15)) {
-    __polygon_draw_mode(_ed, true);
-  }
-
+  if (__polygon_imgui_icon_btn("##tb_unlit", "Unlit Draw Mode", _ed.show_unlit == true, "Un", "sprPolygonEditorIconUnlit", 15, 15))  __polygon_draw_mode(_ed, true);
   ImGui.SameLine();
 
-  if (__polygon_imgui_icon_btn(_ed, "##tb_shaded", "Shaded Draw Mode", _ed.show_unlit != true, "Sh", "sprPolygonEditorIconShaded", 15, 15)) {
-    __polygon_draw_mode(_ed, false);
-  }
-
+  if (__polygon_imgui_icon_btn("##tb_shaded", "Shaded Draw Mode", _ed.show_unlit != true, "Sh", "sprPolygonEditorIconShaded", 15, 15))  __polygon_draw_mode(_ed, false);
   __polygon_toolbar_sep();
 
-  if (__polygon_imgui_icon_btn(_ed, "##tb_home", "Reset camera to the initial view", false, "Hm", "sprPolygonEditorIconCenter", 15, 15)) {
-    __polygon_cam_home(_ed, true);
-  }
-
+  if (__polygon_imgui_icon_btn("##tb_home", "Reset camera to the initial view", false, "Hm", "sprPolygonEditorIconCenter", 15, 15))  __polygon_cam_home(_ed, true);
   ImGui.End();
 }
 
@@ -114,29 +94,12 @@ function __polygon_imgui_toolbar(_ed) {
 
 // Ensures snap settings exist with defaults.
 function __polygon_snap_defaults(_ed) {
-  if (!variable_struct_exists(_ed, "grid_step") || !is_real(_ed.grid_step)) {
-    _ed.grid_step = 1;
-  }
-
-  if (!variable_struct_exists(_ed, "snap_to_grid")) {
-    _ed.snap_to_grid = true;
-  }
-
-  if (!variable_struct_exists(_ed, "snap_pos") || !is_real(_ed.snap_pos)) {
-    _ed.snap_pos = 0.5;
-  }
-
-  if (!variable_struct_exists(_ed, "snap_x")) {
-    _ed.snap_x = true;
-  }
-
-  if (!variable_struct_exists(_ed, "snap_y")) {
-    _ed.snap_y = true;
-  }
-
-  if (!variable_struct_exists(_ed, "snap_z")) {
-    _ed.snap_z = true;
-  }
+  if (!variable_struct_exists(_ed, "grid_step") || !is_real(_ed.grid_step))  _ed.grid_step = 1;
+  if (!variable_struct_exists(_ed, "snap_to_grid"))  _ed.snap_to_grid = true;
+  if (!variable_struct_exists(_ed, "snap_pos") || !is_real(_ed.snap_pos))  _ed.snap_pos = 0.5;
+  if (!variable_struct_exists(_ed, "snap_x"))  _ed.snap_x = true;
+  if (!variable_struct_exists(_ed, "snap_y"))  _ed.snap_y = true;
+  if (!variable_struct_exists(_ed, "snap_z"))  _ed.snap_z = true;
 }
 
 // Draws the grid section of the snap popup.
@@ -153,9 +116,7 @@ function __polygon_snap_grid_sec(_ed) {
 
 // Draws one snap-axis toggle.
 function __polygon_snap_axis_btn(_ed, _tip, _label, _field) {
-  if (__polygon_imgui_tool_btn(_tip, _label, _ed[$ _field], 28, 34)) {
-    _ed[$ _field] = !_ed[$ _field];
-  }
+  if (__polygon_imgui_tool_btn(_tip, _label, _ed[$ _field], 28, 34))  _ed[$ _field] = !_ed[$ _field];
 }
 
 // Draws the position section of the snap popup.
@@ -177,13 +138,8 @@ function __polygon_snap_pos_sec(_ed) {
       var _step = _presets[_j];
       var _sel = abs(_ed.snap_pos - _step) < 0.0001;
 
-      if (ImGui.Selectable(string(_step), _sel)) {
-        _ed.snap_pos = _step;
-      }
-
-      if (_sel) {
-        ImGui.SetItemDefaultFocus();
-      }
+      if (ImGui.Selectable(string(_step), _sel))  _ed.snap_pos = _step;
+      if (_sel)  ImGui.SetItemDefaultFocus();
     }
 
     ImGui.SetNextItemWidth(120);
@@ -192,29 +148,22 @@ function __polygon_snap_pos_sec(_ed) {
 }
 
 // Draws the rotation section of the snap popup.
-function __polygon_snap_rot_sec(_ed) {
-  ImGui.Separator();
-  ImGui.TextDisabled("ROTATION SNAP");
-  ImGui.SetNextItemWidth(120);
-  _ed.snap_rot = max(0.5, __polygon_imgui_dragfloat("##gridsnap_rot", _ed.snap_rot, 0.1));
-}
-
 // Edits grid size and snap increments in one place.
 function __polygon_imgui_grid_snap(_ed) {
   __polygon_snap_defaults(_ed);
   ImGui.SetNextItemWidth(64);
 
   if (!ImGui.BeginCombo("##gridsnap", string(_ed.grid_step) + " m")) {
-    if (ImGui.IsItemHovered()) {
-      ImGui.SetTooltip("Grid and snap settings");
-    }
-
+    if (ImGui.IsItemHovered())  ImGui.SetTooltip("Grid and snap settings");
     return;
   }
 
   __polygon_snap_grid_sec(_ed);
   __polygon_snap_pos_sec(_ed);
-  __polygon_snap_rot_sec(_ed);
+  ImGui.Separator();
+  ImGui.TextDisabled("ROTATION SNAP");
+  ImGui.SetNextItemWidth(120);
+  _ed.snap_rot = max(0.5, __polygon_imgui_dragfloat("##gridsnap_rot", _ed.snap_rot, 0.1));
   ImGui.EndCombo();
 }
 
@@ -223,52 +172,30 @@ function __polygon_imgui_grid_snap(_ed) {
 // ---------------------------------------------------------------------------
 
 // Returns UI settings file path.
-function __polygon_ui_path() {
-  return working_directory + "polygon_ui.json";
-}
-
 // Saves view cube offset to file.
 function __polygon_ui_save(_ed) {
-  if (_ed == undefined) {
-    return;
-  }
-
+  if (_ed == undefined)  return;
   __polygon_write_text_file(
-    __polygon_ui_path(),
+    working_directory + "polygon_ui.json",
     json_stringify({ cube_off: _ed.cube_off }, true)
   );
 }
 
 // Loads view cube offset from file.
 function __polygon_ui_load(_ed) {
-  if (_ed == undefined) {
-    return;
-  }
+  if (_ed == undefined)  return;
+  var _path = working_directory + "polygon_ui.json";
 
-  var _path = __polygon_ui_path();
-
-  if (!file_exists(_path)) {
-    return;
-  }
-
+  if (!file_exists(_path))  return;
   var _json = __polygon_read_text_file(_path);
 
-  if (_json == "") {
-    return;
-  }
-
+  if (_json == "")  return;
   var _data = json_parse(_json);
 
-  if (!is_struct(_data) || !variable_struct_exists(_data, "cube_off")) {
-    return;
-  }
-
+  if (!is_struct(_data) || !variable_struct_exists(_data, "cube_off"))  return;
   var _off = _data.cube_off;
 
-  if (!is_array(_off) || array_length(_off) < 2 || !is_real(_off[0]) || !is_real(_off[1])) {
-    return;
-  }
-
+  if (!is_array(_off) || array_length(_off) < 2 || !is_real(_off[0]) || !is_real(_off[1]))  return;
   // Legacy offsets from the floating layout reset to home.
   if ((_off[0] == 85 || _off[0] == 375) && _off[1] == 100) {
     __polygon_cube_home(_ed);
@@ -286,72 +213,38 @@ function __polygon_ui_load(_ed) {
 function __polygon_menu_file(_ed) {
   var _pending = { do_new: false, do_load: false, do_saveas: false, do_close: false };
 
-  if (!ImGui.BeginMenu("File")) {
-    return _pending;
-  }
-
+  if (!ImGui.BeginMenu("File"))  return _pending;
   ImGui.TextDisabled(_ed.scene_file != "" ? _ed.scene_file : "(unsaved scene)");
 
-  if (ImGui.MenuItem("New", "Ctrl+N")) {
-    _pending.do_new = true;
-  }
-
-  if (ImGui.MenuItem("Save", "Ctrl+S")) {
-    __polygon_save_or_ask(_ed);
-  }
-
-  if (ImGui.MenuItem("Save As...")) {
-    _pending.do_saveas = true;
-  }
-
-  if (ImGui.MenuItem("Load", "Ctrl+L")) {
-    _pending.do_load = true;
-  }
-
+  if (ImGui.MenuItem("New", "Ctrl+N"))  _pending.do_new = true;
+  if (ImGui.MenuItem("Save", "Ctrl+S"))  __polygon_save_or_ask(_ed);
+  if (ImGui.MenuItem("Save As..."))  _pending.do_saveas = true;
+  if (ImGui.MenuItem("Load", "Ctrl+L"))  _pending.do_load = true;
   ImGui.Separator();
 
-  if (ImGui.MenuItem("Close Editor", "Ctrl+W")) {
-    _pending.do_close = true;
-  }
-
+  if (ImGui.MenuItem("Close Editor", "Ctrl+W"))  _pending.do_close = true;
   ImGui.EndMenu();
   return _pending;
 }
 
 // Draws the Create menu.
 function __polygon_menu_create(_ed) {
-  if (!ImGui.BeginMenu("Create")) {
-    return;
-  }
-
+  if (!ImGui.BeginMenu("Create"))  return;
   if (__polygon_light_count(_ed) >= 8) {
     ImGui.TextDisabled("Lights (8 max reached)");
   } else {
-    if (ImGui.MenuItem("Directional Light")) {
-      __polygon_create_light(_ed, "directional");
-    }
-
-    if (ImGui.MenuItem("Point Light")) {
-      __polygon_create_light(_ed, "point");
-    }
+    if (ImGui.MenuItem("Directional Light"))  __polygon_create_light(_ed, "directional");
+    if (ImGui.MenuItem("Point Light"))  __polygon_create_light(_ed, "point");
   }
 
   ImGui.Separator();
 
-  if (ImGui.MenuItem("Perspective Camera")) {
-    __polygon_create_camera(_ed, "perspective");
-  }
-
-  if (ImGui.MenuItem("Ortho Camera")) {
-    __polygon_create_camera(_ed, "ortho");
-  }
-
+  if (ImGui.MenuItem("Perspective Camera"))  __polygon_create_camera(_ed, "perspective");
+  if (ImGui.MenuItem("Ortho Camera"))  __polygon_create_camera(_ed, "ortho");
   ImGui.Separator();
 
   if (__polygon_env_node(_ed) == undefined) {
-    if (ImGui.MenuItem("Environment")) {
-      __polygon_create_env(_ed);
-    }
+    if (ImGui.MenuItem("Environment"))  __polygon_create_env(_ed);
   } else {
     ImGui.TextDisabled("Environment (already in scene)");
   }
@@ -361,19 +254,14 @@ function __polygon_menu_create(_ed) {
 
 // Toggles one window-visibility menu entry.
 function __polygon_menu_win(_label, _win) {
-  if (ImGui.MenuItem(_win.open ? "[x] " + _label : "[  ] " + _label)) {
-    _win.open = !_win.open;
-  }
+  if (ImGui.MenuItem(_win.open ? "[x] " + _label : "[  ] " + _label))  _win.open = !_win.open;
 }
 
 // Draws the View menu.
 function __polygon_menu_view(_ed) {
   var _ui = _ed.imgui;
 
-  if (!ImGui.BeginMenu("View")) {
-    return;
-  }
-
+  if (!ImGui.BeginMenu("View"))  return;
   __polygon_menu_win("Models", _ui.win_assets);
   __polygon_menu_win("Hierarchy", _ui.win_hier);
   __polygon_menu_win("Inspector", _ui.win_insp);
@@ -403,10 +291,7 @@ function __polygon_menu_view(_ed) {
 function __polygon_menu_brand() {
   static _logo = -2;
 
-  if (_logo == -2) {
-    _logo = asset_get_index("sprPolygonEditorIconLogo");
-  }
-
+  if (_logo == -2)  _logo = asset_get_index("sprPolygonEditorIconLogo");
   ImGui.Dummy(1, 0);
 
   if (_logo != -1) {
@@ -433,14 +318,8 @@ function __polygon_menu_brand() {
 
 // Draws the Help menu.
 function __polygon_menu_help(_ed) {
-  if (!ImGui.BeginMenu("Help")) {
-    return;
-  }
-
-  if (ImGui.MenuItem("Report a Bug/Feature Request")) {
-    url_open("https://github.com/manuel-di-iorio/Polygon/issues");
-  }
-
+  if (!ImGui.BeginMenu("Help"))  return;
+  if (ImGui.MenuItem("Report a Bug/Feature Request"))  url_open("https://github.com/manuel-di-iorio/Polygon/issues");
   if (ImGui.MenuItem("About")) {
     _ed.about = { open: true };
   }
@@ -450,30 +329,14 @@ function __polygon_menu_help(_ed) {
 
 // Executes pending menu bar actions.
 function __polygon_menu_do(_ed, _file) {
-  if (_file.do_new) {
-    __polygon_confirm_ask(_ed, "new");
-  }
-
-  if (_file.do_load) {
-    __polygon_confirm_ask(_ed, "load");
-  }
-
-  if (_file.do_saveas) {
-    __polygon_save_as(_ed);
-  }
-
-  if (_file.do_close) {
-    __polygon_confirm_ask(_ed, "close");
-  }
+  if (_file.do_new)  __polygon_confirm_ask(_ed, "new");
+  if (_file.do_load)  __polygon_confirm_ask(_ed, "load");
+  if (_file.do_saveas)  __polygon_scene_dlg_open(_ed, "save", undefined);
+  if (_file.do_close)  __polygon_confirm_ask(_ed, "close");
 }
 
 // Tries to pad the menu bar via FramePadding (Dear ImGui StyleVar 11).
 // Returns true when active: caller must pop with __polygon_menu_pad_pop().
-function __polygon_menu_pad_push() {
-  ImGui.PushStyleVar(11, 8, 12);
-  return true;
-}
-
 // Pops a menu bar padding override.
 function __polygon_menu_pad_pop() {
   ImGui.PopStyleVar();
@@ -505,20 +368,16 @@ function __polygon_menu_ai(_ed) {
 
   ImGui.SameLine(max(0, _w - 60));
 
-  if (__polygon_imgui_tool_btn("AI bridge: connect/disconnect the MCP relay", "AI", _ai.on, 0, 0)) {
-    __polygon_ai_enable(!_ai.on);
-  }
+  if (__polygon_imgui_tool_btn("AI bridge: connect/disconnect the MCP relay", "AI", _ai.on, 0, 0))  __polygon_ai_enable(!_ai.on);
 }
 
 // Draws main menu bar with actions.
 function __polygon_imgui_menu(_ed) {
-  var _pad = __polygon_menu_pad_push();
+  ImGui.PushStyleVar(11, 8, 12);
+  var _pad = true;
 
   if (!ImGui.BeginMainMenuBar()) {
-    if (_pad) {
-      __polygon_menu_pad_pop();
-    }
-
+    if (_pad)  __polygon_menu_pad_pop();
     return;
   }
 
@@ -531,9 +390,6 @@ function __polygon_imgui_menu(_ed) {
   __polygon_menu_ai(_ed);
   ImGui.EndMainMenuBar();
 
-  if (_pad) {
-    __polygon_menu_pad_pop();
-  }
-
+  if (_pad)  __polygon_menu_pad_pop();
   __polygon_menu_do(_ed, _file);
 }

@@ -8,10 +8,7 @@
 function __polygon_imgui_scene_win(_ed) {
   var _ui = _ed.imgui;
 
-  if (!_ui.win_hier.open) {
-    return;
-  }
-
+  if (!_ui.win_hier.open)  return;
   var _place = __polygon_imgui_place(_ed).hier;
 
   if (!__polygon_imgui_dock_fresh(_ed)) {
@@ -23,10 +20,7 @@ function __polygon_imgui_scene_win(_ed) {
 
   var _flags = __polygon_imgui_panel_flags(_ed, "hier");
 
-  if (__polygon_imgui_lock_move(_ed)) {
-    _flags = _flags | ImGuiWindowFlags.NoMove;
-  }
-
+  if (__polygon_imgui_lock_move(_ed))  _flags = _flags | ImGuiWindowFlags.NoMove;
   if (!ImGui.Begin("Hierarchy", _ui.win_hier, _flags)) {
     __polygon_imgui_panel_save(_ed, "hier");
     ImGui.End();
@@ -43,18 +37,12 @@ function __polygon_imgui_scene_win(_ed) {
 // ---------------------------------------------------------------------------
 
 // Draws visibility toggle eye button.
-function __polygon_imgui_eye(_ed, _hidden, _ghost, _tipkey) {
+function __polygon_imgui_eye(_hidden, _ghost, _tipkey) {
   static _eye_open = -2;
   static _eye_shut = -2;
 
-  if (_eye_open == -2) {
-    _eye_open = asset_get_index("sprPolygonEditorIconEye");
-  }
-
-  if (_eye_shut == -2) {
-    _eye_shut = asset_get_index("sprPolygonEditorIconEyeClosed");
-  }
-
+  if (_eye_open == -2)  _eye_open = asset_get_index("sprPolygonEditorIconEye");
+  if (_eye_shut == -2)  _eye_shut = asset_get_index("sprPolygonEditorIconEyeClosed");
   var _spr = _hidden ? _eye_shut : _eye_open;
   var _tint = c_white;
 
@@ -71,26 +59,17 @@ function __polygon_imgui_eye(_ed, _hidden, _ghost, _tipkey) {
     _hit = ImGui.SmallButton(_hidden ? "Show##eye" : "Hide##eye");
   }
 
-  if (ImGui.IsItemHovered()) {
-    __polygon_imgui_tip_delayed(_tipkey, _hidden ? "Show in viewport" : "Hide from viewport", true);
-  }
-
+  if (ImGui.IsItemHovered())  __polygon_imgui_tip_delayed(_tipkey, _hidden ? "Show in viewport" : "Hide from viewport", true);
   return _hit;
 }
 
 // Draws selection lock toggle handpoint button.
-function __polygon_imgui_lock(_ed, _locked, _ghost, _tipkey) {
+function __polygon_imgui_lock(_locked, _ghost, _tipkey) {
   static _hand = -2;
   static _hand_off = -2;
 
-  if (_hand == -2) {
-    _hand = asset_get_index("sprPolygonEditorIconHandpoint");
-  }
-
-  if (_hand_off == -2) {
-    _hand_off = asset_get_index("sprPolygonEditorIconHandpointDisabled");
-  }
-
+  if (_hand == -2)  _hand = asset_get_index("sprPolygonEditorIconHandpoint");
+  if (_hand_off == -2)  _hand_off = asset_get_index("sprPolygonEditorIconHandpointDisabled");
   var _tint = c_white;
   var _spr = _hand;
 
@@ -111,10 +90,7 @@ function __polygon_imgui_lock(_ed, _locked, _ghost, _tipkey) {
     _hit = ImGui.SmallButton(_locked ? "Unlock##lock" : "Lock##lock");
   }
 
-  if (ImGui.IsItemHovered()) {
-    __polygon_imgui_tip_delayed(_tipkey, _locked ? "Unlock selection" : "Lock selection", true);
-  }
-
+  if (ImGui.IsItemHovered())  __polygon_imgui_tip_delayed(_tipkey, _locked ? "Unlock selection" : "Lock selection", true);
   return _hit;
 }
 
@@ -124,24 +100,12 @@ function __polygon_imgui_lock(_ed, _locked, _ghost, _tipkey) {
 
 // Starts in-place node rename mode.
 function __polygon_rename_begin(_ed, _node) {
-  if (_node == undefined) {
-    return;
-  }
-
-  if (_ed.giz.drag != -1) {
-    return;
-  }
-
-  if (__polygon_registry_find(_ed, _node) == undefined) {
-    return;
-  }
-
+  if (_node == undefined)  return;
+  if (_ed.giz.drag != -1)  return;
+  if (__polygon_registry_find(_ed, _node) == undefined)  return;
   var _label = __polygon_label_get(_ed, _node);
 
-  if (!is_string(_label) || _label == "") {
-    return;
-  }
-
+  if (!is_string(_label) || _label == "")  return;
   _ed.rename_name = _label;
   _ed.rename_id = _node.name;
   _ed.imgui.win_hier.open = true;
@@ -154,10 +118,6 @@ function __polygon_rename_cancel(_ed) {
 }
 
 // Checks node matches rename target id.
-function __polygon_rename_at(_ed, _node) {
-  return _node != undefined && _node.name == _ed.rename_id;
-}
-
 // ---------------------------------------------------------------------------
 // Kind icons
 // ---------------------------------------------------------------------------
@@ -198,10 +158,7 @@ function __polygon_imgui_kind_icon(_ed, _node, _kind, _hidden, _idx) {
 
   var _info = __polygon_kind_icon_info(_ed, _node, _kind, _cache);
 
-  if (_info.spr == -1) {
-    return;
-  }
-
+  if (_info.spr == -1)  return;
   var _iw = sprite_get_width(_info.spr);
   var _ih = sprite_get_height(_info.spr);
   var _tint = _hidden ? make_colour_rgb(105, 115, 135) : c_white;
@@ -251,7 +208,7 @@ function __polygon_scene_row_meta(_ed, _node, _en = undefined, _selset = undefin
     _kind = "instance";
   }
 
-  var _sel = _selset != undefined ? __polygon_sel_in(_selset, _node, _en) : __polygon_sel_match(_ed, _node, _en);
+  var _sel = _selset != undefined ? __polygon_sel_in(_selset, _node, _en) : __polygon_node_list_has(_ed.sel, _node);
   return {
     node: _node,
     label: _label,
@@ -270,14 +227,8 @@ function __polygon_hier_rect_step(_ed) {
   _ed.hier_mdown = _down;
 
   if (_ed.hier_rect == undefined) {
-    if (!_down || _was_down || _ed.rename_name != undefined) {
-      return;
-    }
-
-    if (!__polygon_imgui_safe("IsWindowHovered", false)) {
-      return;
-    }
-
+    if (!_down || _was_down || _ed.rename_name != undefined)  return;
+    if (!__polygon_imgui_safe("IsWindowHovered", false))  return;
     var _mx = ImGui.GetMousePosX();
     var _my = ImGui.GetMousePosY();
     _ed.hier_rect = { x0: _mx, y0: _my, x1: _mx, y1: _my, active: false, on_item: __polygon_imgui_safe("IsAnyItemHovered", true) };
@@ -290,16 +241,11 @@ function __polygon_hier_rect_step(_ed) {
     _rect.x1 = ImGui.GetMousePosX();
     _rect.y1 = ImGui.GetMousePosY();
 
-    if (!_rect.active && max(abs(_rect.x1 - _rect.x0), abs(_rect.y1 - _rect.y0)) > 6) {
-      _rect.active = true;
-    }
-
+    if (!_rect.active && max(abs(_rect.x1 - _rect.x0), abs(_rect.y1 - _rect.y0)) > 6)  _rect.active = true;
     if (_rect.active) {
       var _dl = ImGui.GetWindowDrawList();
 
-      if (_dl != undefined) {
-        ImGui.DrawListAddRect(_dl, min(_rect.x0, _rect.x1), min(_rect.y0, _rect.y1), max(_rect.x0, _rect.x1), max(_rect.y0, _rect.y1), make_colour_rgb(120, 170, 255));
-      }
+      if (_dl != undefined)  ImGui.DrawListAddRect(_dl, min(_rect.x0, _rect.x1), min(_rect.y0, _rect.y1), max(_rect.x0, _rect.x1), max(_rect.y0, _rect.y1), make_colour_rgb(120, 170, 255));
     }
 
     return;
@@ -310,15 +256,10 @@ function __polygon_hier_rect_step(_ed) {
   _ed.hier_rect = undefined;
 
   if (!_was_active) {
-    if (_from_item) {
-      return;
-    }
-
-    _ed.sel = [];
-    _ed.giz.drag = -1;
+    if (_from_item)  return;
+    __polygon_sel_assign(_ed, []);
     _ed.scene_click_idx = -1;
     _ed.scene_click_time = -10000;
-    __polygon_sel_apply_tool(_ed);
     return;
   }
 
@@ -331,18 +272,9 @@ function __polygon_hier_rect_step(_ed) {
 
 // Checks if a row kind passes the kind filter.
 function __polygon_kind_shown(_filter, _kind) {
-  if (_kind == "light") {
-    return _filter.l;
-  }
-
-  if (_kind == "camera") {
-    return _filter.c;
-  }
-
-  if (_kind == "environment") {
-    return _filter.e;
-  }
-
+  if (_kind == "light")  return _filter.l;
+  if (_kind == "camera")  return _filter.c;
+  if (_kind == "environment")  return _filter.e;
   return _filter.m;
 }
 
@@ -353,14 +285,8 @@ function __polygon_scene_filter(_ed, _pairs, _selset, _kinds, _flt) {
   for (var _r = 0, _n = array_length(_pairs); _r < _n; _r++) {
     var _meta = __polygon_scene_row_meta(_ed, _pairs[_r].node, _pairs[_r].en, _selset);
 
-    if (!__polygon_kind_shown(_kinds, _meta.kind)) {
-      continue;
-    }
-
-    if (_flt != "" && string_pos(_flt, string_lower(_meta.label)) <= 0) {
-      continue;
-    }
-
+    if (!__polygon_kind_shown(_kinds, _meta.kind))  continue;
+    if (_flt != "" && string_pos(_flt, string_lower(_meta.label)) <= 0)  continue;
     array_push(_rows, _meta);
   }
 
@@ -374,10 +300,7 @@ function __polygon_scene_row_rename(_ed, _meta) {
   if (_res.was_active && !_res.active) {
     var _next = string_trim(_res.text);
 
-    if (_next != "" && _next != _meta.label) {
-      __polygon_scene_commit_rename(_ed, _meta.node, _next);
-    }
-
+    if (_next != "" && _next != _meta.label)  __polygon_scene_commit_rename(_ed, _meta.node, _next);
     __polygon_rename_cancel(_ed);
   }
 }
@@ -393,55 +316,32 @@ function __polygon_scene_row(_ed, _ui, _meta, _idx) {
   var _node = _meta.node;
   var _eye_on = _meta.hidden || (_ui.scene_eye_idx == _idx && current_time <= _ui.scene_eye_till);
 
-  if (__polygon_imgui_eye(_ed, _meta.hidden, !_eye_on, "hier|eye|" + string(_idx))) {
-    __polygon_hidden_set(_ed, _node, !_meta.hidden);
-  }
-
-  if (ImGui.IsItemHovered()) {
-    __polygon_scene_row_reveal(_ui, _idx);
-  }
-
+  if (__polygon_imgui_eye(_meta.hidden, !_eye_on, "hier|eye|" + string(_idx)))  __polygon_hidden_set(_ed, _node, !_meta.hidden);
+  if (ImGui.IsItemHovered())  __polygon_scene_row_reveal(_ui, _idx);
   ImGui.SameLine(0, 0);
   var _lock_on = _meta.locked || (_ui.scene_eye_idx == _idx && current_time <= _ui.scene_eye_till);
 
-  if (__polygon_imgui_lock(_ed, _meta.locked, !_lock_on, "hier|lock|" + string(_idx))) {
-    __polygon_locked_set(_ed, _node, !_meta.locked);
-  }
-
-  if (ImGui.IsItemHovered()) {
-    __polygon_scene_row_reveal(_ui, _idx);
-  }
-
+  if (__polygon_imgui_lock(_meta.locked, !_lock_on, "hier|lock|" + string(_idx)))  __polygon_locked_set(_ed, _node, !_meta.locked);
+  if (ImGui.IsItemHovered())  __polygon_scene_row_reveal(_ui, _idx);
   ImGui.SameLine();
   __polygon_imgui_kind_icon(_ed, _node, _meta.kind, _meta.hidden, _idx);
   ImGui.SameLine();
 
   var _short = __polygon_short_name(_meta.label);
 
-  if (ImGui.Selectable(_short, _meta.sel)) {
-    __polygon_scene_click(_ed, _node, _idx, _ed.hier_rows);
-  }
-
+  if (ImGui.Selectable(_short, _meta.sel))  __polygon_scene_click(_ed, _node, _idx, _ed.hier_rows);
   if (ImGui.IsItemHovered()) {
     __polygon_scene_row_reveal(_ui, _idx);
     __polygon_imgui_tip_delayed("hier|name|" + string(_idx), _meta.label, true);
   }
 
-  if (ImGui.IsMouseDoubleClicked(0) && ImGui.IsItemHovered()) {
-    __polygon_focus_node(_ed, _node);
-  }
+  if (ImGui.IsMouseDoubleClicked(0) && ImGui.IsItemHovered())  __polygon_focus_node(_ed, _node);
 }
 
 // Draws the right-click context menu for a row.
 function __polygon_scene_row_menu(_ed, _meta, _node, _idx, _pending) {
-  if (!ImGui.BeginPopupContextItem("ctx##" + string(_idx))) {
-    return;
-  }
-
-  if (!_meta.sel) {
-    __polygon_scene_select(_ed, _node);
-  }
-
+  if (!ImGui.BeginPopupContextItem("ctx##" + string(_idx)))  return;
+  if (!_meta.sel)  __polygon_scene_select(_ed, _node);
   if (array_length(_ed.sel) <= 1) {
     if (ImGui.MenuItem("Focus", "F")) {
       _pending.foc = _node;
@@ -481,9 +381,7 @@ function __polygon_hier_status(_ed, _shown, _total) {
 
   var _h = ImGui.GetCursorPosY() - _y0;
 
-  if (is_real(_h) && _h > 0 && is_struct(_ed.imgui)) {
-    _ed.imgui.hier_status_h = _h;
-  }
+  if (is_real(_h) && _h > 0 && is_struct(_ed.imgui))  _ed.imgui.hier_status_h = _h;
 }
 
 // Draws filterable scene list with selection actions.
@@ -503,10 +401,7 @@ function __polygon_imgui_scene_list(_ed) {
   _ui.scene_filter = __polygon_imgui_text_hint("##scenefilter", "Filter nodes...", _ui.scene_filter);
   ImGui.SameLine();
 
-  if (__polygon_imgui_icon_btn(_ed, "##scenefilters", "Filter asset types", false, "Fl", "sprPolygonEditorIconFilters", 13, 13)) {
-    ImGui.OpenPopup("##scenekindfilters");
-  }
-
+  if (__polygon_imgui_icon_btn("##scenefilters", "Filter asset types", false, "Fl", "sprPolygonEditorIconFilters", 13, 13))  ImGui.OpenPopup("##scenekindfilters");
   if (ImGui.BeginPopup("##scenekindfilters")) {
     _ui.show_kind.m = ImGui.Checkbox("Models", _ui.show_kind.m);
     _ui.show_kind.l = ImGui.Checkbox("Lights", _ui.show_kind.l);
@@ -531,10 +426,7 @@ function __polygon_imgui_scene_list(_ed) {
     _ed.scene_click_time = -10000;
   }
 
-  if (!variable_struct_exists(_ed, "scene_anchor")) {
-    _ed.scene_anchor = undefined;
-  }
-
+  if (!variable_struct_exists(_ed, "scene_anchor"))  _ed.scene_anchor = undefined;
   var _pairs = __polygon_root_pairs(_ed);
   var _rows = __polygon_scene_filter(_ed, _pairs, __polygon_sel_set(_ed), _ui.show_kind, string_lower(_ui.scene_filter));
   var _n = array_length(_rows);
@@ -543,10 +435,7 @@ function __polygon_imgui_scene_list(_ed) {
   // known, compact estimate on the first frame.
   var _status_h = ImGui.GetTextLineHeight() + 10;
 
-  if (variable_struct_exists(_ui, "hier_status_h") && is_real(_ui.hier_status_h) && _ui.hier_status_h > 0) {
-    _status_h = _ui.hier_status_h;
-  }
-
+  if (variable_struct_exists(_ui, "hier_status_h") && is_real(_ui.hier_status_h) && _ui.hier_status_h > 0)  _status_h = _ui.hier_status_h;
   if (!ImGui.BeginChild("##hierarchy_node_rows", 0, -_status_h, ImGuiChildFlags.None)) {
     ImGui.EndChild();
     __polygon_scene_list_commit(_ed, _pending.ren, _pending.foc, _pending.dup, _pending.del);
@@ -563,10 +452,7 @@ function __polygon_imgui_scene_list(_ed) {
     _ui.scene_row_height = 0;
   }
 
-  if (_row_h <= 0) {
-    _row_h = ImGui.GetFrameHeightWithSpacing();
-  }
-
+  if (_row_h <= 0)  _row_h = ImGui.GetFrameHeightWithSpacing();
   var _first = 0;
   var _last = _n;
   var _virtualized = false;
@@ -578,10 +464,7 @@ function __polygon_imgui_scene_list(_ed) {
     _first = min(_n, max(0, floor(_scroll_y / _row_h) - 1));
     _last = max(_first, min(_n, ceil((_scroll_y + _child_h) / _row_h) + 1));
 
-    if (_first > 0) {
-      ImGui.Dummy(1, max(0, _first * _row_h - _row_spacing));
-    }
-
+    if (_first > 0)  ImGui.Dummy(1, max(0, _first * _row_h - _row_spacing));
     _virtualized = (_first > 0 || _last < _n);
   }
 
@@ -597,7 +480,7 @@ function __polygon_imgui_scene_list(_ed) {
     _ed.hier_row_y[$ string(_i)] = ImGui.GetCursorScreenPosY();
     ImGui.PushID(_i);
 
-    if (_ed.rename_name != undefined && _rows[_i].label == _ed.rename_name && __polygon_rename_at(_ed, _rows[_i].node)) {
+    if (_ed.rename_name != undefined && _rows[_i].label == _ed.rename_name && _rows[_i].node != undefined && _rows[_i].node.name == _ed.rename_id) {
       __polygon_scene_row_rename(_ed, _rows[_i]);
     } else {
       __polygon_scene_row(_ed, _ui, _rows[_i], _i);
@@ -626,9 +509,7 @@ function __polygon_imgui_scene_list(_ed) {
   if (_virtualized && _row_h > 0 && _last < _n) {
     var _tail_h = (_n - _last) * _row_h - _row_spacing;
 
-    if (_tail_h > 0) {
-      ImGui.Dummy(1, _tail_h);
-    }
+    if (_tail_h > 0)  ImGui.Dummy(1, _tail_h);
   }
 
   ImGui.EndChild();

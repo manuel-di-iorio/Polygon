@@ -2,10 +2,7 @@
 
 // Draws all editor ImGui windows and menus.
 function __polygon_imgui_draw(_ed) {
-  if (!_ed.active) {
-    return;
-  }
-
+  if (!_ed.active)  return;
   __polygon_imgui_style_once(_ed);
   var _dock_id = ImGui.GetID("PolygonEditorDockspace");
   var _dock_root = ImGui.DockSpaceOverViewport(
@@ -65,31 +62,17 @@ function __polygon_imgui_draw(_ed) {
 
 // Draws whichever modal dialogs are open.
 function __polygon_imgui_modals(_ed) {
-  if (_ed.confirm != undefined) {
-    __polygon_imgui_confirm(_ed);
-  }
-
-  if (variable_struct_exists(_ed, "delete_confirm") && _ed.delete_confirm != undefined) {
-    __polygon_imgui_delete_confirm(_ed);
-  }
-
-  if (_ed.about != undefined) {
-    __polygon_imgui_about(_ed);
-  }
-
-  if (_ed.scene_dlg != undefined) {
-    __polygon_imgui_scene_dlg(_ed);
-  }
+  if (_ed.confirm != undefined)  __polygon_imgui_confirm(_ed);
+  if (variable_struct_exists(_ed, "delete_confirm") && _ed.delete_confirm != undefined)  __polygon_imgui_delete_confirm(_ed);
+  if (_ed.about != undefined)  __polygon_imgui_about(_ed);
+  if (_ed.scene_dlg != undefined)  __polygon_imgui_scene_dlg(_ed);
 }
 
 // Draws Models asset browser window.
 function __polygon_imgui_assets(_ed) {
   var _ui = _ed.imgui;
 
-  if (!_ui.win_assets.open) {
-    return;
-  }
-
+  if (!_ui.win_assets.open)  return;
   var _place = __polygon_imgui_place(_ed).assets;
 
   if (!__polygon_imgui_dock_fresh(_ed)) {
@@ -101,10 +84,7 @@ function __polygon_imgui_assets(_ed) {
 
   var _flags = __polygon_imgui_panel_flags(_ed, "assets");
 
-  if (__polygon_imgui_lock_move(_ed)) {
-    _flags = _flags | ImGuiWindowFlags.NoMove;
-  }
-
+  if (__polygon_imgui_lock_move(_ed))  _flags = _flags | ImGuiWindowFlags.NoMove;
   if (!ImGui.Begin("Models", _ui.win_assets, _flags)) {
     __polygon_imgui_panel_save(_ed, "assets");
     ImGui.End();

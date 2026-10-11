@@ -57,9 +57,7 @@ function __polygon_input_owner_is_camera(_owner) {
 
 // Clears specified input owner if active.
 function __polygon_input_owner_clear(_ed, _owner) {
-  if (_ed.input_owner == _owner) {
-    _ed.input_owner = undefined;
-  }
+  if (_ed.input_owner == _owner)  _ed.input_owner = undefined;
 }
 
 // Builds mouse keyboard and viewport input context.
@@ -91,7 +89,7 @@ function __polygon_input_context(_ed, _keys) {
   _mx < _pox + _pww &&
   _my >= _poy &&
   _my < _poy + _phh;
-  var _vp = __polygon_viewport(_ed);
+  var _vp = __polygon_viewport_cached(_ed);
   var _owner = __polygon_input_owner_sync(_ed);
   return {
     keys: _keys,
@@ -140,18 +138,12 @@ function __polygon_step_nudge(_ed) {
   var _nx = keyboard_check_pressed(vk_right) - keyboard_check_pressed(vk_left);
   var _nz = keyboard_check_pressed(vk_down) - keyboard_check_pressed(vk_up);
 
-  if ((_nx == 0 && _nz == 0) || array_length(_ed.sel) == 0) {
-    return;
-  }
-
+  if ((_nx == 0 && _nz == 0) || array_length(_ed.sel) == 0)  return;
   var _step = _ed.snap_on ? __polygon_snap_step(_ed) : 0.25;
   var _before = __polygon_history_snap(_ed);
 
   for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++) {
-    if (!__polygon_tool_allowed(_ed, _ed.sel[_i], PolygonEditorTool.Translate) || __polygon_hidden_get(_ed, _ed.sel[_i])) {
-      continue;
-    }
-
+    if (!__polygon_tool_allowed(_ed, _ed.sel[_i], PolygonEditorTool.Translate) || __polygon_hidden_get(_ed, _ed.sel[_i]))  continue;
     var _pos = _ed.sel[_i].getLocalPosition();
     _ed.sel[_i].setLocalPosition(new GM3D_Vec3(_pos.x + _nx * _step, _pos.y, _pos.z + _nz * _step));
   }
@@ -165,67 +157,32 @@ function __polygon_step_hotkeys(_ed, _input) {
   var _typing = _input.typing;
   var _gesture = _input.gesture_active;
 
-  if (_typing) {
-    return;
-  }
-
+  if (_typing)  return;
   var _ctrl = keyboard_check(vk_control);
 
   if (!_ctrl && !_gesture) {
     var _tools = __polygon_tool_hotkeys();
 
-    for (var _t = 0, _nt = array_length(_tools); _t < _nt; _t++) {
-      if (__polygon_key_pressed(_keys, _tools[_t][0])) {
-        _ed.giz.tool = _tools[_t][1];
-      }
-    }
-
-    if (keyboard_check_pressed(_keys.del)) {
-      __polygon_delete_ask(_ed);
-    }
-
-    if (__polygon_key_pressed(_keys, "focus")) {
-      __polygon_focus_selection(_ed);
-    }
-
-    if (__polygon_key_pressed(_keys, "rename") && array_length(_ed.sel) > 0) {
-      __polygon_rename_begin(_ed, _ed.sel[0]);
-    }
-
+    for (var _t = 0, _nt = array_length(_tools); _t < _nt; _t++)  if (__polygon_key_pressed(_keys, _tools[_t][0]))  _ed.giz.tool = _tools[_t][1];
+    if (keyboard_check_pressed(_keys.del))  __polygon_delete_ask(_ed);
+    if (__polygon_key_pressed(_keys, "focus"))  __polygon_focus_selection(_ed);
+    if (__polygon_key_pressed(_keys, "rename") && array_length(_ed.sel) > 0)  __polygon_rename_begin(_ed, _ed.sel[0]);
     __polygon_step_nudge(_ed);
   }
 
-  if (_gesture || !_ctrl) {
-    return;
-  }
-
-  if (keyboard_check_pressed(_keys.save)) {
-    __polygon_save_or_ask(_ed);
-  }
-
-  if (keyboard_check_pressed(_keys.dupe)) {
-    __polygon_duplicate_sel(_ed);
-  }
-
-  if (keyboard_check_pressed(_keys.new_scene)) {
-    __polygon_confirm_ask(_ed, "new");
-  }
-
-  if (keyboard_check_pressed(_keys.close)) {
-    __polygon_confirm_ask(_ed, "close");
-  }
-
-  if (__polygon_key_pressed(_keys, "load")) {
-    __polygon_confirm_ask(_ed, "load");
-  }
-
+  if (_gesture || !_ctrl)  return;
+  if (keyboard_check_pressed(_keys.save))  __polygon_save_or_ask(_ed);
+  if (keyboard_check_pressed(_keys.dupe))  __polygon_duplicate_sel(_ed);
+  if (keyboard_check_pressed(_keys.new_scene))  __polygon_confirm_ask(_ed, "new");
+  if (keyboard_check_pressed(_keys.close))  __polygon_confirm_ask(_ed, "close");
+  if (__polygon_key_pressed(_keys, "load"))  __polygon_confirm_ask(_ed, "load");
   var _has_undo = variable_struct_exists(_keys, "undo");
   var _has_redo = variable_struct_exists(_keys, "redo");
 
   if (_has_undo && !keyboard_check(vk_shift) && keyboard_check_pressed(_keys.undo)) {
-    __polygon_history_undo(_ed);
+    __polygon_history_apply(_ed, _ed.undo, _ed.redo);
   } else if ((_has_redo && keyboard_check_pressed(_keys.redo)) || (_has_undo && keyboard_check(vk_shift) && keyboard_check_pressed(_keys.undo))) {
-    __polygon_history_redo(_ed);
+    __polygon_history_apply(_ed, _ed.redo, _ed.undo);
   }
 }
 
@@ -255,10 +212,7 @@ function __polygon_cancel_gizmo(_ed) {
 
 // Handles Escape cancellation of active operations.
 function __polygon_step_cancel(_ed, _input) {
-  if (_input.typing || !keyboard_check_pressed(_input.keys.cancel)) {
-    return;
-  }
-
+  if (_input.typing || !keyboard_check_pressed(_input.keys.cancel))  return;
   if (_ed.scene_dlg != undefined) {
     _ed.scene_dlg = undefined;
   } else if (_ed.confirm != undefined) {
@@ -293,24 +247,18 @@ function __polygon_step_gizmo(_ed, _input) {
   var _mx = _input.mx;
   var _my = _input.my;
 
-  if (_ed.giz.drag == -1) {
-    return false;
-  }
-
+  if (_ed.giz.drag == -1)  return false;
   if (!mouse_check_button(mb_left)) {
     _ed.giz.drag = -1;
 
-    if (_ed.hist_before != undefined) {
-      __polygon_history_commit(_ed, _ed.hist_before);
-    }
-
+    if (_ed.hist_before != undefined)  __polygon_cmd_commit(_ed, _ed.hist_before, "gizmo-drag");
     __polygon_wrap_end(_ed);
 
     _ed.hist_before = undefined;
     __polygon_input_owner_clear(_ed, "gizmo");
   } else {
     if (_ed.wrap == undefined) {
-      __polygon_wrap_begin(_ed, _mx, _my);
+      _ed.wrap = { on: true, vx: _mx, vy: _my, lx: _mx, ly: _my };
     }
 
     var _wrapped = __polygon_wrap_step(_ed, _mx, _my);
@@ -329,13 +277,10 @@ function __polygon_step_gizmo(_ed, _input) {
 
 // Computes the drop point (ground plane, else fixed distance ahead).
 function __polygon_libdrop_point(_ed, _input, _in_vp, _moved) {
-  if (_moved && _in_vp) {
-    return __polygon_drop_point(_ed, _input.vp, _input.vmx, _input.vmy);
-  }
-
+  if (_moved && _in_vp)  return __polygon_drop_point(_input.vp, _input.vmx, _input.vmy);
   if (!_moved) {
     var _pos = _ed.rt.cam.getLocalPosition();
-    var _fwd = __polygon_view_forward(_ed);
+    var _fwd = __polygon_view_forward_cached(_ed);
     var _dist = 5.0;
     return new GM3D_Vec3(
       _pos.x - _fwd.x * _dist,
@@ -351,22 +296,15 @@ function __polygon_libdrop_point(_ed, _input, _in_vp, _moved) {
 function __polygon_libdrop_commit_preview(_ed, _asset, _spawn, _drop) {
   _ed.drag_preview.setLocalPosition(new GM3D_Vec3(_drop.x, _drop.y, _drop.z));
 
-  if (_spawn.rot != undefined) {
-    _ed.drag_preview.setLocalRotation(_spawn.rot);
-  }
-
+  if (_spawn.rot != undefined)  _ed.drag_preview.setLocalRotation(_spawn.rot);
   _ed.drag_preview.setLocalScale(new GM3D_Vec3(_spawn.sca[0], _spawn.sca[1], _spawn.sca[2]));
 
-  if (variable_struct_exists(_ed.rt, "on_spawn")) {
-    _ed.rt.on_spawn(_ed.drag_preview, _asset.key, _asset.model);
-  }
-
+  if (variable_struct_exists(_ed.rt, "on_spawn"))  _ed.rt.on_spawn(_ed.drag_preview, _asset.key, _asset.model);
   var _at = _ed.drag_preview.getLocalPosition();
   __polygon_spawn_register(
     _ed,
     _ed.drag_preview,
     _asset.key,
-    [ _at.x, _at.y, _at.z ],
     __polygon_fresh_label(_ed, __polygon_asset_label(_asset))
   );
   __polygon_spawn_shadow_apply(_ed, _asset, _ed.drag_preview);
@@ -396,18 +334,12 @@ function __polygon_libdrop_place_new(_ed, _asset, _spawn, _drop) {
 
 // Handles asset drag preview and placement.
 function __polygon_step_libdrop(_ed, _input) {
-  if (_ed.drag_lib == undefined) {
-    return false;
-  }
-
+  if (_ed.drag_lib == undefined)  return false;
   var _in_vp = __polygon_drag_in_viewport(_ed, _input.mx, _input.my);
 
-  if (point_distance(_input.mx, _input.my, _ed.press_x, _ed.press_y) > 4) {
-    _ed.drag_moved = true;
-  }
-
+  if (point_distance(_input.mx, _input.my, _ed.press_x, _ed.press_y) > 4)  _ed.drag_moved = true;
   if (_ed.drag_moved && _in_vp) {
-    var _preview_at = __polygon_drop_point(_ed, _input.vp, _input.vmx, _input.vmy);
+    var _preview_at = __polygon_drop_point(_input.vp, _input.vmx, _input.vmy);
 
     if (_preview_at == undefined) {
       __polygon_drop_preview_clear(_ed);
@@ -416,10 +348,7 @@ function __polygon_step_libdrop(_ed, _input) {
     }
   }
 
-  if (mouse_check_button(mb_left)) {
-    return true;
-  }
-
+  if (mouse_check_button(mb_left))  return true;
   var _drop = __polygon_libdrop_point(_ed, _input, _in_vp, _ed.drag_moved);
 
   if (_drop != undefined) {
@@ -450,17 +379,11 @@ function __polygon_step_libdrop(_ed, _input) {
 
 // Handles rectangle selection drag completion.
 function __polygon_step_rect(_ed, _input) {
-  if (_ed.giz.tool == PolygonEditorTool.View) {
-    return false;
-  }
-
+  if (_ed.giz.tool == PolygonEditorTool.View)  return false;
   var _mx = _input.mx;
   var _my = _input.my;
 
-  if (_ed.rect == undefined || !_ed.rect.on) {
-    return false;
-  }
-
+  if (_ed.rect == undefined || !_ed.rect.on)  return false;
   _ed.rect.x1 = _mx;
   _ed.rect.y1 = _my;
 
@@ -505,10 +428,7 @@ function __polygon_hover_press(_ed, _input, _vp, _vmx, _vmy) {
   var _mx = _input.mx;
   var _my = _input.my;
 
-  if (!(mouse_check_button_pressed(mb_left) && _input.vin && !_input.typing && !keyboard_check(vk_alt) && _input.owner == undefined)) {
-    return;
-  }
-
+  if (!(mouse_check_button_pressed(mb_left) && _input.vin && !_input.typing && !keyboard_check(vk_alt) && _input.owner == undefined))  return;
   if (_ed.cube_geom != undefined && __polygon_viewcube_box_at(_ed.cube_geom, _vmx, _vmy)) {
     _ed.input_owner = "viewcube";
     _input.owner = "viewcube";
@@ -548,18 +468,9 @@ function __polygon_hover_press(_ed, _input, _vp, _vmx, _vmy) {
 
 // Drags the viewcube widget itself (moves it on screen).
 function __polygon_cube_drag(_ed, _input, _vmx, _vmy) {
-  if (!(_ed.cube_armed == true && mouse_check_button(mb_left))) {
-    return;
-  }
-
-  if (point_distance(_input.mx, _input.my, _ed.press_x, _ed.press_y) > 6) {
-    _ed.cube_moved = true;
-  }
-
-  if (!_ed.cube_moved) {
-    return;
-  }
-
+  if (!(_ed.cube_armed == true && mouse_check_button(mb_left)))  return;
+  if (point_distance(_input.mx, _input.my, _ed.press_x, _ed.press_y) > 6)  _ed.cube_moved = true;
+  if (!_ed.cube_moved)  return;
   var _pw = _ed.gw;
   var _ph = _ed.gh;
 
@@ -584,47 +495,26 @@ function __polygon_step_hover(_ed, _input) {
   _ed.cube_geom = _ed.imgui.win_cube.open ? __polygon_viewcube(_ed) : undefined;
   _ed.cube_hover = undefined;
 
-  if (_in_vp && !mouse_check_button(mb_right) && _ed.cube_geom != undefined) {
-    _ed.cube_hover = __polygon_viewcube_cone_at(_ed.cube_geom, _vmx, _vmy);
-  }
-
+  if (_in_vp && !mouse_check_button(mb_right) && _ed.cube_geom != undefined)  _ed.cube_hover = __polygon_viewcube_cone_at(_ed.cube_geom, _vmx, _vmy);
   _ed.giz.hover = -1;
 
-  if (_in_vp && !mouse_check_button(mb_right)) {
-    _ed.giz.hover = __polygon_gizmo_hover(_ed, _vp, _vmx, _vmy);
-  }
-
-  if (_ed.cube_geom != undefined && __polygon_viewcube_box_at(_ed.cube_geom, _vmx, _vmy)) {
-    _ed.giz.hover = -1;
-  }
-
+  if (_in_vp && !mouse_check_button(mb_right))  _ed.giz.hover = __polygon_gizmo_hover(_ed, _vp, _vmx, _vmy);
+  if (_ed.cube_geom != undefined && __polygon_viewcube_box_at(_ed.cube_geom, _vmx, _vmy))  _ed.giz.hover = -1;
   __polygon_hover_press(_ed, _input, _vp, _vmx, _vmy);
 
-  if (_ed.press_vp && _ed.rect != undefined && mouse_check_button(mb_left)) {
-    if (point_distance(_mx, _my, _ed.press_x, _ed.press_y) > 6) {
-      _ed.rect.on = true;
-    }
-  }
-
+  if (_ed.press_vp && _ed.rect != undefined && mouse_check_button(mb_left))  if (point_distance(_mx, _my, _ed.press_x, _ed.press_y) > 6)  _ed.rect.on = true;
   if (_ed.input_owner == "viewpan" && mouse_check_button(mb_left)) {
-    if (point_distance(_mx, _my, _ed.press_x, _ed.press_y) > 6) {
-      _ed.viewpan_moved = true;
-    }
-
-    if (_ed.viewpan_moved == true) {
-      __polygon_view_pan(_ed, _vp);
-    }
+    if (point_distance(_mx, _my, _ed.press_x, _ed.press_y) > 6)  _ed.viewpan_moved = true;
+    if (_ed.viewpan_moved == true)  __polygon_view_pan(_ed, _vp);
   }
 
   __polygon_cube_drag(_ed, _input, _vmx, _vmy);
 
-  if (mouse_check_button_released(mb_left) && _ed.press_vp && (_ed.rect == undefined || !_ed.rect.on)) {
-    __polygon_hover_release(_ed, _input, _vp, _vmx, _vmy, _in_vp);
-  }
+  if (mouse_check_button_released(mb_left) && _ed.press_vp && (_ed.rect == undefined || !_ed.rect.on))  __polygon_hover_release(_ed, _vmx, _vmy, _in_vp);
 }
 
 // Handles left-button release (click select, cube face, view focus).
-function __polygon_hover_release(_ed, _input, _vp, _vmx, _vmy, _in_vp) {
+function __polygon_hover_release(_ed, _vmx, _vmy, _in_vp) {
   var _was_view = _ed.input_owner == "viewpan";
   var _view_drag = _was_view && _ed.viewpan_moved == true;
   _ed.press_vp = false;
@@ -634,17 +524,12 @@ function __polygon_hover_release(_ed, _input, _vp, _vmx, _vmy, _in_vp) {
   __polygon_input_owner_clear(_ed, "viewpan");
 
   if (_was_view) {
-    if (!_view_drag && _in_vp) {
-      __polygon_gpupick_request_click(_ed, _vmx, _vmy, keyboard_check(vk_shift));
-    }
+    if (!_view_drag && _in_vp)  __polygon_gpupick_request_click(_ed, _vmx, _vmy, keyboard_check(vk_shift));
   } else if (_ed.cube_armed == true) {
     _ed.cube_armed = undefined;
     __polygon_input_owner_clear(_ed, "viewcube");
 
-    if (_ed.cube_moved) {
-      __polygon_ui_save(_ed);
-    }
-
+    if (_ed.cube_moved)  __polygon_ui_save(_ed);
     if (_in_vp && !_ed.cube_moved && _ed.cube_face != undefined && _ed.cube_geom != undefined) {
       var _hit = __polygon_viewcube_cone_at(_ed.cube_geom, _vmx, _vmy);
 
@@ -691,25 +576,16 @@ function __polygon_wrap_edge(_mx, _my, _ww, _wh) {
 }
 
 // Begins infinite mouse wrap tracking.
-function __polygon_wrap_begin(_ed, _mx, _my) {
-  _ed.wrap = { on: true, vx: _mx, vy: _my, lx: _mx, ly: _my };
-}
-
 // Ends mouse wrap tracking.
 function __polygon_wrap_end(_ed) {
-  if (_ed != undefined) {
-    _ed.wrap = undefined;
-  }
+  if (_ed != undefined)  _ed.wrap = undefined;
 }
 
 // Updates wrapped mouse virtual coordinates.
 function __polygon_wrap_step(_ed, _mx, _my) {
   var _wrap = _ed.wrap;
 
-  if (_wrap == undefined || !_wrap.on) {
-    return [ _mx, _my ];
-  }
-
+  if (_wrap == undefined || !_wrap.on)  return [ _mx, _my ];
   _wrap.vx += _mx - _wrap.lx;
   _wrap.vy += _my - _wrap.ly;
   _wrap.lx = _mx;
@@ -733,32 +609,21 @@ function __polygon_wrap_step(_ed, _mx, _my) {
 
 // Wraps cursor at window edges.
 function __polygon_wrap_camera(_ed) {
-  if (_ed == undefined) {
-    return;
-  }
-
+  if (_ed == undefined)  return;
   var _mx = device_mouse_x_to_gui(0);
   var _my = device_mouse_y_to_gui(0);
   var _ww = window_get_width();
   var _wh = window_get_height();
 
-  if (_ww <= 16 || _wh <= 16) {
-    return;
-  }
-
+  if (_ww <= 16 || _wh <= 16)  return;
   var _edge = __polygon_wrap_edge(_mx, _my, _ww, _wh);
 
-  if (_edge[0] != _mx || _edge[1] != _my) {
-    window_mouse_set(round(_edge[0]), round(_edge[1]));
-  }
+  if (_edge[0] != _mx || _edge[1] != _my)  window_mouse_set(round(_edge[0]), round(_edge[1]));
 }
 
 // Checks if mouse is inside viewport.
 function __polygon_drag_in_viewport(_ed, _mx, _my) {
-  if (!__polygon_scene_panel_open(_ed) || !variable_struct_exists(_ed, "svp") || !is_struct(_ed.svp)) {
-    return false;
-  }
-
+  if (!__polygon_scene_panel_open(_ed) || !variable_struct_exists(_ed, "svp") || !is_struct(_ed.svp))  return false;
   return (
     _mx >= _ed.svp.x &&
     _mx < _ed.svp.x + _ed.svp.w &&

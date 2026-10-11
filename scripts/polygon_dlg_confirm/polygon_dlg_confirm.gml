@@ -4,10 +4,7 @@
 function __polygon_imgui_confirm(_ed) {
   var _dlg = _ed.confirm;
 
-  if (_dlg == undefined) {
-    return;
-  }
-
+  if (_dlg == undefined)  return;
   if (_dlg.open == false) {
     _ed.confirm = undefined;
     return;
@@ -29,30 +26,21 @@ function __polygon_imgui_confirm(_ed) {
   ImGui.Text("before " + _what + "?");
 
   if (ImGui.Button("Save", 0, 0)) {
-    if (__polygon_save_or_ask(_ed, _dlg.action)) {
-      __polygon_confirm_do(_ed, _dlg.action);
-    }
-
+    if (__polygon_save_or_ask(_ed, _dlg.action))  __polygon_confirm_do(_ed, _dlg.action);
     _ed.confirm = undefined;
   }
 
   ImGui.SameLine();
 
   if (ImGui.Button("Don't save", 0, 0)) {
-    if (_dlg.action == "close") {
-      __polygon_discard_changes(_ed);
-    }
-
+    if (_dlg.action == "close")  __polygon_discard_changes(_ed);
     __polygon_confirm_do(_ed, _dlg.action);
     _ed.confirm = undefined;
   }
 
   ImGui.SameLine();
 
-  if (ImGui.Button("Cancel", 0, 0)) {
-    _ed.confirm = undefined;
-  }
-
+  if (ImGui.Button("Cancel", 0, 0))  _ed.confirm = undefined;
   __polygon_modal_end();
 }
 
@@ -60,10 +48,7 @@ function __polygon_imgui_confirm(_ed) {
 function __polygon_imgui_delete_confirm(_ed) {
   var _dlg = _ed.delete_confirm;
 
-  if (_dlg == undefined) {
-    return;
-  }
-
+  if (_dlg == undefined)  return;
   if (_dlg.open == false) {
     _ed.delete_confirm = undefined;
     return;
@@ -87,9 +72,6 @@ function __polygon_imgui_delete_confirm(_ed) {
 
   ImGui.SameLine();
 
-  if (ImGui.Button("Cancel", 0, 0)) {
-    _ed.delete_confirm = undefined;
-  }
-
+  if (ImGui.Button("Cancel", 0, 0))  _ed.delete_confirm = undefined;
   __polygon_modal_end();
 }

@@ -22,15 +22,48 @@ function __polygon_walk_collect_tree(_node, _out) {
   while (array_length(_stack) > 0) {
     var _cur = array_pop(_stack);
 
-    if (_cur == undefined) {
-      continue;
-    }
-
+    if (_cur == undefined)  continue;
     __polygon_walk_collect_comps(_cur, _out);
     var _kids = _cur.getChildren();
 
-    for (var _k = 0, _n = array_length(_kids); _k < _n; _k++) {
+    for (var _k = 0, _n = array_length(_kids); _k < _n; _k++)  array_push(_stack, _kids[_k]);
+  }
+}
+
+// Calls _fn(_cur, _ctx) for every node in the subtree (explicit stack,
+// pre-order). Single traversal used by all per-node passes (outline,
+// unlit, magenta, gpu-pick, hide) instead of cloned stack loops.
+function __polygon_walk_tree(_node, _fn, _ctx = undefined) {
+  var _stack = [ _node ];
+
+  while (array_length(_stack) > 0) {
+    var _cur = array_pop(_stack);
+
+    if (_cur == undefined)  continue;
+    _fn(_cur, _ctx);
+    var _kids = _cur.getChildren();
+
+    for (var _k = array_length(_kids) - 1; _k >= 0; _k--)  array_push(_stack, _kids[_k]);
+  }
+}
+
+// Same, threading inherited state down the tree: _fn(_cur, _ctx, _inh)
+// returns the state for the children (e.g. gpu-pick muted-by-ancestor).
+function __polygon_walk_tree_inherit(_node, _fn, _ctx, _inh) {
+  var _stack = [ _node ];
+  var _inhs = [ _inh ];
+
+  while (array_length(_stack) > 0) {
+    var _cur = array_pop(_stack);
+    var _ci = array_pop(_inhs);
+
+    if (_cur == undefined)  continue;
+    var _next = _fn(_cur, _ctx, _ci);
+    var _kids = _cur.getChildren();
+
+    for (var _k = array_length(_kids) - 1; _k >= 0; _k--) {
       array_push(_stack, _kids[_k]);
+      array_push(_inhs, _next);
     }
   }
 }
@@ -48,19 +81,11 @@ function __polygon_flags_read(_node) {
   for (var _i = 0, _n = array_length(_comps); _i < _n; _i++) {
     var _flags = _comps[_i].comp.getFlags();
 
-    if (!is_real(_flags)) {
-      continue;
-    }
-
+    if (!is_real(_flags))  continue;
     _found = true;
 
-    if ((_flags & _cb) == 0) {
-      _cast = false;
-    }
-
-    if ((_flags & _rb) == 0) {
-      _recv = false;
-    }
+    if ((_flags & _cb) == 0)  _cast = false;
+    if ((_flags & _rb) == 0)  _recv = false;
   }
 
   if (!_found) {
@@ -78,9 +103,15 @@ function __polygon_flags_apply(_node, _cast, _receive) {
   var _comps = [];
   __polygon_walk_collect_tree(_node, _comps);
 
-  for (var _i = 0, _n = array_length(_comps); _i < _n; _i++) {
-    _comps[_i].comp.setFlags(_bits);
-  }
+  for (var _i = 0, _n = array_length(_comps); _i < _n; _i++)  _comps[_i].comp.setFlags(_bits);
+}
+
+// Applies shadow flags from a data struct with safe reads
+// (missing keys default to false, never crash on file data).
+function __polygon_flags_apply_data(_node, _d) {
+  var _cast = is_struct(_d) && _d[$ "castShadows"] == true;
+  var _recv = is_struct(_d) && _d[$ "receiveShadows"] == true;
+  __polygon_flags_apply(_node, _cast, _recv);
 }
 
 // Disables node meshes and records state.
@@ -100,13 +131,6 @@ function __polygon_walk_mute_node(_node, _muted) {
 
 // Restores materials and enabled states.
 function __polygon_walk_restore(_swapped, _muted) {
-  for (var _s = 0, _ns = array_length(_swapped); _s < _ns; _s++) {
-    _swapped[_s].comp.setMaterial(_swapped[_s].orig);
-  }
-
-  for (var _m = 0, _nm = array_length(_muted); _m < _nm; _m++) {
-    if (_muted[_m].was) {
-      _muted[_m].comp.setEnabled(true);
-    }
-  }
+  for (var _s = 0, _ns = array_length(_swapped); _s < _ns; _s++)  _swapped[_s].comp.setMaterial(_swapped[_s].orig);
+  for (var _m = 0, _nm = array_length(_muted); _m < _nm; _m++)  if (_muted[_m].was)  _muted[_m].comp.setEnabled(true);
 }

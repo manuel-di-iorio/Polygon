@@ -49,7 +49,7 @@ function __polygon_axis_val(_ed, _mode, _idx) {
 }
 
 // Opens collapsible section by default on first use.
-function __polygon_imgui_sec_open(_ed) {
+function __polygon_imgui_sec_open() {
   ImGui.SetNextItemOpen(true, ImGuiCond.FirstUseEver);
 }
 
@@ -59,10 +59,7 @@ function __polygon_imgui_sec_open(_ed) {
 
 // Commits a finished axis drag (applies final value, single undo entry).
 function __polygon_axis_release(_ed, _fkey, _nv, _shown, _was, _mode, _ax) {
-  if (variable_struct_exists(_ed.imgui.ax_draft, _fkey)) {
-    variable_struct_remove(_ed.imgui.ax_draft, _fkey);
-  }
-
+  if (variable_struct_exists(_ed.imgui.ax_draft, _fkey))  variable_struct_remove(_ed.imgui.ax_draft, _fkey);
   var _before = undefined;
 
   if (variable_struct_exists(_ed.imgui.ax_before, _fkey)) {
@@ -71,13 +68,8 @@ function __polygon_axis_release(_ed, _fkey, _nv, _shown, _was, _mode, _ax) {
   }
 
   if (_was) {
-    if (is_real(_nv) && _nv != _shown) {
-      __polygon_apply_axis(_ed, _mode, _ax, _nv);
-    }
-
-    if (_before != undefined) {
-      __polygon_history_commit(_ed, _before);
-    }
+    if (is_real(_nv) && _nv != _shown)  __polygon_apply_axis(_ed, _mode, _ax, _nv);
+    if (_before != undefined)  __polygon_history_commit(_ed, _before);
   }
 }
 
@@ -91,9 +83,7 @@ function __polygon_axis_cell(_ed, _mode, _ax, _names, _speed) {
   if (_was && variable_struct_exists(_ed.imgui.ax_draft, _fkey)) {
     var _draft = _ed.imgui.ax_draft[$ _fkey];
 
-    if (is_real(_draft)) {
-      _input = _draft;
-    }
+    if (is_real(_draft))  _input = _draft;
   }
 
   var _nv = __polygon_imgui_dragfloat(_names[_ax], _input, _speed);
@@ -110,9 +100,7 @@ function __polygon_axis_cell(_ed, _mode, _ax, _names, _speed) {
     _ed.imgui.ax_draft[$ _fkey] = _nv;
     // Live preview: apply to the nodes every frame while dragging.
     // No history here — a single undo entry is committed on release.
-    if (is_real(_nv) && _nv != _shown.val) {
-      __polygon_apply_axis(_ed, _mode, _ax, _nv);
-    }
+    if (is_real(_nv) && _nv != _shown.val)  __polygon_apply_axis(_ed, _mode, _ax, _nv);
   } else {
     __polygon_axis_release(_ed, _fkey, _nv, _shown.val, _was, _mode, _ax);
   }
@@ -158,9 +146,7 @@ function __polygon_imgui_prop_float(_ed, _key, _label, _val, _w) {
   if (_was && variable_struct_exists(_ed.imgui.flt_draft, _key)) {
     var _draft = _ed.imgui.flt_draft[$ _key];
 
-    if (is_real(_draft)) {
-      _input = _draft;
-    }
+    if (is_real(_draft))  _input = _draft;
   }
 
   var _nv = __polygon_imgui_dragfloat(_label, _input, 0.01);
@@ -172,24 +158,12 @@ function __polygon_imgui_prop_float(_ed, _key, _label, _val, _w) {
     return undefined;
   }
 
-  if (variable_struct_exists(_ed.imgui.flt_draft, _key)) {
-    variable_struct_remove(_ed.imgui.flt_draft, _key);
-  }
-
-  if (_was && _nv != _val) {
-    return _nv;
-  }
-
+  if (variable_struct_exists(_ed.imgui.flt_draft, _key))  variable_struct_remove(_ed.imgui.flt_draft, _key);
+  if (_was && _nv != _val)  return _nv;
   return undefined;
 }
 
 // Commits history snapshot.
-function __polygon_props_end(_ed, _before) {
-  if (_before != undefined) {
-    __polygon_history_commit(_ed, _before);
-  }
-}
-
 // Edits color with undo history grouping.
 function __polygon_imgui_color_edit(_ed, _key, _label, _packed) {
   if (!variable_struct_exists(_ed.imgui, "col_gest")) {
@@ -209,14 +183,9 @@ function __polygon_imgui_color_edit(_ed, _key, _label, _packed) {
     var _before = _rec.before;
     _ed.imgui.col_gest[$ _key] = { active: false, before: undefined };
 
-    if (_before != undefined) {
-      __polygon_history_commit(_ed, _before);
-    }
+    if (_before != undefined)  __polygon_history_commit(_ed, _before);
   }
 
-  if (_nv != _packed) {
-    return _nv;
-  }
-
+  if (_nv != _packed)  return _nv;
   return undefined;
 }

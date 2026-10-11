@@ -6,28 +6,42 @@
 
 // Computes normalized camera forward direction vector.
 function __polygon_view_forward(_ed) {
-  var _q = _ed.rt.cam.getLocalRotation();
-  var _x = _q.x;
-  var _y = _q.y;
-  var _z = _q.z;
-  var _w = _q.w;
-  var _fwd = new GM3D_Vec3(
-    2.0 * (_x * _z + _w * _y),
-    2.0 * (_y * _z - _w * _x),
-    1.0 - 2.0 * (_x * _x + _y * _y)
-  );
+  var _fwd = __polygon_quat_forward(_ed.rt.cam.getLocalRotation());
   _fwd.normalizeSafe(0.000001);
   return _fwd;
+}
+
+// Cached camera forward: reuses _ed.vp.camForward when available
+// (computed once per frame in __polygon_viewport), else falls back.
+function __polygon_view_forward_cached(_ed) {
+  if (_ed != undefined && variable_struct_exists(_ed, "vp") && is_struct(_ed.vp)
+    && variable_struct_exists(_ed.vp, "camForward") && _ed.vp.camForward != undefined) {
+    var _f = _ed.vp.camForward;
+    var _c = new GM3D_Vec3(_f.x, _f.y, _f.z);
+    _c.normalizeSafe(0.000001);
+    return _c;
+  }
+  return __polygon_view_forward(_ed);
+}
+
+// Caches __polygon_quat_basis per frame on _ed (same quaternion reuses basis).
+function __polygon_quat_basis_cached(_ed, _q) {
+  if (_ed != undefined && variable_struct_exists(_ed, "_qb_cache") && is_struct(_ed._qb_cache)) {
+    var _c = _ed._qb_cache;
+    if (_c.x == _q.x && _c.y == _q.y && _c.z == _q.z && _c.w == _q.w)  return _c.basis;
+  }
+  var _b = __polygon_quat_basis(_q);
+  if (_ed != undefined) {
+    _ed._qb_cache = { x: _q.x, y: _q.y, z: _q.z, w: _q.w, basis: _b };
+  }
+  return _b;
 }
 
 // Stores current camera position and rotation as home.
 function __polygon_cam_remember(_ed) {
   _ed.cam_home = undefined;
 
-  if (_ed == undefined || _ed.rt == undefined || _ed.rt.cam == undefined) {
-    return;
-  }
-
+  if (_ed.rt == undefined || _ed.rt.cam == undefined)  return;
   var _pos = _ed.rt.cam.getLocalPosition();
   var _rot = _ed.rt.cam.getLocalRotation();
   _ed.cam_home = { pos: [ _pos.x, _pos.y, _pos.z ], rot: [ _rot.x, _rot.y, _rot.z, _rot.w ] };
@@ -52,10 +66,7 @@ function __polygon_cam_animate(_ed, _to_pos, _to_quat, _dur = 0.4) {
 function __polygon_cam_anim_step(_ed, _dt) {
   var _anim = _ed.cam_anim;
 
-  if (_anim == undefined) {
-    return;
-  }
-
+  if (_anim == undefined)  return;
   _anim.t += _dt / max(_anim.dur, 0.01);
 
   if (_anim.t >= 1) {
@@ -107,17 +118,11 @@ function __polygon_cam_home(_ed, _smooth = false) {
 
 // Ensures separate editor viewport camera exists and selects it.
 function __polygon_viewcam_ensure(_ed) {
-  if (_ed == undefined || _ed.rt == undefined || _ed.rt.scene == undefined) {
-    return undefined;
-  }
-
+  if (_ed == undefined || _ed.rt == undefined || _ed.rt.scene == undefined)  return undefined;
   if (_ed.viewcam == undefined) {
     var _node = _ed.rt.scene.createNode("__editor_camera");
 
-    if (_node == undefined) {
-      return undefined;
-    }
-
+    if (_node == undefined)  return undefined;
     var _comp = new GM3D_CameraComponent();
     _node.addComponent(_comp);
     _comp.setEnabled(false);
@@ -130,17 +135,11 @@ function __polygon_viewcam_ensure(_ed) {
 
 // Seeds editor camera from given gameplay camera pose and settings.
 function __polygon_viewcam_seed_from(_ed, _src) {
-  if (_ed == undefined) {
-    return false;
-  }
-
+  if (_ed == undefined)  return false;
   __polygon_viewcam_ensure(_ed);
   var _cam = _ed.viewcam;
 
-  if (_cam == undefined || _src == undefined) {
-    return false;
-  }
-
+  if (_cam == undefined || _src == undefined)  return false;
   var _pos = _src.getLocalPosition();
   var _rot = _src.getLocalRotation();
   _cam.setLocalPosition(new GM3D_Vec3(_pos.x, _pos.y, _pos.z));
@@ -148,10 +147,7 @@ function __polygon_viewcam_seed_from(_ed, _src) {
   __polygon_camera_apply(_cam, __polygon_camera_read(_src));
   var _comp = _cam.getCameraComponent();
 
-  if (_comp != undefined) {
-    _comp.setEnabled(true);
-  }
-
+  if (_comp != undefined)  _comp.setEnabled(true);
   _ed.rt.scene.update(0);
   __polygon_cam_remember(_ed);
   return true;
@@ -159,10 +155,7 @@ function __polygon_viewcam_seed_from(_ed, _src) {
 
 // Seeds editor camera from resolved gameplay camera.
 function __polygon_viewcam_seed(_ed) {
-  if (_ed == undefined) {
-    return false;
-  }
-
+  if (_ed == undefined)  return false;
   var _game = __polygon_gamecam_resolve(_ed);
 
   if (_game == undefined) {
@@ -171,9 +164,7 @@ function __polygon_viewcam_seed(_ed) {
     if (_ed.viewcam != undefined) {
       var _comp = _ed.viewcam.getCameraComponent();
 
-      if (_comp != undefined) {
-        _comp.setEnabled(true);
-      }
+      if (_comp != undefined)  _comp.setEnabled(true);
     }
 
     __polygon_cam_remember(_ed);
@@ -206,24 +197,17 @@ function __polygon_orbit_apply(_ed, _dx, _dy) {
     degtorad(-_dx * 0.18)
   );
   _yaw.multiply(_rot);
-  var _basis = __polygon_quat_basis(_yaw);
+  var _basis = __polygon_quat_basis_cached(_ed, _yaw);
   var _pitch = GM3D_Quaternion.fromAxisAngle(_basis[0], degtorad(-_dy * 0.18));
   _pitch.multiply(_yaw);
   var _qn = _pitch.normalizeSafe(0.000001);
   _node.setLocalRotation(_qn);
-  return new GM3D_Vec3(
-    2.0 * (_qn.x * _qn.z + _qn.w * _qn.y),
-    2.0 * (_qn.y * _qn.z - _qn.w * _qn.x),
-    1.0 - 2.0 * (_qn.x * _qn.x + _qn.y * _qn.y)
-  );
+  return __polygon_quat_forward(_qn);
 }
 
 // Returns the orbit/pan/zoom pivot: selection pivot, else a point ahead.
 function __polygon_cam_pivot(_ed, _pos, _fwd, _dist = 10) {
-  if (array_length(_ed.sel) > 0) {
-    return __polygon_gizmo_pivot(_ed.sel);
-  }
-
+  if (array_length(_ed.sel) > 0)  return __polygon_gizmo_pivot(_ed.sel);
   return new GM3D_Vec3(_pos.x - _fwd.x * _dist, _pos.y - _fwd.y * _dist, _pos.z - _fwd.z * _dist);
 }
 
@@ -231,10 +215,7 @@ function __polygon_cam_pivot(_ed, _pos, _fwd, _dist = 10) {
 function __polygon_planar(_fwd) {
   var _len = sqrt(_fwd.x * _fwd.x + _fwd.z * _fwd.z);
 
-  if (_len <= 0.000001) {
-    return [ 1.0, 0.0 ];
-  }
-
+  if (_len <= 0.000001)  return [ 1.0, 0.0 ];
   return [ _fwd.x / _len, _fwd.z / _len ];
 }
 
@@ -273,12 +254,9 @@ function __polygon_cam_fly(_ed, _input, _dt) {
   var _allow_zoom = _input.camera_zoom;
   var _node = _ed.rt.cam;
 
-  if (_node == undefined) {
-    return;
-  }
-
+  if (_node == undefined)  return;
   _ed.cam_speed_notice = max(0, _ed.cam_speed_notice - _dt);
-  var _fwd = __polygon_view_forward(_ed);
+  var _fwd = __polygon_view_forward_cached(_ed);
   var _yaw = radtodeg(arctan2(_fwd.x, -_fwd.z));
   var _pitch = radtodeg(arcsin(clamp(_fwd.y, -1.0, 1.0)));
   var _gesture = __polygon_cam_gesture(_ed, _allow_keys, _allow_zoom);
@@ -333,9 +311,9 @@ function __polygon_cam_fly(_ed, _input, _dt) {
 
   var _rotated = false;
   var _live_fwd = undefined;
+  var _md = __polygon_mouse_delta();
 
   if (_orbit || _fly) {
-    var _md = __polygon_mouse_delta();
     _live_fwd = __polygon_orbit_apply(_ed, _md[0], _md[1]);
     _rotated = true;
   }
@@ -366,10 +344,7 @@ function __polygon_cam_fly(_ed, _input, _dt) {
     _wheel = 0;
   }
 
-  if (!_orbit && !_pan && !_zoom && !_fly && _wheel == 0) {
-    return;
-  }
-
+  if (!_orbit && !_pan && !_zoom && !_fly && _wheel == 0)  return;
   _ed.cam_anim = undefined;
 
   var _f = _rotated ? _live_fwd : __polygon_cam_forward(_yaw, _pitch);
@@ -395,7 +370,7 @@ function __polygon_cam_fly(_ed, _input, _dt) {
     var _zy = _ny - _target.y;
     var _zz = _nz - _target.z;
     var _zoom_factor = _zoom
-    ? 1 + __polygon_mouse_delta()[1] * 0.001
+    ? 1 + _md[1] * 0.001
     : _wheel < 0
     ? 0.9
     : 1.1;
@@ -406,14 +381,15 @@ function __polygon_cam_fly(_ed, _input, _dt) {
   }
 
   if (_pan) {
-    var _basis = __polygon_quat_basis(_node.getLocalRotation());
+    var _cam_quat = _node.getLocalRotation();
+    var _basis = __polygon_quat_basis_cached(_ed, _cam_quat);
     var _pivot = __polygon_cam_pivot(_ed, _pos, _f);
     var _to_pivot = [ _pivot.x - _pos.x, _pivot.y - _pos.y, _pivot.z - _pos.z ];
     var _plen = sqrt(_to_pivot[0] * _to_pivot[0] + _to_pivot[1] * _to_pivot[1] + _to_pivot[2] * _to_pivot[2]);
 
     if (_plen > 0.001) {
       var _k = ((2 * _plen * tan(_vp.fovY * 0.5)) / max(_vp.winH, 1)) * 0.8;
-      var _pmd = __polygon_mouse_delta();
+      var _pmd = _md;
       _nx += (-_basis[0].x * _pmd[0] + _basis[1].x * _pmd[1]) * _k;
       _ny += (-_basis[0].y * _pmd[0] + _basis[1].y * _pmd[1]) * _k;
       _nz += (-_basis[0].z * _pmd[0] + _basis[1].z * _pmd[1]) * _k;
@@ -422,9 +398,7 @@ function __polygon_cam_fly(_ed, _input, _dt) {
 
   _node.setLocalPosition(new GM3D_Vec3(_nx, _ny, _nz));
 
-  if (_orbit || _pan || _zoom || _fly) {
-    __polygon_wrap_camera(_ed);
-  }
+  if (_orbit || _pan || _zoom || _fly)  __polygon_wrap_camera(_ed);
 }
 
 // Pans camera in screen space for View tool drag.
@@ -440,16 +414,13 @@ function __polygon_view_pan(_ed, _vp) {
 
   var _node = _ed.rt.cam;
   var _pos = _node.getLocalPosition();
-  var _basis = __polygon_quat_basis(_node.getLocalRotation());
-  var _fwd = __polygon_view_forward(_ed);
+  var _basis = __polygon_quat_basis_cached(_ed, _node.getLocalRotation());
+  var _fwd = __polygon_view_forward_cached(_ed);
   var _pivot = __polygon_cam_pivot(_ed, _pos, _fwd);
   var _to_pivot = [ _pivot.x - _pos.x, _pivot.y - _pos.y, _pivot.z - _pos.z ];
   var _plen = sqrt(_to_pivot[0] * _to_pivot[0] + _to_pivot[1] * _to_pivot[1] + _to_pivot[2] * _to_pivot[2]);
 
-  if (_plen <= 0.001) {
-    return;
-  }
-
+  if (_plen <= 0.001)  return;
   _ed.cam_anim = undefined;
   var _k = ((2 * _plen * tan(_vp.fovY * 0.5)) / max(_vp.winH, 1)) * 0.8;
   var _md = __polygon_mouse_delta();
@@ -476,13 +447,10 @@ function __polygon_view_focus_node(_ed, _node) {
 
   var _target = _node.getWorldPosition();
   var _pos = _ed.rt.cam.getLocalPosition();
-  var _fwd = __polygon_view_forward(_ed);
+  var _fwd = __polygon_view_forward_cached(_ed);
   var _flen = sqrt(_fwd.x * _fwd.x + _fwd.y * _fwd.y + _fwd.z * _fwd.z);
 
-  if (_flen <= 0.0001) {
-    return false;
-  }
-
+  if (_flen <= 0.0001)  return false;
   var _n = [ _fwd.x / _flen, _fwd.y / _flen, _fwd.z / _flen ];
   var _delta = [ _target.x - _pos.x, _target.y - _pos.y, _target.z - _pos.z ];
   var _along = _delta[0] * _n[0] + _delta[1] * _n[1] + _delta[2] * _n[2];
@@ -497,11 +465,8 @@ function __polygon_view_focus_node(_ed, _node) {
 
 // Animates camera to align with selected viewcube direction.
 function __polygon_viewcube_snap(_ed, _n) {
-  if (_ed == undefined || _ed.rt == undefined || _ed.rt.cam == undefined) {
-    return;
-  }
-
-  var _fwd = __polygon_view_forward(_ed);
+  if (_ed == undefined || _ed.rt == undefined || _ed.rt.cam == undefined)  return;
+  var _fwd = __polygon_view_forward_cached(_ed);
   var _up = GM3D_Vec3.up();
   var _dir = new GM3D_Vec3(_n.x, _n.y, _n.z);
   var _tilted = false;
@@ -526,10 +491,7 @@ function __polygon_viewcube_snap(_ed, _n) {
   var _rot = _node.getLocalRotation();
   var _to_rot = _rot;
 
-  if (_tilted || abs(_n.x * _up.x + _n.y * _up.y + _n.z * _up.z) < 0.99) {
-    _to_rot = GM3D_Quaternion.fromLookRotation(_dir, _up).normalizeSafe(0.000001);
-  }
-
+  if (_tilted || abs(_n.x * _up.x + _n.y * _up.y + _n.z * _up.z) < 0.99)  _to_rot = GM3D_Quaternion.fromLookRotation(_dir, _up).normalizeSafe(0.000001);
   var _pos = _node.getLocalPosition();
   var _ax = _pos.x;
   var _ay = _pos.y;
@@ -551,10 +513,7 @@ function __polygon_viewcube_snap(_ed, _n) {
   var _dz = _pos.z - _az;
   var _dist = sqrt(_dx * _dx + _dy * _dy + _dz * _dz);
 
-  if (_dist < 0.001) {
-    return;
-  }
-
+  if (_dist < 0.001)  return;
   _ed.cam_anim = {
     t: 0,
     dur: 0.4,

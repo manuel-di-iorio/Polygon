@@ -26,6 +26,7 @@ var fs = require("fs");
 var path = require("path");
 
 var DEFAULT_IGNORED = { ".git": true, "Build": true, "node_modules": true };
+var GENERATED_FILES = { "polygon_merged.gml": true };
 
 function parseArgs(argv) {
   var opts = { root: null, json: false, fail: false, help: false, roots: null };
@@ -88,7 +89,9 @@ function collectGmlFiles(directory, files) {
         collectGmlFiles(full, files);
       }
     } else if (st.isFile() && entries[i].toLowerCase().lastIndexOf(".gml") === entries[i].length - 4) {
-      files.push(full);
+      if (!GENERATED_FILES[entries[i]]) {
+        files.push(full);
+      }
     }
   }
   return files;
