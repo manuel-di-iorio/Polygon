@@ -402,6 +402,8 @@ function polygon_cleanup(_ed = undefined) {
 
   if (surface_exists(_ed.scene_surf)) surface_free(_ed.scene_surf);
   _ed.scene_surf = undefined;
+  if (surface_exists(_ed[$ "scene_hi"])) surface_free(_ed.scene_hi);
+  _ed.scene_hi = undefined;
   _ed.renderer = undefined;
   __polygon_ui_save(_ed);
   __polygon_drop_preview_clear(_ed);
@@ -768,6 +770,10 @@ function __polygon_create(_rt) {
     press_y: 0,
     viewpan_moved: false,
     scene_surf: undefined,
+    scene_hi: undefined,
+    aa_mode: "ssaa",
+    aa_k: 2,
+    aa_used: 1,
     scene_stable_w: -1,
     scene_stable_h: -1,
     view_dirty: true,

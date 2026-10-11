@@ -329,7 +329,31 @@ function __polygon_scene_panel_open(_ed) {
   return _ed.imgui.win_scene.open == true;
 }
 
-// Renders live scene to scene surface.
+// Effective AA mode: off, ssaa or fxaa (anything else falls back to ssaa).
+function __polygon_aa_mode(_ed) {
+  var _m = _ed[$ "aa_mode"];
+  if (_m != "off" && _m != "ssaa" && _m != "fxaa") _m = "ssaa";
+  return _m;
+}
+
+// Switches AA mode and forces a re-render.
+function __polygon_aa_set(_ed, _mode) {
+  if (_mode != "off" && _mode != "ssaa" && _mode != "fxaa") return;
+  _ed.aa_mode = _mode;
+  _ed.view_dirty = true;
+}
+
+// Effective AA factor: always the setting (1, 1.5 or 2). No stillness
+// gate: switching factors between motion and rest caused visible AA
+// on/off popping on every re-render.
+function __polygon_aa_factor(_ed) {
+  var _want = (is_real(_ed[$ "aa_k"]) && _ed.aa_k >= 1) ? _ed.aa_k : 1;
+  return _want;
+}
+
+// Renders live scene to scene surface (with optional supersampling:
+// 3D renders hi-res into scene_hi, then downsamples; overlays compose
+// at display res on scene_surf so gizmo lines and text stay sharp).
 function __polygon_scene_panel_render(_ed) {
   if (_ed == undefined || !_ed.active) return;
   if (!__polygon_scene_panel_open(_ed)) return;
@@ -353,11 +377,98 @@ function __polygon_scene_panel_render(_ed) {
   _ed.scene_stable_h = _h;
 
   if (!surface_exists(_ed.scene_surf)) return;
-  if (!__polygon_view_needs_render(_ed)) return;
+  var _mode = __polygon_aa_mode(_ed);
+  var _k = (_mode == "ssaa") ? __polygon_aa_factor(_ed) : 1;
+  // Cap memory: hi-res dims stay within 4096px.
+  var _kcap = min(4096 / max(_w, 1), 4096 / max(_h, 1));
+  if (_k > _kcap) _k = max(_kcap, 1);
+  var _ukey = _mode + ":" + string(_k);
+
+  if (!__polygon_view_needs_render(_ed) && _ukey == _ed[$ "aa_used"]) return;
   _ed.view_dirty = false;
+  _ed.aa_used = _ukey;
+
+  if (_mode == "ssaa" && _k > 1) {
+    var _hw = max(1, floor(_w * _k));
+    var _hh = max(1, floor(_h * _k));
+
+    if (!__polygon_scene_hi_ensure(_ed, _hw, _hh)) {
+      // Hi-res unavailable (memory): fall back to direct 1x render.
+      surface_set_target(_ed.scene_surf);
+      draw_clear(c_black);
+      _ed.renderer.render(_ed.rt.scene);
+      __polygon_compose_viewport(_ed);
+      surface_reset_target();
+      return;
+    }
+
+    surface_set_target(_ed.scene_hi);
+    draw_clear(c_black);
+    _ed.renderer.render(_ed.rt.scene);
+    surface_reset_target();
+    surface_set_target(_ed.scene_surf);
+    draw_clear(c_black);
+    var _was_blend = gpu_get_blendenable();
+    var _was_filter = gpu_get_texfilter();
+    gpu_set_blendenable(false);
+    gpu_set_texfilter(true);
+    draw_surface_stretched(_ed.scene_hi, 0, 0, _w, _h);
+    gpu_set_texfilter(_was_filter);
+    gpu_set_blendenable(_was_blend);
+    __polygon_compose_viewport(_ed);
+    surface_reset_target();
+    return;
+  }
+
+  if (_mode == "fxaa" && __polygon_scene_hi_ensure(_ed, _w, _h) && shader_is_compiled(shPolygonEditorFXAA)) {
+    // Raw 1x 3D into the scratch surface, FXAA-resolve onto scene_surf,
+    // then compose overlays on the resolved image (they stay sharp).
+    surface_set_target(_ed.scene_hi);
+    draw_clear(c_black);
+    _ed.renderer.render(_ed.rt.scene);
+    surface_reset_target();
+
+    if (__polygon_fxaa_resolve(_ed, _ed.scene_hi, _w, _h)) {
+      surface_set_target(_ed.scene_surf);
+      __polygon_compose_viewport(_ed);
+      surface_reset_target();
+      return;
+    }
+
+    // Resolve failed: fall through to direct 1x render.
+  }
+
   surface_set_target(_ed.scene_surf);
   draw_clear(c_black);
   _ed.renderer.render(_ed.rt.scene);
   __polygon_compose_viewport(_ed);
   surface_reset_target();
+}
+
+// Ensures the scratch surface exists at w,h (retiring the old one).
+// False when unavailable.
+function __polygon_scene_hi_ensure(_ed, _w, _h) {
+  if (surface_exists(_ed[$ "scene_hi"]) && surface_get_width(_ed.scene_hi) == _w && surface_get_height(_ed.scene_hi) == _h) return true;
+  if (surface_exists(_ed[$ "scene_hi"])) __polygon_surf_retire(_ed, _ed.scene_hi);
+  _ed.scene_hi = surface_create(max(1, _w), max(1, _h));
+  return surface_exists(_ed[$ "scene_hi"]);
+}
+
+// FXAA-resolves _src (raw 3D) onto scene_surf. False when unavailable.
+function __polygon_fxaa_resolve(_ed, _src, _w, _h) {
+  static _u = -2;
+
+  if (_u == -2) _u = shader_get_uniform(shPolygonEditorFXAA, "u_texel");
+  if (_u < 0 || !surface_exists(_src) || !surface_exists(_ed.scene_surf)) return false;
+  surface_set_target(_ed.scene_surf);
+  draw_clear(c_black);
+  var _was_blend = gpu_get_blendenable();
+  gpu_set_blendenable(false);
+  shader_set(shPolygonEditorFXAA);
+  shader_set_uniform_f(_u, 1.0 / max(_w, 1), 1.0 / max(_h, 1));
+  draw_surface(_src, 0, 0);
+  shader_reset();
+  gpu_set_blendenable(_was_blend);
+  surface_reset_target();
+  return true;
 }

@@ -85,6 +85,20 @@ function __polygon_imgui_toolbar(_ed) {
   __polygon_toolbar_sep();
 
   if (__polygon_imgui_icon_btn("##tb_home", "Reset camera to the initial view", false, "Hm", "sprPolygonEditorIconCenter", 15, 15)) __polygon_cam_home(_ed, true);
+  ImGui.SameLine();
+  ImGui.SetNextItemWidth(86);
+  var _aa = __polygon_aa_mode(_ed);
+  var _aa_label = _aa == "off" ? "AA Off" : _aa == "fxaa" ? "FXAA" : "SSAA";
+
+  if (!ImGui.BeginCombo("##aa_mode", _aa_label)) {
+    if (ImGui.IsItemHovered()) ImGui.SetTooltip("Viewport antialiasing");
+  } else {
+    if (ImGui.Selectable("AA Off", _aa == "off", 0, 0, 0)) __polygon_aa_set(_ed, "off");
+    if (ImGui.Selectable("SSAA", _aa == "ssaa", 0, 0, 0)) __polygon_aa_set(_ed, "ssaa");
+    if (ImGui.Selectable("FXAA", _aa == "fxaa", 0, 0, 0)) __polygon_aa_set(_ed, "fxaa");
+    ImGui.EndCombo();
+  }
+
   ImGui.End();
 }
 
