@@ -4,7 +4,8 @@
 function __polygon_imgui_scene_dlg(_ed) {
   var _dlg = _ed.scene_dlg;
 
-  if (_dlg == undefined)  return;
+  if (_dlg == undefined) return;
+
   if (_dlg.open == false) {
     _ed.scene_dlg = undefined;
     return;
@@ -57,14 +58,14 @@ function __polygon_scene_dlg_delete(_dlg) {
 
   ImGui.SameLine();
 
-  if (ImGui.Button("Cancel", 0, 0))  _dlg.delete_pending = undefined;
+  if (ImGui.Button("Cancel", 0, 0)) _dlg.delete_pending = undefined;
 }
 
 // Draws the name field, scene list and action buttons.
 function __polygon_scene_dlg_form(_ed, _dlg, _is_save) {
   ImGui.Text("Scene name:");
 
-  if (!variable_struct_exists(_dlg, "buf") || !is_string(_dlg.buf))  _dlg.buf = __polygon_imgui_pad(_dlg.name);
+  if (!variable_struct_exists(_dlg, "buf") || !is_string(_dlg.buf)) _dlg.buf = __polygon_imgui_pad(_dlg.name);
   var _out = ImGui.InputText("##scene_dlg_name", _dlg.buf, ImGuiInputTextFlags.AutoSelectAll);
 
   if (is_string(_out)) {
@@ -77,14 +78,14 @@ function __polygon_scene_dlg_form(_ed, _dlg, _is_save) {
     _dlg.err_name = "";
   }
 
-  if (!_is_save)  __polygon_scene_dlg_list(_ed, _dlg);
+  if (!_is_save) __polygon_scene_dlg_list(_ed, _dlg);
   __polygon_scene_dlg_status(_ed, _dlg, _is_save);
 
-  if (ImGui.Button(_is_save ? "Save" : "Load", 0, 0))  __polygon_scene_dlg_commit(_ed, _is_save);
+  if (ImGui.Button(_is_save ? "Save" : "Load", 0, 0)) __polygon_scene_dlg_commit(_ed, _is_save);
   ImGui.SameLine();
 
-  if (ImGui.Button("Cancel", 0, 0))  _ed.scene_dlg = undefined;
-  if (_ed.scene_dlg != undefined && keyboard_check_pressed(vk_enter))  __polygon_scene_dlg_commit(_ed, _is_save);
+  if (ImGui.Button("Cancel", 0, 0)) _ed.scene_dlg = undefined;
+  if (_ed.scene_dlg != undefined && keyboard_check_pressed(vk_enter)) __polygon_scene_dlg_commit(_ed, _is_save);
 }
 
 // Draws the searchable list of saved scenes (load mode).
@@ -93,7 +94,7 @@ function __polygon_scene_dlg_list(_ed, _dlg) {
   ImGui.TextDisabled("Existing:");
   ImGui.SetNextItemWidth(-1);
 
-  if (!variable_struct_exists(_dlg, "search") || !is_string(_dlg.search))  _dlg.search = "";
+  if (!variable_struct_exists(_dlg, "search") || !is_string(_dlg.search)) _dlg.search = "";
   _dlg.search = __polygon_imgui_text_hint("##scene_dlg_search", "Search scene..", _dlg.search);
   var _filter = string_lower(string_trim(_dlg.search));
   var _matched = 0;
@@ -104,7 +105,7 @@ function __polygon_scene_dlg_list(_ed, _dlg) {
     for (var _i = 0, _n = array_length(_dlg.list); _i < _n; _i++) {
       var _name = _dlg.list[_i];
 
-      if (_filter != "" && string_pos(_filter, string_lower(_name)) <= 0)  continue;
+      if (_filter != "" && string_pos(_filter, string_lower(_name)) <= 0) continue;
       ImGui.PushID(_i);
       _matched++;
 
@@ -113,10 +114,10 @@ function __polygon_scene_dlg_list(_ed, _dlg) {
         _dlg.buf = __polygon_imgui_pad(_name);
       }
 
-      if (ImGui.IsMouseDoubleClicked(0) && ImGui.IsItemHovered())  __polygon_scene_dlg_do_load(_ed);
+      if (ImGui.IsMouseDoubleClicked(0) && ImGui.IsItemHovered()) __polygon_scene_dlg_do_load(_ed);
       ImGui.SameLine();
 
-      if (ImGui.SmallButton("x##del_" + string(_i)))  _dlg.delete_pending = _name;
+      if (ImGui.SmallButton("x##del_" + string(_i))) _dlg.delete_pending = _name;
       ImGui.PopID();
     }
   }
@@ -153,9 +154,9 @@ function __polygon_scene_dlg_commit(_ed, _is_save) {
 function __polygon_scene_dlg_exists(_ed, _name) {
   var _clean = string_lower(__polygon_sanitize_scene_name(_name));
 
-  if (_clean == "")  return false;
+  if (_clean == "") return false;
   var _list = _ed.scene_dlg.list;
 
-  for (var _i = 0, _n = array_length(_list); _i < _n; _i++)  if (string_lower(_list[_i]) == _clean)  return true;
+  for (var _i = 0, _n = array_length(_list); _i < _n; _i++) if (string_lower(_list[_i]) == _clean) return true;
   return false;
 }

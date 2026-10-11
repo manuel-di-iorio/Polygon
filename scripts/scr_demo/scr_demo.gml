@@ -31,12 +31,12 @@ function demo_create() {
 
 // Destroys demo scene and loaded models.
 function demo_destroy() {
-  if (!is_undefined(demo_scene))  demo_scene.destroy();
+  if (!is_undefined(demo_scene)) demo_scene.destroy();
   demo_scene = undefined;
   demo_cam = undefined;
   demo_cam_comp = undefined;
 
-  for (var _i = 0, _n = array_length(demo_models); _i < _n; _i++)  demo_models[_i].destroy();
+  for (var _i = 0, _n = array_length(demo_models); _i < _n; _i++) demo_models[_i].destroy();
   demo_models = [];
   demo_cache = {};
   demo_renderer = undefined;
@@ -107,7 +107,7 @@ function demo_build_props() {
     { path: "kenney_cube-pets_1.0/animal-fox.glb", pos: [ 0.95, 0, 0.55 ], yaw: -25, scale: 0.3 },
   ];
 
-  for (var _i = 0, _n = array_length(_props); _i < _n; _i++)  demo_spawn_prop(_props[_i]);
+  for (var _i = 0, _n = array_length(_props); _i < _n; _i++) demo_spawn_prop(_props[_i]);
 }
 
 // ---------------------------------------------------------------------------
@@ -119,10 +119,10 @@ function demo_pretty_label(_path) {
   var _base = is_string(_path) ? _path : "";
   var _slash = string_last_pos("/", _base);
 
-  if (_slash > 0)  _base = string_copy(_base, _slash + 1, string_length(_base) - _slash);
+  if (_slash > 0) _base = string_copy(_base, _slash + 1, string_length(_base) - _slash);
   var _dot = string_last_pos(".", _base);
 
-  if (_dot > 0)  _base = string_copy(_base, 1, _dot - 1);
+  if (_dot > 0) _base = string_copy(_base, 1, _dot - 1);
   _base = string_replace_all(_base, "-", " ");
   _base = string_replace_all(_base, "_", " ");
   var _words = string_split(_base, " ");
@@ -131,7 +131,7 @@ function demo_pretty_label(_path) {
   for (var _i = 0, _n = array_length(_words); _i < _n; _i++) {
     var _word = _words[_i];
 
-    if (!is_string(_word) || _word == "")  continue;
+    if (!is_string(_word) || _word == "") continue;
     var _cap = string_upper(string_copy(_word, 1, 1)) + string_copy(_word, 2, string_length(_word) - 1);
     _out += (_out == "" ? "" : " ") + _cap;
   }
@@ -143,11 +143,12 @@ function demo_pretty_label(_path) {
 function demo_load_model(_path, _label = undefined) {
   var _src = undefined;
 
-  if (variable_struct_exists(demo_cache, _path))  _src = demo_cache[$ _path];
+  if (variable_struct_exists(demo_cache, _path)) _src = demo_cache[$ _path];
+
   if (_src == undefined) {
     _src = GM3D_Scene.loadGltf(working_directory + _path);
 
-    if (_src == undefined)  return undefined;
+    if (_src == undefined) return undefined;
     demo_assign_shaders(_src);
     _src.freeze();
     array_push(demo_models, _src);
@@ -164,15 +165,15 @@ function demo_load_model(_path, _label = undefined) {
 
 // Builds a vec3 from a [x, y, z] array, falling back to defaults.
 function demo_vec3(_arr, _fallback) {
-  if (!is_array(_arr) || array_length(_arr) < 3)  return new GM3D_Vec3(_fallback[0], _fallback[1], _fallback[2]);
+  if (!is_array(_arr) || array_length(_arr) < 3) return new GM3D_Vec3(_fallback[0], _fallback[1], _fallback[2]);
   return new GM3D_Vec3(_arr[0], _arr[1], _arr[2]);
 }
 
 // Builds a scale vec3 from a number (uniform), an array, or defaults to 1.
 function demo_scale3(_prop) {
   if (variable_struct_exists(_prop, "scale")) {
-    if (is_real(_prop.scale))  return new GM3D_Vec3(_prop.scale, _prop.scale, _prop.scale);
-    if (is_array(_prop.scale) && array_length(_prop.scale) >= 3)  return new GM3D_Vec3(_prop.scale[0], _prop.scale[1], _prop.scale[2]);
+    if (is_real(_prop.scale)) return new GM3D_Vec3(_prop.scale, _prop.scale, _prop.scale);
+    if (is_array(_prop.scale) && array_length(_prop.scale) >= 3) return new GM3D_Vec3(_prop.scale[0], _prop.scale[1], _prop.scale[2]);
   }
 
   return new GM3D_Vec3(1, 1, 1);
@@ -182,14 +183,14 @@ function demo_scale3(_prop) {
 function demo_spawn_prop(_prop) {
   var _res = demo_load_model(_prop.path);
 
-  if (_res == undefined)  return undefined;
+  if (_res == undefined) return undefined;
   var _node = _res.model.spawnInto(demo_scene, undefined);
 
-  if (_node == undefined)  return undefined;
+  if (_node == undefined) return undefined;
   _node.setLocalPosition(demo_vec3(_prop.pos, [ 0, 0, 0 ]));
   _node.setLocalScale(demo_scale3(_prop));
 
-  if (variable_struct_exists(_prop, "yaw") && is_real(_prop.yaw))  _node.setLocalRotation(demo_yaw_quat(_prop.yaw));
+  if (variable_struct_exists(_prop, "yaw") && is_real(_prop.yaw)) _node.setLocalRotation(demo_yaw_quat(_prop.yaw));
   demo_on_spawn(_node, _res.path, _res.model);
   return _node;
 }
@@ -198,7 +199,7 @@ function demo_spawn_prop(_prop) {
 // Signature is fixed by the editor (wrapper node, model id, model):
 // walk the subtree, the model root lives inside the wrapper.
 function demo_on_spawn(_node, _model_id, _src) {
-  if (_node == undefined || _src == undefined)  return;
+  if (_node == undefined || _src == undefined) return;
   demo_assign_instance_shaders(_node);
 
   if (_src.animationCount > 0) {
@@ -223,26 +224,26 @@ function demo_shade_material(_mat, _skinned) {
   var _forward = _skinned ? sAnimated : sStatic;
   var _shadow = _skinned ? sAnimatedShadow : sStaticShadow;
 
-  if (_mat.getShader(GM3D_ERenderPass.Forward) == undefined)  _mat.setShader(GM3D_ERenderPass.Forward, _forward);
-  if (_mat.getShader(GM3D_ERenderPass.Shadow) == undefined)  _mat.setShader(GM3D_ERenderPass.Shadow, _shadow);
+  if (_mat.getShader(GM3D_ERenderPass.Forward) == undefined) _mat.setShader(GM3D_ERenderPass.Forward, _forward);
+  if (_mat.getShader(GM3D_ERenderPass.Shadow) == undefined) _mat.setShader(GM3D_ERenderPass.Shadow, _shadow);
 }
 
 // Assigns shaders to one mesh component (shared by source and live nodes).
 function demo_shade_comp(_comp, _skinned) {
-  if (_comp == undefined)  return;
+  if (_comp == undefined) return;
   var _mat = _comp.getMaterial();
 
-  if (_mat != undefined)  demo_shade_material(_mat, _skinned);
+  if (_mat != undefined) demo_shade_material(_mat, _skinned);
 }
 
 // Assigns static and skinned shaders to a freshly loaded source scene.
 function demo_assign_shaders(_src) {
   var _materials = _src.getMaterials();
 
-  for (var _i = 0, _nmat = array_length(_materials); _i < _nmat; _i++)  demo_shade_material(_materials[_i], false);
+  for (var _i = 0, _nmat = array_length(_materials); _i < _nmat; _i++) demo_shade_material(_materials[_i], false);
   var _nodes = _src.getNodes();
 
-  for (var _j = 0, _nnod = array_length(_nodes); _j < _nnod; _j++)  demo_shade_comp(_nodes[_j].getSkinnedMeshComponent(), true);
+  for (var _j = 0, _nnod = array_length(_nodes); _j < _nnod; _j++) demo_shade_comp(_nodes[_j].getSkinnedMeshComponent(), true);
 }
 
 // Assigns lighting shaders across a live node subtree.
@@ -252,13 +253,13 @@ function demo_assign_instance_shaders(_node) {
   while (array_length(_stack) > 0) {
     var _cur = array_pop(_stack);
 
-    if (_cur == undefined)  continue;
+    if (_cur == undefined) continue;
     demo_shade_comp(_cur.getMeshComponent(), false);
     demo_shade_comp(_cur.getSkinnedMeshComponent(), true);
 
     var _kids = _cur.getChildren();
 
-    for (var _k = 0, _nkid = array_length(_kids); _k < _nkid; _k++)  array_push(_stack, _kids[_k]);
+    for (var _k = 0, _nkid = array_length(_kids); _k < _nkid; _k++) array_push(_stack, _kids[_k]);
   }
 }
 
@@ -268,19 +269,19 @@ function demo_assign_instance_shaders(_node) {
 
 // Finds the first animation component in a subtree.
 function demo_find_anim(_node) {
-  if (_node == undefined)  return undefined;
+  if (_node == undefined) return undefined;
   var _found = _node.findAnimationComponent();
 
-  if (_found != undefined)  return _found;
+  if (_found != undefined) return _found;
   var _comp = _node.getAnimationComponent();
 
-  if (_comp != undefined)  return _comp;
+  if (_comp != undefined) return _comp;
   var _children = _node.getChildren();
 
   for (var _i = 0, _nchild = array_length(_children); _i < _nchild; _i++) {
     var _nested = demo_find_anim(_children[_i]);
 
-    if (_nested != undefined)  return _nested;
+    if (_nested != undefined) return _nested;
   }
 
   return undefined;
@@ -296,11 +297,11 @@ function demo_find_anim_index(_src, _name) {
     var _anim = _src.getAnimation(_i);
     var _anim_name = string_lower(string(_anim.path));
 
-    if (_anim_name == _target)  return _i;
-    if (_fallback < 0 && string_pos(_target, _anim_name) > 0)  _fallback = _i;
+    if (_anim_name == _target) return _i;
+    if (_fallback < 0 && string_pos(_target, _anim_name) > 0) _fallback = _i;
   }
 
-  if (_fallback >= 0)  return _fallback;
+  if (_fallback >= 0) return _fallback;
   return 0;
 }
 
@@ -333,7 +334,7 @@ function demo_look_at(_node, _dir) {
   _forward.normalize();
   var _up = GM3D_Vec3.up();
 
-  if (abs(_forward.dot(_up)) >= 0.999)  _up = GM3D_Vec3.forward();
+  if (abs(_forward.dot(_up)) >= 0.999) _up = GM3D_Vec3.forward();
   var _rot = GM3D_Quaternion.fromLookRotation(_forward, _up);
   _node.setLocalRotation(_rot.normalizeSafe(0.000001));
 }

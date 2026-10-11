@@ -8,7 +8,7 @@
 function __polygon_gizmo_pivot(_sel) {
   var _n = array_length(_sel);
 
-  if (_n == 0)  return undefined;
+  if (_n == 0) return undefined;
   var _cx = 0;
   var _cy = 0;
   var _cz = 0;
@@ -29,7 +29,7 @@ function __polygon_gizmo_dirs(_ed) {
   if (_ed.giz.orient == 1 && array_length(_ed.sel) > 0) {
     var _local = _ed.sel[0].getLocalRotation();
 
-    if (_local != undefined)  return __polygon_quat_basis_cached(_ed, _local);
+    if (_local != undefined) return __polygon_quat_basis_cached(_ed, _local);
   }
 
   return [ new GM3D_Vec3(1, 0, 0), GM3D_Vec3.up(), GM3D_Vec3.forward() ];
@@ -45,20 +45,20 @@ function __polygon_gizmo_len(_ed, _vp, _pivot) {
 function __polygon_gizmo_world_size_dist(_vp, _dist, _pixels) {
   var _h = 768;
 
-  if (is_real(_vp.winH) && _vp.winH > 0)  _h = _vp.winH;
+  if (is_real(_vp.winH) && _vp.winH > 0) _h = _vp.winH;
   var _fov = pi / 3.0;
 
-  if (is_real(_vp.fovY) && _vp.fovY > 0.001)  _fov = _vp.fovY;
+  if (is_real(_vp.fovY) && _vp.fovY > 0.001) _fov = _vp.fovY;
   var _ws = _pixels * max(_dist, 0.001) * max(tan(_fov * 0.5), 0.001) * 2.0 / _h;
   return clamp(_ws, 0.0005, 10000);
 }
 
 // Measures camera distance to pivot, -1 when unknown.
 function __polygon_gizmo_cam_dist(_vp, _pivot) {
-  if (_vp == undefined || _vp.camNode == undefined || _pivot == undefined)  return -1;
+  if (_vp == undefined || _vp.camNode == undefined || _pivot == undefined) return -1;
   var _cam = _vp.camNode.getWorldPosition();
 
-  if (_cam == undefined)  return -1;
+  if (_cam == undefined) return -1;
   var _vx = _cam.x - _pivot.x;
   var _vy = _cam.y - _pivot.y;
   var _vz = _cam.z - _pivot.z;
@@ -71,24 +71,24 @@ function __polygon_gizmo_world_size(_vp, _pivot, _pixels) {
   var _fallback = _dist > 0 ? __polygon_gizmo_world_size_dist(_vp, _dist, _pixels) : 1;
   var _a = __polygon_world_to_screen(_vp, _pivot);
 
-  if (_a == undefined)  return _fallback;
+  if (_a == undefined) return _fallback;
   var _b = __polygon_world_to_screen(
     _vp,
     new GM3D_Vec3(_pivot.x + _vp.camRight.x, _pivot.y + _vp.camRight.y, _pivot.z + _vp.camRight.z)
   );
 
-  if (_b == undefined)  return _fallback;
+  if (_b == undefined) return _fallback;
   var _dx = _b[0] - _a[0];
   var _dy = _b[1] - _a[1];
   var _len = sqrt(_dx * _dx + _dy * _dy);
 
-  if (_len < 0.5)  return _fallback;
+  if (_len < 0.5) return _fallback;
   return _pixels / _len;
 }
 
 // Converts world movement delta into node local space.
 function __polygon_gizmo_world_delta_to_local(_node, _delta) {
-  if (_node.parent == undefined)  return _delta.clone();
+  if (_node.parent == undefined) return _delta.clone();
   var _inv = _node.parent.getWorldMatrix().clone();
   _inv.invert();
   var _a = new GM3D_Vec3(0, 0, 0);
@@ -96,8 +96,8 @@ function __polygon_gizmo_world_delta_to_local(_node, _delta) {
   var _ta = _inv.transformPoint(_a);
   var _tb = _inv.transformPoint(_b);
 
-  if (_ta != undefined)  _a = _ta;
-  if (_tb != undefined)  _b = _tb;
+  if (_ta != undefined) _a = _ta;
+  if (_tb != undefined) _b = _tb;
   _b.sub(_a);
   return _b;
 }
@@ -110,7 +110,7 @@ function __polygon_gizmo_world_delta_to_local(_node, _delta) {
 function __polygon_gizmo_ring_basis(_axis) {
   var _ref = GM3D_Vec3.up();
 
-  if (abs(_axis.dot(_ref)) >= 0.99)  _ref = GM3D_Vec3.forward();
+  if (abs(_axis.dot(_ref)) >= 0.99) _ref = GM3D_Vec3.forward();
   var _u = new GM3D_Vec3();
   _u.crossVectors(_axis, _ref);
   _u.normalizeSafe(0.000001);
@@ -136,7 +136,7 @@ function __polygon_gizmo_ring_world_fast(_pivot, _u, _v, _ws) {
   var _seg = 36;
   var _world = array_create(_seg + 1);
 
-  for (var _i = 0; _i <= _seg; _i++)  _world[_i] = __polygon_gizmo_ring_point_fast(_pivot, _u, _v, _ws, (_i / _seg) * pi * 2);
+  for (var _i = 0; _i <= _seg; _i++) _world[_i] = __polygon_gizmo_ring_point_fast(_pivot, _u, _v, _ws, (_i / _seg) * pi * 2);
   return _world;
 }
 
@@ -151,7 +151,7 @@ function __polygon_gizmo_ring_pts(_vp, _pivot, _axis, _ws) {
   var _mapped = __polygon_world_corners_to_screen(_vp, __polygon_gizmo_ring_world(_pivot, _axis, _ws));
   var _pts = [];
 
-  for (var _j = 0, _n = array_length(_mapped); _j < _n; _j++)  if (_mapped[_j] != undefined)  array_push(_pts, _mapped[_j]);
+  for (var _j = 0, _n = array_length(_mapped); _j < _n; _j++) if (_mapped[_j] != undefined) array_push(_pts, _mapped[_j]);
   return _pts;
 }
 
@@ -169,7 +169,7 @@ function __polygon_gizmo_ring_front(_vp, _pivot, _axis, _ws) {
     var _w = _world[_k];
     var _front = false;
 
-    if (_len > 0.0001)  _front = ((_w.x - _pivot.x) * _vx + (_w.y - _pivot.y) * _vy + (_w.z - _pivot.z) * _vz) > 0;
+    if (_len > 0.0001) _front = ((_w.x - _pivot.x) * _vx + (_w.y - _pivot.y) * _vy + (_w.z - _pivot.z) * _vz) > 0;
     array_push(_out, { s: __polygon_world_to_screen(_vp, _w), front: _front });
   }
 
@@ -184,8 +184,8 @@ function __polygon_gizmo_quad(_pivot, _dirs, _a, _h, _view = undefined) {
   var _sc = 1.0;
 
   if (_view != undefined) {
-    if (_dirs[_b].dot(_view) < 0)  _sb = -1.0;
-    if (_dirs[_c].dot(_view) < 0)  _sc = -1.0;
+    if (_dirs[_b].dot(_view) < 0) _sb = -1.0;
+    if (_dirs[_c].dot(_view) < 0) _sc = -1.0;
   }
 
   var _pb = _pivot.clone();
@@ -206,10 +206,10 @@ function __polygon_ring_front_dist2(_mx, _my, _ring) {
     var _a = _ring[_i];
     var _b = _ring[_i + 1];
 
-    if (_a.s == undefined || _b.s == undefined || !_a.front || !_b.front)  continue;
+    if (_a.s == undefined || _b.s == undefined || !_a.front || !_b.front) continue;
     var _d = __polygon_point_seg_dist2(_mx, _my, _a.s[0], _a.s[1], _b.s[0], _b.s[1]);
 
-    if (_d < _best)  _best = _d;
+    if (_d < _best) _best = _d;
   }
 
   return _best;
@@ -217,7 +217,7 @@ function __polygon_ring_front_dist2(_mx, _my, _ring) {
 
 // Computes normalized view direction from pivot to camera.
 function __polygon_gizmo_cam_view(_vp, _pivot) {
-  if (_vp == undefined || _vp.camNode == undefined || _pivot == undefined)  return undefined;
+  if (_vp == undefined || _vp.camNode == undefined || _pivot == undefined) return undefined;
   var _cam = _vp.camNode.getWorldPosition();
   var _view = new GM3D_Vec3(_cam.x - _pivot.x, _cam.y - _pivot.y, _cam.z - _pivot.z);
   _view.normalizeSafe(0.000001);
@@ -240,9 +240,9 @@ function __polygon_screen_poly_area(_pts) {
 
 // Checks shift screen-space move mode (not while flying camera).
 function __polygon_gizmo_shift_square(_ed) {
-  if (!keyboard_check(vk_shift))  return false;
-  if (mouse_check_button(mb_right) || mouse_check_button(mb_middle))  return false;
-  if (_ed.cam_fly == true || _ed.cam_orbit == true || _ed.cam_pan == true || _ed.cam_zoom == true)  return false;
+  if (!keyboard_check(vk_shift)) return false;
+  if (mouse_check_button(mb_right) || mouse_check_button(mb_middle)) return false;
+  if (_ed.cam_fly == true || _ed.cam_orbit == true || _ed.cam_pan == true || _ed.cam_zoom == true) return false;
   return true;
 }
 
@@ -255,11 +255,10 @@ function __polygon_gizmo_shift_square(_ed) {
 function __polygon_gizmo_frame_cache(_ed, _vp, _pivot, _dirs, _ws, _view) {
   var _g = _ed.giz;
   var _c = _g[$ "_ring_cache"];
-  var _same = is_struct(_c) && _c.ws == _ws && _c.pivot != undefined
-    && _c.pivot.x == _pivot.x && _c.pivot.y == _pivot.y && _c.pivot.z == _pivot.z;
-  if (_same)  return _c;
+  var _same = is_struct(_c) && _c.ws == _ws && _c.pivot != undefined && _c.pivot.x == _pivot.x && _c.pivot.y == _pivot.y && _c.pivot.z == _pivot.z;
+  if (_same) return _c;
   var _quads = [];
-  for (var _q = 0; _q < 3; _q++)  array_push(_quads, __polygon_clip_screen_poly(_vp, __polygon_gizmo_quad(_pivot, _dirs, _q, _ws * 0.3, _view)));
+  for (var _q = 0; _q < 3; _q++) array_push(_quads, __polygon_clip_screen_poly(_vp, __polygon_gizmo_quad(_pivot, _dirs, _q, _ws * 0.3, _view)));
   _g._ring_cache = { pivot: _pivot.clone(), ws: _ws, quads: _quads, view: _view };
   return _g._ring_cache;
 }
@@ -272,7 +271,7 @@ function __polygon_gizmo_hover_quad(_vp, _pivot, _dirs, _ws, _view, _mx, _my) {
   for (var _q = 0; _q < 3; _q++) {
     var _poly = __polygon_clip_screen_poly(_vp, __polygon_gizmo_quad(_pivot, _dirs, _q, _ws * 0.3, _view));
 
-    if (array_length(_poly) < 3 || __polygon_screen_poly_area(_poly) < 200)  continue;
+    if (array_length(_poly) < 3 || __polygon_screen_poly_area(_poly) < 200) continue;
     var _inside = false;
 
     for (var _t = 1, _n = array_length(_poly) - 1; _t < _n - 1; _t++) {
@@ -282,7 +281,7 @@ function __polygon_gizmo_hover_quad(_vp, _pivot, _dirs, _ws, _view, _mx, _my) {
       }
     }
 
-    if (!_inside)  continue;
+    if (!_inside) continue;
     var _area = __polygon_screen_poly_area(_poly);
 
     if (_area > _best_area) {
@@ -304,7 +303,7 @@ function __polygon_gizmo_hover_edge(_vp, _pivot, _dirs, _ws, _view, _mx, _my) {
     var _poly = __polygon_clip_screen_poly(_vp, __polygon_gizmo_quad(_pivot, _dirs, _q, _ws * 0.3, _view));
     var _n = array_length(_poly);
 
-    if (_n < 3 || __polygon_screen_poly_area(_poly) < 200)  continue;
+    if (_n < 3 || __polygon_screen_poly_area(_poly) < 200) continue;
     var _dmin = 1000000000;
 
     for (var _e = 0; _e < _n; _e++) {
@@ -312,7 +311,7 @@ function __polygon_gizmo_hover_edge(_vp, _pivot, _dirs, _ws, _view, _mx, _my) {
       var _pb = _poly[(_e + 1) mod _n];
       var _d = __polygon_point_seg_dist2(_mx, _my, _pa[0], _pa[1], _pb[0], _pb[1]);
 
-      if (_d < _dmin)  _dmin = _d;
+      if (_d < _dmin) _dmin = _d;
     }
 
     if (_dmin <= _pad && _dmin < _best_d) {
@@ -329,8 +328,8 @@ function __polygon_gizmo_hover_rotate(_vp, _pivot, _look, _ws, _mx, _my, _ps, _b
   var _ring = __polygon_gizmo_ring_pts(_vp, _pivot, _look, _ws);
   var _rd = __polygon_point_polyline_dist2(_mx, _my, _ring);
 
-  if (_rd < _best_d)  return 6;
-  if (_best != -1)  return _best;
+  if (_rd < _best_d) return 6;
+  if (_best != -1) return _best;
   var _rr = 0;
 
   for (var _i = 0, _n = array_length(_ring); _i < _n; _i++) {
@@ -338,14 +337,14 @@ function __polygon_gizmo_hover_rotate(_vp, _pivot, _look, _ws, _mx, _my, _ps, _b
     var _dy = _ring[_i][1] - _ps[1];
     var _d2 = _dx * _dx + _dy * _dy;
 
-    if (_d2 > _rr)  _rr = _d2;
+    if (_d2 > _rr) _rr = _d2;
   }
 
   if (_rr > 1) {
     var _mcx = _mx - _ps[0];
     var _mcy = _my - _ps[1];
 
-    if (_mcx * _mcx + _mcy * _mcy <= _rr)  return 7;
+    if (_mcx * _mcx + _mcy * _mcy <= _rr) return 7;
   }
 
   return -1;
@@ -353,13 +352,13 @@ function __polygon_gizmo_hover_rotate(_vp, _pivot, _look, _ws, _mx, _my, _ps, _b
 
 // Detects which gizmo handle mouse currently hovers.
 function __polygon_gizmo_hover(_ed, _vp, _mx, _my) {
-  if (array_length(_ed.sel) == 0)  return -1;
-  if (!__polygon_gizmo_allowed(_ed))  return -1;
+  if (array_length(_ed.sel) == 0) return -1;
+  if (!__polygon_gizmo_allowed(_ed)) return -1;
   var _pivot = __polygon_gizmo_pivot(_ed.sel);
   var _ps = __polygon_world_to_screen(_vp, _pivot);
 
-  if (_ps == undefined)  return -1;
-  if (_ed.giz.tool == PolygonEditorTool.Scale)  if ((_mx - _ps[0]) * (_mx - _ps[0]) + (_my - _ps[1]) * (_my - _ps[1]) <= 64)  return -2;
+  if (_ps == undefined) return -1;
+  if (_ed.giz.tool == PolygonEditorTool.Scale) if ((_mx - _ps[0]) * (_mx - _ps[0]) + (_my - _ps[1]) * (_my - _ps[1]) <= 64) return -2;
   var _dirs = __polygon_gizmo_dirs(_ed);
   var _ws = __polygon_gizmo_len(_ed, _vp, _pivot);
   var _view = __polygon_gizmo_cam_view(_vp, _pivot);
@@ -370,14 +369,15 @@ function __polygon_gizmo_hover(_ed, _vp, _mx, _my) {
   if (_ed.giz.tool == PolygonEditorTool.Translate) {
     var _shift = __polygon_gizmo_shift_square(_ed);
 
-    if (_shift && abs(_mx - _ps[0]) <= 15 && abs(_my - _ps[1]) <= 15)  return -2;
+    if (_shift && abs(_mx - _ps[0]) <= 15 && abs(_my - _ps[1]) <= 15) return -2;
+
     if (!_shift) {
       var _quad = __polygon_gizmo_hover_quad(_vp, _pivot, _dirs, _ws, _view, _mx, _my);
 
-      if (_quad != -1)  return 3 + _quad;
+      if (_quad != -1) return 3 + _quad;
       var _edge = __polygon_gizmo_hover_edge(_vp, _pivot, _dirs, _ws, _view, _mx, _my);
 
-      if (_edge != -1)  return 3 + _edge;
+      if (_edge != -1) return 3 + _edge;
     }
   }
 
@@ -395,7 +395,7 @@ function __polygon_gizmo_hover(_ed, _vp, _mx, _my) {
         new GM3D_Vec3(_pivot.x + _dirs[_a].x * _ws, _pivot.y + _dirs[_a].y * _ws, _pivot.z + _dirs[_a].z * _ws)
       );
 
-      if (_tip == undefined)  continue;
+      if (_tip == undefined) continue;
       _d = __polygon_point_seg_dist2(_mx, _my, _ps[0], _ps[1], _tip[0], _tip[1]);
       _d = min(_d, (_mx - _tip[0]) * (_mx - _tip[0]) + (_my - _tip[1]) * (_my - _tip[1]));
     }
@@ -406,7 +406,7 @@ function __polygon_gizmo_hover(_ed, _vp, _mx, _my) {
     }
   }
 
-  if (_ed.giz.tool == PolygonEditorTool.Rotate)  return __polygon_gizmo_hover_rotate(_vp, _pivot, _look, _ws, _mx, _my, _ps, _best, _best_d);
+  if (_ed.giz.tool == PolygonEditorTool.Rotate) return __polygon_gizmo_hover_rotate(_vp, _pivot, _look, _ws, _mx, _my, _ps, _best, _best_d);
   return _best;
 }
 
@@ -427,7 +427,7 @@ function __polygon_gizmo_calibrate_ring(_ed, _vp, _g, _pivot, _mx, _my) {
     var _t = (_s / _samples) * 2 * pi;
     var _pt = __polygon_world_to_screen(_vp, __polygon_gizmo_ring_point_fast(_pivot, _u, _v, _ws, _t));
 
-    if (_pt == undefined)  continue;
+    if (_pt == undefined) continue;
     var _dx = _pt[0] - _mx;
     var _dy = _pt[1] - _my;
     var _d2 = _dx * _dx + _dy * _dy;
@@ -447,7 +447,7 @@ function __polygon_gizmo_calibrate_ring(_ed, _vp, _g, _pivot, _mx, _my) {
       var _cand_t = _g.sector_t0 + _off * _step;
       var _cand = __polygon_world_to_screen(_vp, __polygon_gizmo_ring_point_fast(_pivot, _u, _v, _ws, _cand_t));
 
-      if (_cand == undefined)  continue;
+      if (_cand == undefined) continue;
       var _cdx = _cand[0] - _mx;
       var _cdy = _cand[1] - _my;
       var _cd2 = _cdx * _cdx + _cdy * _cdy;
@@ -487,9 +487,9 @@ function __polygon_gizmo_begin(_ed, _vp, _mx, _my) {
 
   for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++) {
     array_push(_g.starts, {
-        pos: _ed.sel[_i].getLocalPosition().clone(),
-        sca: _ed.sel[_i].getLocalScale().clone(),
-        rot: _ed.sel[_i].getLocalRotation().clone(),
+      pos: _ed.sel[_i].getLocalPosition().clone(),
+      sca: _ed.sel[_i].getLocalScale().clone(),
+      rot: _ed.sel[_i].getLocalRotation().clone(),
     });
   }
 
@@ -535,14 +535,14 @@ function __polygon_gizmo_begin(_ed, _vp, _mx, _my) {
     _g.plane_n = _view.clone();
     _g.plane_n.addScaledVector(_g.dir, -_view.dot(_g.dir));
 
-    if (_g.plane_n.lengthSq() < 0.000001)  _g.plane_n.crossVectors(_g.dir, _vp.camUp);
+    if (_g.plane_n.lengthSq() < 0.000001) _g.plane_n.crossVectors(_g.dir, _vp.camUp);
     _g.plane_n.normalizeSafe(0.000001);
   }
 
   var _ray = __polygon_screen_ray(_vp, _mx, _my);
   _g.start_hit = __polygon_ray_plane(_ray.origin, _ray.dir, _pivot, _g.plane_n);
 
-  if (_g.start_hit == undefined)  _g.start_hit = _pivot.clone();
+  if (_g.start_hit == undefined) _g.start_hit = _pivot.clone();
   _g.mx0 = _mx;
   _g.my0 = _my;
   var _ps = __polygon_world_to_screen(_vp, _pivot);
@@ -557,7 +557,7 @@ function __polygon_gizmo_begin(_ed, _vp, _mx, _my) {
   _g.display_ang = 0;
   _g.sector_t0 = 0;
 
-  if (_g.tool == PolygonEditorTool.Rotate && _g.drag != 7)  __polygon_gizmo_calibrate_ring(_ed, _vp, _g, _pivot, _mx, _my);
+  if (_g.tool == PolygonEditorTool.Rotate && _g.drag != 7) __polygon_gizmo_calibrate_ring(_ed, _vp, _g, _pivot, _mx, _my);
 }
 
 // ---------------------------------------------------------------------------
@@ -582,7 +582,7 @@ function __polygon_gizmo_drag(_ed, _vp, _mx, _my) {
 function __polygon_gizmo_drag_translate(_ed, _g, _ray) {
   var _hit = __polygon_ray_plane(_ray.origin, _ray.dir, _g.pivot, _g.plane_n);
 
-  if (_hit == undefined)  return;
+  if (_hit == undefined) return;
   var _delta = new GM3D_Vec3();
   _delta.subVectors(_hit, _g.start_hit);
 
@@ -596,7 +596,7 @@ function __polygon_gizmo_drag_translate(_ed, _g, _ray) {
   }
 
   for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++) {
-    if (!__polygon_tool_allowed(_ed, _ed.sel[_i], PolygonEditorTool.Translate) || __polygon_hidden_get(_ed, _ed.sel[_i]))  continue;
+    if (!__polygon_tool_allowed(_ed, _ed.sel[_i], PolygonEditorTool.Translate) || __polygon_hidden_get(_ed, _ed.sel[_i])) continue;
     var _local = __polygon_gizmo_world_delta_to_local(_ed.sel[_i], _delta);
     var _pos = _g.starts[_i].pos.clone();
     _pos.add(_local);
@@ -614,9 +614,9 @@ function __polygon_gizmo_drag_translate(_ed, _g, _ray) {
 
 // Scales a start scale by factor along one axis (center scales all).
 function __polygon_scale_axis(_sca, _factor, _center, _axis) {
-  if (_center || _axis == 0)  _sca.x *= _factor;
-  if (_center || _axis == 1)  _sca.y *= _factor;
-  if (_center || _axis == 2)  _sca.z *= _factor;
+  if (_center || _axis == 0) _sca.x *= _factor;
+  if (_center || _axis == 1) _sca.y *= _factor;
+  if (_center || _axis == 2) _sca.z *= _factor;
   _sca.x = max(_sca.x, 0.01);
   _sca.y = max(_sca.y, 0.01);
   _sca.z = max(_sca.z, 0.01);
@@ -632,7 +632,7 @@ function __polygon_gizmo_drag_scale(_ed, _g, _ray, _my) {
   } else {
     var _hit = __polygon_ray_plane(_ray.origin, _ray.dir, _g.pivot, _g.plane_n);
 
-    if (_hit == undefined)  return;
+    if (_hit == undefined) return;
     var _dd = new GM3D_Vec3();
     _dd.subVectors(_hit, _g.start_hit);
     _f = 1.0 + _dd.dot(_g.dir) / max(_g.world_len, 0.0001);
@@ -641,7 +641,7 @@ function __polygon_gizmo_drag_scale(_ed, _g, _ray, _my) {
   _f = max(_f, 0.01);
 
   for (var _j = 0, _n = array_length(_ed.sel); _j < _n; _j++) {
-    if (!__polygon_tool_allowed(_ed, _ed.sel[_j], PolygonEditorTool.Scale) || __polygon_hidden_get(_ed, _ed.sel[_j]))  continue;
+    if (!__polygon_tool_allowed(_ed, _ed.sel[_j], PolygonEditorTool.Scale) || __polygon_hidden_get(_ed, _ed.sel[_j])) continue;
     _ed.sel[_j].setLocalScale(__polygon_scale_axis(_g.starts[_j].sca.clone(), _f, _g.center, _g.axis_idx));
   }
 }
@@ -654,7 +654,7 @@ function __polygon_gizmo_drag_trackball(_ed, _vp, _g, _mx, _my) {
   _g.tb_my = _my;
   var _mag = sqrt(_dx * _dx + _dy * _dy);
 
-  if (_mag <= 0.0001 || _vp.camRight == undefined || _vp.camUp == undefined)  return;
+  if (_mag <= 0.0001 || _vp.camRight == undefined || _vp.camUp == undefined) return;
   var _axis = new GM3D_Vec3(
     _vp.camRight.x * _dy + _vp.camUp.x * _dx,
     _vp.camRight.y * _dy + _vp.camUp.y * _dx,
@@ -664,11 +664,11 @@ function __polygon_gizmo_drag_trackball(_ed, _vp, _g, _mx, _my) {
   var _twist = GM3D_Quaternion.fromAxisAngle(_axis, _mag * 0.01);
 
   for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++) {
-    if (!__polygon_tool_allowed(_ed, _ed.sel[_i], PolygonEditorTool.Rotate) || __polygon_hidden_get(_ed, _ed.sel[_i]))  continue;
+    if (!__polygon_tool_allowed(_ed, _ed.sel[_i], PolygonEditorTool.Rotate) || __polygon_hidden_get(_ed, _ed.sel[_i])) continue;
     var _rot = _twist.clone();
     _rot.multiply(_ed.sel[_i].getLocalRotation().clone());
 
-    if (is_nan(_rot.x) || is_nan(_rot.y) || is_nan(_rot.z) || is_nan(_rot.w))  continue;
+    if (is_nan(_rot.x) || is_nan(_rot.y) || is_nan(_rot.z) || is_nan(_rot.w)) continue;
     _ed.sel[_i].setLocalRotation(_rot.normalizeSafe(0.000001));
   }
 }
@@ -708,12 +708,12 @@ function __polygon_gizmo_drag_ring(_ed, _g, _mx, _my) {
   var _deg = radtodeg(_g.total_ang);
   var _snap = _ed.snap_on || keyboard_check(vk_control) ? _ed.snap_rot : 0;
 
-  if (_snap > 0)  _deg = __polygon_snap(_deg, _snap);
+  if (_snap > 0) _deg = __polygon_snap(_deg, _snap);
   _g.display_ang = degtorad(_deg);
   var _axis = __polygon_gizmo_ring_axis(_ed, _g);
 
   for (var _k = 0, _n = array_length(_ed.sel); _k < _n; _k++) {
-    if (!__polygon_tool_allowed(_ed, _ed.sel[_k], PolygonEditorTool.Rotate) || __polygon_hidden_get(_ed, _ed.sel[_k]))  continue;
+    if (!__polygon_tool_allowed(_ed, _ed.sel[_k], PolygonEditorTool.Rotate) || __polygon_hidden_get(_ed, _ed.sel[_k])) continue;
     var _rot = GM3D_Quaternion.fromAxisAngle(_axis, degtorad(_deg));
 
     if (_ed.giz.orient == 1) {

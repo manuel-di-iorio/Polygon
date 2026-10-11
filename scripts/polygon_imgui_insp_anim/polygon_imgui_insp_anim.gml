@@ -8,13 +8,13 @@
 function __polygon_imgui_node_model(_ed, _node) {
   var _en = __polygon_registry_find(_ed, _node);
 
-  if (_en == undefined || !is_string(_en.asset) || !is_array(_ed.assets))  return undefined;
+  if (_en == undefined || !is_string(_en.asset) || !is_array(_ed.assets)) return undefined;
   var _entry = __polygon_asset_get(_ed, _en.asset);
   return _entry == undefined ? undefined : _entry.model;
 }
 
 function __polygon_imgui_anim_count(_model) {
-  if (_model == undefined)  return 0;
+  if (_model == undefined) return 0;
   var _count = _model.animationCount;
   return _count == undefined ? 0 : max(0, _count);
 }
@@ -25,7 +25,7 @@ function __polygon_imgui_anim_count(_model) {
 
 // Checks if the preview card is open for model+index.
 function __polygon_anim_ui_is_open(_ed, _model, _index) {
-  if (!variable_struct_exists(_ed, "anim_ui") || !is_struct(_ed.anim_ui))  return false;
+  if (!variable_struct_exists(_ed, "anim_ui") || !is_struct(_ed.anim_ui)) return false;
   return _ed.anim_ui.model == _model && _ed.anim_ui.index == _index;
 }
 
@@ -54,7 +54,7 @@ function __polygon_anim_ui_toggle(_ed, _model, _index) {
 
 // Places the preview window under the cursor on first open (clamped on screen).
 function __polygon_anim_win_place(_ed) {
-  if (!variable_struct_exists(_ed, "anim_win_at") || !is_array(_ed.anim_win_at) || array_length(_ed.anim_win_at) < 2)  return;
+  if (!variable_struct_exists(_ed, "anim_win_at") || !is_array(_ed.anim_win_at) || array_length(_ed.anim_win_at) < 2) return;
   var _x = _ed.anim_win_at[0];
   var _y = _ed.anim_win_at[1];
   _ed.anim_win_at = undefined;
@@ -79,7 +79,7 @@ function __polygon_anim_pv_time(_ed) {
       if (_get != undefined) {
         var _t = method(_pv.comp, _get)();
 
-        if (is_real(_t))  return _t;
+        if (is_real(_t)) return _t;
       }
     } else if (is_real(_pv.t)) {
       return _pv.t;
@@ -104,12 +104,12 @@ function __polygon_anim_controls(_ui) {
   ImGui.SameLine();
   var _loop = ImGui.Checkbox("Loop", _ui.loop == true);
 
-  if (_loop != (_ui.loop == true))  _ui.loop = _loop;
+  if (_loop != (_ui.loop == true)) _ui.loop = _loop;
   ImGui.SameLine();
   ImGui.SetNextItemWidth(50);
   var _speed = __polygon_imgui_dragfloat("Speed", _ui.speed, 0.01);
 
-  if (is_real(_speed))  _ui.speed = clamp(_speed, 0, 4);
+  if (is_real(_speed)) _ui.speed = clamp(_speed, 0, 4);
 }
 
 // Draws the 256px preview as a non-modal floating window with playback controls.
@@ -120,7 +120,8 @@ function __polygon_anim_ui_window(_ed) {
   var _row_clicked = variable_struct_exists(_ed, "anim_row_clicked") && _ed.anim_row_clicked == true;
   _ed.anim_row_clicked = false;
 
-  if (!variable_struct_exists(_ed, "anim_ui") || !is_struct(_ed.anim_ui) || _ed.anim_ui.model == undefined)  return;
+  if (!variable_struct_exists(_ed, "anim_ui") || !is_struct(_ed.anim_ui) || _ed.anim_ui.model == undefined) return;
+
   if (!variable_struct_exists(_ed, "anim_win") || !is_struct(_ed.anim_win)) {
     _ed.anim_win = { open: true };
   }
@@ -132,7 +133,7 @@ function __polygon_anim_ui_window(_ed) {
   __polygon_anim_win_place(_ed);
 
   var _flags =
-  ImGuiWindowFlags.AlwaysAutoResize |
+    ImGuiWindowFlags.AlwaysAutoResize |
   ImGuiWindowFlags.NoCollapse |
   ImGuiWindowFlags.NoDocking;
   ImGui.SetNextWindowBgAlpha(1);
@@ -140,7 +141,7 @@ function __polygon_anim_ui_window(_ed) {
   if (!ImGui.Begin("Animation Preview##anim_pv_win", _ed.anim_win, _flags)) {
     ImGui.End();
 
-    if (_ed.anim_win.open != true)  _ed.anim_ui = undefined;
+    if (_ed.anim_win.open != true) _ed.anim_ui = undefined;
     return;
   }
 
@@ -175,7 +176,7 @@ function __polygon_anim_ui_window(_ed) {
   // The click itself is NOT eaten (non-modal window), it already reached
   // its target this frame — row switches set _row_clicked, window controls
   // are covered by _hv — so this only clears the preview.
-  if (!_row_clicked && !_hovered && (mouse_check_button_pressed(mb_left) || mouse_check_button_pressed(mb_right)))  _ed.anim_ui = undefined;
+  if (!_row_clicked && !_hovered && (mouse_check_button_pressed(mb_left) || mouse_check_button_pressed(mb_right))) _ed.anim_ui = undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -186,7 +187,7 @@ function __polygon_anim_ui_window(_ed) {
 function __polygon_anim_clip_name(_src, _idx) {
   var _clip = _src.getAnimation(_idx);
 
-  if (_clip == undefined)  return undefined;
+  if (_clip == undefined) return undefined;
   var _name = _clip.path;
   return is_string(_name) ? _name : "Animation " + string(_idx);
 }
@@ -196,12 +197,12 @@ function __polygon_anim_clip_list(_ed, _src, _count) {
   for (var _i = 0; _i < _count; _i++) {
     var _name = __polygon_anim_clip_name(_src, _i);
 
-    if (_name == undefined)  continue;
+    if (_name == undefined) continue;
     ImGui.PushID(_i);
     var _clicked = ImGui.Selectable(_name, __polygon_anim_ui_is_open(_ed, _src, _i));
     ImGui.PopID();
 
-    if (_clicked)  __polygon_anim_ui_toggle(_ed, _src, _i);
+    if (_clicked) __polygon_anim_ui_toggle(_ed, _src, _i);
   }
 }
 
@@ -211,13 +212,13 @@ function __polygon_imgui_anim_sec(_ed, _node) {
 
 // Draws the shared animation clip list for a model source.
 function __polygon_imgui_anim_list(_ed, _src, _id) {
-  if (_src == undefined)  return;
+  if (_src == undefined) return;
   var _count = __polygon_imgui_anim_count(_src);
 
-  if (_count <= 0)  return;
+  if (_count <= 0) return;
   ImGui.Indent(8);
 
-  if (ImGui.BeginChild(_id, 0, min(180, _count * 24), ImGuiChildFlags.Borders))  __polygon_anim_clip_list(_ed, _src, _count);
+  if (ImGui.BeginChild(_id, 0, min(180, _count * 24), ImGuiChildFlags.Borders)) __polygon_anim_clip_list(_ed, _src, _count);
   ImGui.EndChild();
 
   ImGui.Unindent(8);

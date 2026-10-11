@@ -89,11 +89,11 @@ function __polygon_world_to_screen(_vp, _p, _wide = false) {
   var _v = new GM3D_Vec4(_p.x, _p.y, _p.z, 1.0);
   _v.applyMatrix4(_vp.viewProj);
 
-  if (_v.w <= 0.0001)  return undefined;
+  if (_v.w <= 0.0001) return undefined;
   var _nx = _v.x / _v.w;
   var _ny = _v.y / _v.w;
 
-  if (!_wide && (_nx < -2.0 || _nx > 2.0 || _ny < -2.0 || _ny > 2.0))  return undefined;
+  if (!_wide && (_nx < -2.0 || _nx > 2.0 || _ny < -2.0 || _ny > 2.0)) return undefined;
   return __polygon_ndc_to_screen(_vp, _nx, _ny);
 }
 
@@ -102,7 +102,7 @@ function __polygon_unproject(_inv, _nx, _ny, _nz) {
   var _v = new GM3D_Vec4(_nx, _ny, _nz, 1.0);
   _v.applyMatrix4(_inv);
 
-  if (abs(_v.w) < 0.0001)  _v.w = 1.0;
+  if (abs(_v.w) < 0.0001) _v.w = 1.0;
   return new GM3D_Vec3(_v.x / _v.w, _v.y / _v.w, _v.z / _v.w);
 }
 
@@ -147,7 +147,7 @@ function __polygon_clip_screen_poly(_vp, _corners) {
     }
   }
 
-  if (!_any)  return [];
+  if (!_any) return [];
   var _out = [];
 
   for (var _e = 0, _ne = array_length(_clip); _e < _ne; _e++) {
@@ -157,7 +157,7 @@ function __polygon_clip_screen_poly(_vp, _corners) {
     var _nxt_in = _nxt.w >= _eps;
 
     if (_nxt_in) {
-      if (!_cur_in)  array_push(_out, __polygon_clip_lerp(_cur, _nxt, _eps));
+      if (!_cur_in) array_push(_out, __polygon_clip_lerp(_cur, _nxt, _eps));
       array_push(_out, _nxt);
     } else if (_cur_in) {
       array_push(_out, __polygon_clip_lerp(_cur, _nxt, _eps));
@@ -178,7 +178,7 @@ function __polygon_clip_screen_poly(_vp, _corners) {
 function __polygon_world_corners_to_screen(_vp, _corners) {
   var _out = [];
 
-  for (var _i = 0, _n = array_length(_corners); _i < _n; _i++)  array_push(_out, __polygon_world_to_screen(_vp, _corners[_i]));
+  for (var _i = 0, _n = array_length(_corners); _i < _n; _i++) array_push(_out, __polygon_world_to_screen(_vp, _corners[_i]));
   return _out;
 }
 
@@ -190,10 +190,10 @@ function __polygon_world_corners_to_screen(_vp, _corners) {
 function __polygon_ray_plane(_origin, _dir, _point, _normal) {
   var _den = _dir.dot(_normal);
 
-  if (abs(_den) < 0.000001)  return undefined;
+  if (abs(_den) < 0.000001) return undefined;
   var _t = (_point.dot(_normal) - _origin.dot(_normal)) / _den;
 
-  if (_t < 0.0)  return undefined;
+  if (_t < 0.0) return undefined;
   var _hit = new GM3D_Vec3();
   _hit.copy(_dir);
   _hit.multiplyScalar(_t);
@@ -213,10 +213,10 @@ function __polygon_node_mesh_boxes(_node) {
   for (var _i = 0, _n = array_length(_comps); _i < _n; _i++) {
     var _mesh = _comps[_i].getMesh();
 
-    if (_mesh == undefined)  continue;
+    if (_mesh == undefined) continue;
     var _box = _mesh.getBoundingBox();
 
-    if (_box == undefined || _box.min == undefined || _box.max == undefined)  continue;
+    if (_box == undefined || _box.min == undefined || _box.max == undefined) continue;
     array_push(_boxes, { min: _box.min, max: _box.max });
   }
 
@@ -267,7 +267,8 @@ function __polygon_node_aabb(_node) {
       var _bmin = _boxes[_i].min;
       var _bmax = _boxes[_i].max;
 
-      if (_bmin == undefined || _bmax == undefined)  continue;
+      if (_bmin == undefined || _bmax == undefined) continue;
+
       for (var _ix = 0; _ix < 2; _ix++) {
         for (var _iy = 0; _iy < 2; _iy++) {
           for (var _iz = 0; _iz < 2; _iz++) {
@@ -278,7 +279,7 @@ function __polygon_node_aabb(_node) {
             );
             var _tw = _wm.transformPoint(_p);
 
-            if (_tw != undefined)  _p = _tw;
+            if (_tw != undefined) _p = _tw;
             __polygon_aabb_grow(_mm, _p);
           }
         }
@@ -287,7 +288,7 @@ function __polygon_node_aabb(_node) {
 
     var _kids = _cur.getChildren();
 
-    for (var _k = 0, _nk = array_length(_kids); _k < _nk; _k++)  array_push(_stack, _kids[_k]);
+    for (var _k = 0, _nk = array_length(_kids); _k < _nk; _k++) array_push(_stack, _kids[_k]);
   }
 
   if (_mm.min == undefined) {
@@ -306,35 +307,44 @@ function __polygon_vp_line(_x1, _y1, _x2, _y2, _wd, _col) {
 // Viewport cache (per-frame)
 // ---------------------------------------------------------------------------
 
-// Builds a cheap cache key for the current viewport inputs.
-// Covers window size, scene-panel rect, camera pos/rot, lens and NDC flip.
-function __polygon_viewport_key(_ed) {
-  var _pos = _ed.rt.cam.getLocalPosition();
-  var _rot = _ed.rt.cam.getLocalRotation();
-  var _key = string(display_get_gui_width()) + "x" + string(display_get_gui_height())
-    + "|" + string(_pos.x) + "," + string(_pos.y) + "," + string(_pos.z)
-    + "|" + string(_rot.x) + "," + string(_rot.y) + "," + string(_rot.z) + "," + string(_rot.w);
-
-  if (is_struct(_ed.svp))  _key += "|" + string(_ed.svp.x) + "," + string(_ed.svp.y) + "," + string(_ed.svp.w) + "," + string(_ed.svp.h);
-  var _comp = _ed.rt.cam.getCameraComponent();
-
-  if (_comp != undefined)  _key += "|" + string(_comp.getFovY()) + "," + string(_comp.getNear()) + "," + string(_comp.getFar());
-  _key += _ed.ndc_yup ? "|yu" : "|yd";
-  return _key;
-}
-
 // Returns the cached viewport when inputs are unchanged, else rebuilds.
-// _ed.vp is refreshed every __polygon_step, so Step->Draw reuse skips the
-// matrix invert chain; the key guards against mid-frame camera moves.
+// Compares raw numbers (never stringified: GML string() rounds to 2
+// decimals, which blinded the old key to sub-0.01 camera motion and
+// skipped rebuilds during smooth navigation).
 // Same signature contract as __polygon_viewport (takes _ed, returns vp).
 function __polygon_viewport_cached(_ed) {
-  if (variable_struct_exists(_ed, "vp") && is_struct(_ed.vp)
-      && variable_struct_exists(_ed, "vp_key") && _ed.vp_key == __polygon_viewport_key(_ed)) {
+  var _cam = _ed.rt.cam;
+  var _pos = _cam.getLocalPosition();
+  var _rot = _cam.getLocalRotation();
+  var _comp = _cam.getCameraComponent();
+  var _fov = _comp != undefined ? _comp.getFovY() : pi / 3.0;
+  var _nr = _comp != undefined ? _comp.getNear() : 0.1;
+  var _fr = _comp != undefined ? _comp.getFar() : 10000.0;
+  var _gw = display_get_gui_width();
+  var _gh = display_get_gui_height();
+  var _sv = (__polygon_scene_panel_open(_ed) && variable_struct_exists(_ed, "svp") && is_struct(_ed.svp) && _ed.svp.w > 0 && _ed.svp.h > 0) ? _ed.svp : undefined;
+  var _k = (variable_struct_exists(_ed, "vp_pose") && is_struct(_ed.vp_pose)) ? _ed.vp_pose : undefined;
+
+  if (is_struct(_ed.vp) && _k != undefined
+    && _k.cpx == _pos.x && _k.cpy == _pos.y && _k.cpz == _pos.z
+    && _k.crx == _rot.x && _k.cry == _rot.y && _k.crz == _rot.z && _k.crw == _rot.w
+    && _k.fov == _fov && _k.nr == _nr && _k.fr == _fr
+    && _k.gw == _gw && _k.gh == _gh
+    && _k.sx == (_sv != undefined ? _sv.x : -1) && _k.sy == (_sv != undefined ? _sv.y : -1)
+    && _k.sw == (_sv != undefined ? _sv.w : -1) && _k.sh == (_sv != undefined ? _sv.h : -1)
+  && _k.yup == _ed.ndc_yup) {
     return _ed.vp;
   }
 
   _ed.vp = __polygon_viewport(_ed);
-  _ed.vp_key = __polygon_viewport_key(_ed);
+  _ed.vp_pose = {
+    cpx: _pos.x, cpy: _pos.y, cpz: _pos.z,
+    crx: _rot.x, cry: _rot.y, crz: _rot.z, crw: _rot.w,
+    fov: _fov, nr: _nr, fr: _fr, gw: _gw, gh: _gh,
+    sx: (_sv != undefined ? _sv.x : -1), sy: (_sv != undefined ? _sv.y : -1),
+    sw: (_sv != undefined ? _sv.w : -1), sh: (_sv != undefined ? _sv.h : -1),
+    yup: _ed.ndc_yup,
+  };
   return _ed.vp;
 }
 
@@ -345,7 +355,7 @@ function __polygon_viewport_cached(_ed) {
 // Reads camera pose as plain numbers (viewcam ?? rt.cam). Undefined when
 // no camera/pose is available, forcing the exact path in callers.
 function __polygon_cam_pose_key(_ed) {
-  if (!is_struct(_ed) || !is_struct(_ed.rt))  return undefined;
+  if (!is_struct(_ed) || !is_struct(_ed.rt)) return undefined;
   var _cam = undefined;
 
   if (variable_struct_exists(_ed, "viewcam") && _ed.viewcam != undefined) {
@@ -354,11 +364,11 @@ function __polygon_cam_pose_key(_ed) {
     _cam = _ed.rt.cam;
   }
 
-  if (_cam == undefined)  return undefined;
+  if (_cam == undefined) return undefined;
   var _cp = _cam.getLocalPosition();
   var _cr = _cam.getLocalRotation();
 
-  if (_cp == undefined || _cr == undefined)  return undefined;
+  if (_cp == undefined || _cr == undefined) return undefined;
   return {
     cpx: _cp.x, cpy: _cp.y, cpz: _cp.z,
     crx: _cr.x, cry: _cr.y, crz: _cr.z, crw: _cr.w,
@@ -367,7 +377,7 @@ function __polygon_cam_pose_key(_ed) {
 
 // Compares two camera pose keys.
 function __polygon_pose_same(_a, _b) {
-  if (!is_struct(_a) || !is_struct(_b))  return false;
+  if (!is_struct(_a) || !is_struct(_b)) return false;
   return _a.cpx == _b.cpx && _a.cpy == _b.cpy && _a.cpz == _b.cpz
     && _a.crx == _b.crx && _a.cry == _b.cry && _a.crz == _b.crz && _a.crw == _b.crw;
 }
@@ -404,8 +414,8 @@ function __polygon_clip_seg(_x0, _y0, _x1, _y1, _w, _h) {
   while (_guard < 8) {
     _guard++;
 
-    if ((_c0 | _c1) == 0)  return [ _x0, _y0, _x1, _y1 ];
-    if ((_c0 & _c1) != 0)  return undefined;
+    if ((_c0 | _c1) == 0) return [ _x0, _y0, _x1, _y1 ];
+    if ((_c0 & _c1) != 0) return undefined;
     var _cc = _c0 == 0 ? _c1 : _c0;
     var _cx = _x0;
     var _cy = _y0;

@@ -8,14 +8,14 @@
 function __polygon_collect_node_mats(_node) {
   var _out = [];
 
-  if (_node == undefined)  return _out;
+  if (_node == undefined) return _out;
   var _comps = [];
   __polygon_walk_collect_tree(_node, _comps);
 
   for (var _i = 0, _n = array_length(_comps); _i < _n; _i++) {
     var _mat = _comps[_i].comp.getMaterial();
 
-    if (_mat != undefined)  array_push(_out, _mat);
+    if (_mat != undefined) array_push(_out, _mat);
   }
 
   return _out;
@@ -25,23 +25,23 @@ function __polygon_collect_node_mats(_node) {
 function __polygon_collect_asset_mats(_entry) {
   var _out = [];
 
-  if (!is_struct(_entry) || _entry.model == undefined)  return _out;
+  if (!is_struct(_entry) || _entry.model == undefined) return _out;
   var _get = _entry.model[$ "getMaterials"];
 
-  if (_get == undefined)  return _out;
+  if (_get == undefined) return _out;
   var _list = method(_entry.model, _get)();
 
-  if (!is_array(_list))  return _out;
-  for (var _i = 0, _n = array_length(_list); _i < _n; _i++)  if (_list[_i] != undefined)  array_push(_out, _list[_i]);
+  if (!is_array(_list)) return _out;
+  for (var _i = 0, _n = array_length(_list); _i < _n; _i++) if (_list[_i] != undefined) array_push(_out, _list[_i]);
   return _out;
 }
 
 // Reads a material name ("material" fallback).
 function __polygon_mat_name(_mm) {
-  if (_mm == undefined)  return "material";
+  if (_mm == undefined) return "material";
   var _get = _mm[$ "getName"];
 
-  if (_get == undefined)  return "material";
+  if (_get == undefined) return "material";
   var _got = method(_mm, _get)();
   return (is_string(_got) && _got != "") ? _got : "material";
 }
@@ -53,10 +53,10 @@ function __polygon_imgui_mat_slot_meta(_mats) {
     for (var _i = 0, _n = array_length(_mats); _i < _n; _i++) {
       var _mat = _mats[_i];
 
-      if (_mat == undefined)  continue;
+      if (_mat == undefined) continue;
       var _key = __polygon_mat_key(_mat);
 
-      if (!array_contains(_keys, _key))  array_push(_keys, _key);
+      if (!array_contains(_keys, _key)) array_push(_keys, _key);
     }
   }
 
@@ -70,16 +70,17 @@ function __polygon_imgui_mat_slot_meta(_mats) {
 
 // Labels a shader handle by name (string, asset id, struct field, method).
 function __polygon_shader_handle_label(_sh) {
-  if (is_string(_sh) && _sh != "")  return _sh;
-  if (is_numeric(_sh))  return shader_exists(_sh) ? shader_get_name(_sh) : "Custom";
+  if (is_string(_sh) && _sh != "") return _sh;
+  if (is_numeric(_sh)) return shader_exists(_sh) ? shader_get_name(_sh) : "Custom";
+
   if (is_struct(_sh)) {
     var _fields = [ "name", "Name", "shader", "id" ];
 
     for (var _i = 0, _n = array_length(_fields); _i < _n; _i++) {
       var _val = _sh[$ _fields[_i]];
 
-      if (is_string(_val) && _val != "")  return _val;
-      if (is_numeric(_val) && shader_exists(_val))  return shader_get_name(_val);
+      if (is_string(_val) && _val != "") return _val;
+      if (is_numeric(_val) && shader_exists(_val)) return shader_get_name(_val);
     }
 
     var _get = _sh[$ "getName"];
@@ -87,7 +88,7 @@ function __polygon_shader_handle_label(_sh) {
     if (_get != undefined) {
       var _got = method(_sh, _get)();
 
-      if (is_string(_got) && _got != "")  return _got;
+      if (is_string(_got) && _got != "") return _got;
     }
   }
 
@@ -96,12 +97,13 @@ function __polygon_shader_handle_label(_sh) {
 
 // Labels a material by its forward shader name (Custom when unknown).
 function __polygon_mat_shader_label(_mm) {
-  if (_mm == undefined)  return "Custom";
+  if (_mm == undefined) return "Custom";
   var _get = _mm[$ "getShader"];
 
-  if (_get == undefined)  return "Custom";
+  if (_get == undefined) return "Custom";
   var _sh = undefined;
   _sh = method(_mm, _get)(GM3D_ERenderPass.Forward);
+
   if (_sh == undefined) {
     // No shader assigned: the engine renders with its default fallback.
     return "Default";
@@ -112,7 +114,7 @@ function __polygon_mat_shader_label(_mm) {
 
 // Builds a display key for a material (name + forward shader).
 function __polygon_mat_key(_mm) {
-  if (_mm == undefined)  return undefined;
+  if (_mm == undefined) return undefined;
   return __polygon_mat_name(_mm) + "|" + string(__polygon_mat_shader_label(_mm));
 }
 
@@ -122,13 +124,13 @@ function __polygon_mat_key(_mm) {
 
 // Probes whether a texture id is a real image (not an invalid or 1x1 default).
 function __polygon_imgui_mat_tex_valid(_tex) {
-  if (!is_numeric(_tex) || _tex == 0)  return false;
+  if (!is_numeric(_tex) || _tex == 0) return false;
   var _tw = texture_get_texel_width(_tex);
   var _th = texture_get_texel_height(_tex);
 
-  if (!is_numeric(_tw) || !is_numeric(_th) || _tw <= 0 || _th <= 0)  return false;
+  if (!is_numeric(_tw) || !is_numeric(_th) || _tw <= 0 || _th <= 0) return false;
   // texel >= 1 means 1px (or smaller): a bound default, not an image.
-  if (_tw >= 1 && _th >= 1)  return false;
+  if (_tw >= 1 && _th >= 1) return false;
   return true;
 }
 
@@ -136,10 +138,10 @@ function __polygon_imgui_mat_tex_valid(_tex) {
 function __polygon_tex_struct_detail(_tex) {
   var _path = _tex[$ "path"];
 
-  if (is_string(_path) && _path != "")  return _path;
+  if (is_string(_path) && _path != "") return _path;
   var _name = _tex[$ "name"];
 
-  if (is_string(_name) && _name != "")  return _name;
+  if (is_string(_name) && _name != "") return _name;
   return undefined;
 }
 
@@ -158,7 +160,7 @@ function __polygon_imgui_mat_tex_info(_mm, _candidates) {
   for (var _i = 0, _n = array_length(_names); _i < _n; _i++) {
     _tex = method(_mm, _get)(_names[_i]);
 
-    if (_tex != undefined)  break;
+    if (_tex != undefined) break;
   }
 
   if (_tex == undefined) {
@@ -195,7 +197,7 @@ function __polygon_imgui_tex_dims(_tex) {
   var _tw = texture_get_texel_width(_tex);
   var _th = texture_get_texel_height(_tex);
 
-  if (is_numeric(_tw) && is_numeric(_th) && _tw > 0 && _th > 0)  return string(round(1 / _tw)) + " x " + string(round(1 / _th));
+  if (is_numeric(_tw) && is_numeric(_th) && _tw > 0 && _th > 0) return string(round(1 / _tw)) + " x " + string(round(1 / _th));
   return "Unknown";
 }
 
@@ -223,13 +225,13 @@ function __polygon_imgui_tex_sampler(_tex) {
 function __polygon_texview_render(_ed, _tex) {
   var _src = __polygon_tri_src(_ed);
 
-  if (_src == undefined)  return undefined;
+  if (_src == undefined) return undefined;
   var _st = __polygon_tex_stage(_ed);
 
-  if (_st == undefined)  return undefined;
+  if (_st == undefined) return undefined;
   var _node = _src.spawnInto(_st.ts, undefined);
 
-  if (_node == undefined)  return undefined;
+  if (_node == undefined) return undefined;
   var _spr = undefined;
   var _view = new GM3D_Material("texview");
   _view.setTexture("gm_BaseTexture", _tex);
@@ -242,7 +244,7 @@ function __polygon_texview_render(_ed, _tex) {
   var _comps = [];
   __polygon_walk_collect_tree(_node, _comps);
 
-  for (var _c = 0, _n = array_length(_comps); _c < _n; _c++)  _comps[_c].comp.setMaterial(_view);
+  for (var _c = 0, _n = array_length(_comps); _c < _n; _c++) _comps[_c].comp.setMaterial(_view);
   _st.ts.update(0);
   _spr = __polygon_pv_shoot_sprite(_st, 96);
 
@@ -254,15 +256,17 @@ function __polygon_texview_render(_ed, _tex) {
 
 // Returns a cached GMRT-rendered sprite for a texture id, or undefined.
 function __polygon_imgui_mat_tex_thumb(_ed, _tex) {
-  if (!is_numeric(_tex) || _tex == 0)  return undefined;
-  if (!variable_struct_exists(_ed, "mat_tex_pv") || !is_array(_ed.mat_tex_pv))  _ed.mat_tex_pv = [];
+  if (!is_numeric(_tex) || _tex == 0) return undefined;
+  if (!variable_struct_exists(_ed, "mat_tex_pv") || !is_array(_ed.mat_tex_pv)) _ed.mat_tex_pv = [];
+
   if (!variable_struct_exists(_ed, "mat_tex_fail") || !is_struct(_ed.mat_tex_fail)) {
     _ed.mat_tex_fail = {};
   }
 
   var _fkey = string(_tex);
 
-  if (variable_struct_exists(_ed.mat_tex_fail, _fkey))  return undefined;
+  if (variable_struct_exists(_ed.mat_tex_fail, _fkey)) return undefined;
+
   for (var _i = 0, _n = array_length(_ed.mat_tex_pv); _i < _n; _i++) {
     if (_ed.mat_tex_pv[_i].tex == _tex) {
       var _hit = _ed.mat_tex_pv[_i].spr;
@@ -272,6 +276,7 @@ function __polygon_imgui_mat_tex_thumb(_ed, _tex) {
 
   var _spr = undefined;
   _spr = __polygon_texview_render(_ed, _tex);
+
   if (_spr != undefined && sprite_exists(_spr)) {
     array_push(_ed.mat_tex_pv, { tex: _tex, spr: _spr });
     return _spr;
@@ -283,9 +288,10 @@ function __polygon_imgui_mat_tex_thumb(_ed, _tex) {
 
 // Frees baked texture thumbnails.
 function __polygon_mat_tex_pv_free(_ed) {
-  if (_ed == undefined)  return;
+  if (_ed == undefined) return;
+
   if (variable_struct_exists(_ed, "mat_tex_pv") && is_array(_ed.mat_tex_pv)) {
-    for (var _i = 0, _n = array_length(_ed.mat_tex_pv); _i < _n; _i++)  if (sprite_exists(_ed.mat_tex_pv[_i].spr))  sprite_delete(_ed.mat_tex_pv[_i].spr);
+    for (var _i = 0, _n = array_length(_ed.mat_tex_pv); _i < _n; _i++) if (sprite_exists(_ed.mat_tex_pv[_i].spr)) sprite_delete(_ed.mat_tex_pv[_i].spr);
     _ed.mat_tex_pv = [];
   }
 
@@ -354,7 +360,7 @@ function __polygon_imgui_section_meta(_label, _meta) {
     var _dl = ImGui.GetWindowDrawList();
     var _tw = ImGui.CalcTextWidth(_meta);
 
-    if (_dl != undefined && is_real(_x) && is_real(_y))  ImGui.DrawListAddText(_dl, _x + max(0, _avail - _tw - 24), _y + max(0, (ImGui.GetFrameHeight() - ImGui.GetTextLineHeight()) * 0.5), _meta, make_colour_rgb(170, 181, 198));
+    if (_dl != undefined && is_real(_x) && is_real(_y)) ImGui.DrawListAddText(_dl, _x + max(0, _avail - _tw - 24), _y + max(0, (ImGui.GetFrameHeight() - ImGui.GetTextLineHeight()) * 0.5), _meta, make_colour_rgb(170, 181, 198));
   }
 
   return _open;
@@ -367,10 +373,11 @@ function __polygon_imgui_tip_delayed(_key, _tip, _hovering) {
   static _cur = "";
   var _now = current_time;
 
-  if (!is_string(_tip) || _tip == "")  return;
+  if (!is_string(_tip) || _tip == "") return;
+
   if (!_hovering) {
-    if (variable_struct_exists(_since, _key))  variable_struct_remove(_since, _key);
-    if (_cur == _key)  _cur = "";
+    if (variable_struct_exists(_since, _key)) variable_struct_remove(_since, _key);
+    if (_cur == _key) _cur = "";
     return;
   }
 
@@ -386,7 +393,7 @@ function __polygon_imgui_tip_delayed(_key, _tip, _hovering) {
     return;
   }
 
-  if (_now - _since[$ _key] >= 500)  ImGui.SetTooltip(_tip);
+  if (_now - _since[$ _key] >= 500) ImGui.SetTooltip(_tip);
 }
 
 // Draws one read-only label/value row, with an optional hover tooltip.
@@ -407,13 +414,13 @@ function __polygon_imgui_tex_field(_label, _value, _tip = undefined) {
 
   var _rh = ImGui.GetCursorScreenPosY() - _ry;
 
-  if (_rh <= 0)  _rh = ImGui.GetTextLineHeight();
+  if (_rh <= 0) _rh = ImGui.GetTextLineHeight();
   ImGui.SetCursorScreenPos(_rx, _ry);
   ImGui.InvisibleButton("##tip_" + _label, max(0, _rw), max(1, _rh));
   var _hov = ImGui.IsItemHovered();
   ImGui.SetCursorScreenPos(_rx, _ry + _rh);
 
-  if (is_string(_tip) && _tip != "")  __polygon_imgui_tip_delayed(_label, _tip, _hov);
+  if (is_string(_tip) && _tip != "") __polygon_imgui_tip_delayed(_label, _tip, _hov);
 }
 
 // ---------------------------------------------------------------------------
@@ -424,11 +431,11 @@ function __polygon_imgui_tex_field(_label, _value, _tip = undefined) {
 function __polygon_imgui_mat_base_factor(_mm) {
   var _get = _mm[$ "getFloatArray"];
 
-  if (_get == undefined)  return undefined;
+  if (_get == undefined) return undefined;
   var _factor = method(_mm, _get)("gm_BaseColorFactor");
 
-  if (!is_array(_factor))  _factor = method(_mm, _get)("u_tint");
-  if (!is_array(_factor) || array_length(_factor) < 3)  return undefined;
+  if (!is_array(_factor)) _factor = method(_mm, _get)("u_tint");
+  if (!is_array(_factor) || array_length(_factor) < 3) return undefined;
   return _factor;
 }
 
@@ -436,10 +443,10 @@ function __polygon_imgui_mat_base_factor(_mm) {
 function __polygon_imgui_mat_alpha_label(_mm) {
   var _get = _mm[$ "getInt"];
 
-  if (_get == undefined)  return "Not exposed";
+  if (_get == undefined) return "Not exposed";
   var _alpha = method(_mm, _get)("gm_AlphaMode");
 
-  if (!is_numeric(_alpha))  return "Not exposed";
+  if (!is_numeric(_alpha)) return "Not exposed";
   static _labels = { "1": "Mask", "2": "Blend", "0": "Opaque" };
   var _key = string(_alpha);
   return variable_struct_exists(_labels, _key) ? _labels[$ _key] : "Not exposed";
@@ -512,7 +519,8 @@ function __polygon_imgui_mat_color_section(_ed, _mm) {
 function __polygon_imgui_mat_tex_row(_ed, _mm, _label, _uniform, _sep_before) {
   var _info = __polygon_imgui_mat_tex_info(_mm, _uniform);
 
-  if (!_info.assigned)  return false;
+  if (!_info.assigned) return false;
+
   if (_sep_before) {
     ImGui.Separator();
     ImGui.Spacing();
@@ -569,8 +577,8 @@ function __polygon_imgui_mat_tex_section(_ed, _mm) {
   var _slots = __polygon_mat_tex_slots();
   var _shown = 0;
 
-  for (var _i = 0, _n = array_length(_slots); _i < _n; _i++)  if (__polygon_imgui_mat_tex_row(_ed, _mm, _slots[_i][0], _slots[_i][1], _shown > 0))  _shown++;
-  if (_shown == 0)  ImGui.TextDisabled("No textures");
+  for (var _i = 0, _n = array_length(_slots); _i < _n; _i++) if (__polygon_imgui_mat_tex_row(_ed, _mm, _slots[_i][0], _slots[_i][1], _shown > 0)) _shown++;
+  if (_shown == 0) ImGui.TextDisabled("No textures");
   ImGui.Spacing();
 }
 
@@ -582,11 +590,12 @@ function __polygon_imgui_mat_tex_section(_ed, _mm) {
 function __polygon_mat_uniq(_mats) {
   var _uniq = [];
 
-  if (!is_array(_mats))  return _uniq;
+  if (!is_array(_mats)) return _uniq;
+
   for (var _i = 0, _n = array_length(_mats); _i < _n; _i++) {
     var _mm = _mats[_i];
 
-    if (_mm == undefined)  continue;
+    if (_mm == undefined) continue;
     var _key = __polygon_mat_key(_mm);
     var _found = false;
 
@@ -615,7 +624,7 @@ function __polygon_mat_open(_ed, _u) {
   _ed.mat_inspector_back = true;
   var _context = [];
 
-  for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++)  array_push(_context, _ed.sel[_i]);
+  for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++) array_push(_context, _ed.sel[_i]);
   _ed.mat_inspector_sel = _context;
   _ed.mat_inspector_lib_sel = _ed.lib_sel;
 }
@@ -635,11 +644,12 @@ function __polygon_imgui_mat_row(_ed, _u, _idx) {
 
   ImGui.Dummy(_row_w, _tsz);
 
-  if (_selected && _dl != undefined)  ImGui.DrawListAddRectFilled(_dl, _sx, _sy, _sx + _row_w, _sy + _tsz, make_colour_rgb(39, 51, 72));
+  if (_selected && _dl != undefined) ImGui.DrawListAddRectFilled(_dl, _sx, _sy, _sx + _row_w, _sy + _tsz, make_colour_rgb(39, 51, 72));
+
   if (_sx != undefined && _sy != undefined && _dl != undefined) {
     var _spr = __polygon_mat_thumb(_ed, _u.mm);
 
-    if (sprite_exists(_spr))  ImGui.DrawListAddImage(_dl, _spr, 0, _sx, _sy, _sx + _tsz, _sy + _tsz, c_white);
+    if (sprite_exists(_spr)) ImGui.DrawListAddImage(_dl, _spr, 0, _sx, _sy, _sx + _tsz, _sy + _tsz, c_white);
     ImGui.DrawListAddText(_dl, _sx + _tsz + _gap, _sy + (_tsz - ImGui.GetTextLineHeight()) * 0.5, _label, c_white);
   }
 
@@ -648,7 +658,7 @@ function __polygon_imgui_mat_row(_ed, _u, _idx) {
   ImGui.BeginGroup();
   ImGui.Dummy(0, _pad_y);
 
-  if (ImGui.Button("Select", 0, 0))  __polygon_mat_open(_ed, _u);
+  if (ImGui.Button("Select", 0, 0)) __polygon_mat_open(_ed, _u);
   ImGui.Dummy(0, _pad_y);
   ImGui.EndGroup();
 
@@ -667,7 +677,7 @@ function __polygon_imgui_mat_rows(_ed, _mats) {
 
   ImGui.Spacing();
 
-  for (var _k = 0, _n = array_length(_uniq); _k < _n; _k++)  __polygon_imgui_mat_row(_ed, _uniq[_k], _k);
+  for (var _k = 0, _n = array_length(_uniq); _k < _n; _k++) __polygon_imgui_mat_row(_ed, _uniq[_k], _k);
 }
 
 // ---------------------------------------------------------------------------
@@ -682,7 +692,7 @@ function __polygon_imgui_mat_rows(_ed, _mats) {
 function __polygon_imgui_mat_inspector(_ed) {
   var _u = _ed.mat_inspector;
 
-  if (!is_struct(_u) || _u.mm == undefined)  return;
+  if (!is_struct(_u) || _u.mm == undefined) return;
   var _mm = _u.mm;
   var _spr = __polygon_mat_thumb(_ed, _mm);
   __polygon_imgui_inspector_asset_header(_u.nm, "Material", _spr, 96);
@@ -690,11 +700,11 @@ function __polygon_imgui_mat_inspector(_ed) {
   ImGui.Spacing();
   __polygon_imgui_sec_open();
 
-  if (ImGui.CollapsingHeader("Base Color"))  __polygon_imgui_mat_color_section(_ed, _mm);
+  if (ImGui.CollapsingHeader("Base Color")) __polygon_imgui_mat_color_section(_ed, _mm);
   ImGui.Spacing();
   __polygon_imgui_sec_open();
 
-  if (ImGui.CollapsingHeader("Textures"))  __polygon_imgui_mat_tex_section(_ed, _mm);
+  if (ImGui.CollapsingHeader("Textures")) __polygon_imgui_mat_tex_section(_ed, _mm);
   ImGui.Spacing();
   __polygon_imgui_sec_open();
 
@@ -724,10 +734,10 @@ function __polygon_imgui_tex_sampler_section(_s) {
 function __polygon_imgui_tex_inspector(_ed) {
   var _t = _ed.tex_inspector;
 
-  if (!is_struct(_t))  return;
+  if (!is_struct(_t)) return;
   var _thumb = undefined;
 
-  if (is_numeric(_t.tex))  _thumb = __polygon_imgui_mat_tex_thumb(_ed, _t.tex);
+  if (is_numeric(_t.tex)) _thumb = __polygon_imgui_mat_tex_thumb(_ed, _t.tex);
   __polygon_imgui_inspector_asset_header(_t.label, "Texture", _thumb, 96);
 
   ImGui.Spacing();

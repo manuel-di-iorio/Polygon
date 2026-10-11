@@ -8,7 +8,7 @@
 function __polygon_thumb_make_stage() {
   var _ts = GM3D_Scene.createEmpty();
 
-  if (_ts == undefined)  return undefined;
+  if (_ts == undefined) return undefined;
   var _renderer = new GM3D_Renderer();
 
   if (_renderer == undefined) {
@@ -50,8 +50,8 @@ function __polygon_thumb_make_stage() {
 
 // Frees a thumbnail stage built by __polygon_thumb_make_stage.
 function __polygon_thumb_free_stage(_st) {
-  if (!is_struct(_st))  return;
-  if (_st.ts != undefined)  _st.ts.destroy();
+  if (!is_struct(_st)) return;
+  if (_st.ts != undefined) _st.ts.destroy();
   _st.renderer = undefined;
 }
 
@@ -60,31 +60,32 @@ function __polygon_pv_stage_cached(_ed, _key) {
   if (variable_struct_exists(_ed, _key) && is_struct(_ed[$ _key])) {
     var _hit = _ed[$ _key];
 
-    if (_hit.ts != undefined && _hit.renderer != undefined && _hit.cam != undefined)  return _hit;
+    if (_hit.ts != undefined && _hit.renderer != undefined && _hit.cam != undefined) return _hit;
   }
 
   var _st = __polygon_thumb_make_stage();
 
-  if (_st == undefined)  return undefined;
+  if (_st == undefined) return undefined;
   _ed[$ _key] = _st;
   return _st;
 }
 
 // Frees editor-captured thumbnails, keeping caller-owned ones.
 function __polygon_thumbs_free(_ed) {
-  if (_ed == undefined)  return;
+  if (_ed == undefined) return;
+
   if (is_array(_ed.assets)) {
     for (var _i = 0, _n = array_length(_ed.assets); _i < _n; _i++) {
       var _entry = _ed.assets[_i];
 
-      if (!is_struct(_entry) || !variable_struct_exists(_entry, "thumb_owned") || _entry.thumb_owned != true)  continue;
-      if (sprite_exists(_entry.thumb))  sprite_delete(_entry.thumb);
+      if (!is_struct(_entry) || !variable_struct_exists(_entry, "thumb_owned") || _entry.thumb_owned != true) continue;
+      if (sprite_exists(_entry.thumb)) sprite_delete(_entry.thumb);
       _entry.thumb = -1;
       _entry.thumb_owned = undefined;
     }
   }
 
-  if (variable_struct_exists(_ed, "thumb_stage") && is_struct(_ed.thumb_stage))  __polygon_thumb_free_stage(_ed.thumb_stage);
+  if (variable_struct_exists(_ed, "thumb_stage") && is_struct(_ed.thumb_stage)) __polygon_thumb_free_stage(_ed.thumb_stage);
   _ed.thumb_stage = undefined;
   _ed.thumb_queue = [];
   _ed.thumb_initializing = false;
@@ -98,13 +99,13 @@ function __polygon_thumbs_free(_ed) {
 function __polygon_pv_clone_lit(_ed, _comp, _skinned) {
   var _mat = _comp.getMaterial();
 
-  if (_mat == undefined || _mat == _ed.magenta_mat || _mat == _ed.magenta_mat_skin)  return;
+  if (_mat == undefined || _mat == _ed.magenta_mat || _mat == _ed.magenta_mat_skin) return;
   var _clone_fn = _mat[$ "clone"];
 
-  if (_clone_fn == undefined)  return;
+  if (_clone_fn == undefined) return;
   var _clone = method(_mat, _clone_fn)();
 
-  if (_clone == undefined)  return;
+  if (_clone == undefined) return;
   _clone.setShader(GM3D_ERenderPass.Forward, _skinned ? shPolygonEditorLitSkin : shPolygonEditorLit);
   _comp.setMaterial(_clone);
 }
@@ -114,19 +115,19 @@ function __polygon_pv_clone_lit(_ed, _comp, _skinned) {
 function __polygon_pv_spawn_lit(_ed, _st, _model, _rot_euler = undefined, _label = "") {
   var _node = _model.spawnInto(_st.ts, undefined);
 
-  if (_node == undefined)  return undefined;
+  if (_node == undefined) return undefined;
   _node.setLocalPosition(new GM3D_Vec3(0, 0, 0));
   _node.setLocalScale(new GM3D_Vec3(1, 1, 1));
 
-  if (is_array(_rot_euler) && array_length(_rot_euler) >= 3)  _node.setLocalRotation(__polygon_euler_to_quat(degtorad(_rot_euler[0]), degtorad(_rot_euler[1]), degtorad(_rot_euler[2])));
+  if (is_array(_rot_euler) && array_length(_rot_euler) >= 3) _node.setLocalRotation(__polygon_euler_to_quat(degtorad(_rot_euler[0]), degtorad(_rot_euler[1]), degtorad(_rot_euler[2])));
   __polygon_magenta_fix(_ed, _node);
 
-  if (variable_struct_exists(_ed.rt, "on_spawn"))  _ed.rt.on_spawn(_node, _label, _model);
+  if (variable_struct_exists(_ed.rt, "on_spawn")) _ed.rt.on_spawn(_node, _label, _model);
   // Previews always use the editor lit shaders (never custom ones).
   var _comps = [];
   __polygon_walk_collect_tree(_node, _comps);
 
-  for (var _c = 0, _n = array_length(_comps); _c < _n; _c++)  __polygon_pv_clone_lit(_ed, _comps[_c].comp, _comps[_c].skinned);
+  for (var _c = 0, _n = array_length(_comps); _c < _n; _c++) __polygon_pv_clone_lit(_ed, _comps[_c].comp, _comps[_c].skinned);
   return _node;
 }
 
@@ -134,14 +135,14 @@ function __polygon_pv_spawn_lit(_ed, _st, _model, _rot_euler = undefined, _label
 function __polygon_pv_shoot_sprite(_st, _size) {
   var _surf = surface_create(_size, _size);
 
-  if (_surf == undefined || !surface_exists(_surf))  return undefined;
+  if (_surf == undefined || !surface_exists(_surf)) return undefined;
   surface_set_target(_surf);
   draw_clear_alpha(c_black, 0);
   _st.renderer.render(_st.ts);
   surface_reset_target();
   var _spr = sprite_create_from_surface(_surf, 0, 0, _size, _size, false, true, 0, 0);
 
-  if (surface_exists(_surf))  surface_free(_surf);
+  if (surface_exists(_surf)) surface_free(_surf);
   return sprite_exists(_spr) ? _spr : undefined;
 }
 
@@ -153,7 +154,7 @@ function __polygon_aim_cam(_cam, _ctr, _back, _dist) {
   _fwd.normalize();
   var _up = GM3D_Vec3.up();
 
-  if (abs(_fwd.dot(_up)) >= 0.999)  _up = GM3D_Vec3.forward();
+  if (abs(_fwd.dot(_up)) >= 0.999) _up = GM3D_Vec3.forward();
   var _rot = GM3D_Quaternion.fromLookRotation(_fwd, _up);
   _cam.setLocalRotation(_rot.normalizeSafe(0.000001));
 }
@@ -196,14 +197,14 @@ function __polygon_thumb_frame_tight(_cam) {
 function __polygon_thumb_shoot(_ed, _st, _entry) {
   var _size = 256;
 
-  if (!is_struct(_entry) || _entry.model == undefined || !is_struct(_st) || _st.ts == undefined || _st.renderer == undefined || _st.cam == undefined)  return -1;
+  if (!is_struct(_entry) || _entry.model == undefined || !is_struct(_st) || _st.ts == undefined || _st.renderer == undefined || _st.cam == undefined) return -1;
   var _rot = undefined;
   var _spawn = __polygon_spawn_t(_entry);
 
-  if (_spawn != undefined)  _rot = _spawn.rot;
+  if (_spawn != undefined) _rot = _spawn.rot;
   var _node = __polygon_pv_spawn_lit(_ed, _st, _entry.model, _rot, _entry.key);
 
-  if (_node == undefined)  return -1;
+  if (_node == undefined) return -1;
   __polygon_thumb_frame(_st.cam, _entry.model);
   _st.ts.update(0);
   var _spr = __polygon_pv_shoot_sprite(_st, _size);
@@ -226,14 +227,14 @@ function __polygon_thumb_bury(_ed, _entry) {
 
 // Re-renders one asset thumbnail after its spawn rotation changed.
 function __polygon_thumb_recap_one(_ed, _entry) {
-  if (_ed == undefined || !is_struct(_entry) || _entry.model == undefined)  return;
+  if (_ed == undefined || !is_struct(_entry) || _entry.model == undefined) return;
   var _st = __polygon_thumb_make_stage();
 
-  if (_st == undefined)  return;
+  if (_st == undefined) return;
   var _spr = __polygon_thumb_shoot(_ed, _st, _entry);
   __polygon_thumb_free_stage(_st);
 
-  if (!sprite_exists(_spr))  return;
+  if (!sprite_exists(_spr)) return;
   __polygon_thumb_bury(_ed, _entry);
   _entry.thumb = _spr;
   _entry.thumb_owned = true;
@@ -243,8 +244,8 @@ function __polygon_thumb_recap_one(_ed, _entry) {
 function polygon_capture_thumbnails() {
   var _ed = global.polygon_inst;
 
-  if (_ed.thumbs_done == true || _ed.thumb_initializing == true)  return;
-  if (!is_array(_ed.assets) || array_length(_ed.assets) == 0)  return;
+  if (_ed.thumbs_done == true || _ed.thumb_initializing == true) return;
+  if (!is_array(_ed.assets) || array_length(_ed.assets) == 0) return;
   _ed.thumb_stage = __polygon_thumb_make_stage();
 
   if (_ed.thumb_stage == undefined) {
@@ -257,10 +258,10 @@ function polygon_capture_thumbnails() {
   for (var _i = array_length(_ed.assets) - 1; _i >= 0; --_i) {
     var _entry = _ed.assets[_i];
 
-    if (!is_struct(_entry) || _entry.model == undefined)  continue;
+    if (!is_struct(_entry) || _entry.model == undefined) continue;
     var _spawn = __polygon_spawn_t(_entry);
 
-    if (_spawn != undefined)  _entry.thumb_rot = [ _spawn.rot[0], _spawn.rot[1], _spawn.rot[2] ];
+    if (_spawn != undefined) _entry.thumb_rot = [ _spawn.rot[0], _spawn.rot[1], _spawn.rot[2] ];
     array_push(_ed.thumb_queue, _entry);
   }
 
@@ -279,14 +280,14 @@ function polygon_capture_thumbnails() {
 
 // Loads an editor preview model once (sphere, triangle), warning once if missing.
 function __polygon_preview_src(_ed, _slot, _rel_path, _warn_tag) {
-  if (_ed == undefined)  return undefined;
-  if (variable_struct_exists(_ed, _slot) && _ed[$ _slot] != undefined)  return _ed[$ _slot];
+  if (_ed == undefined) return undefined;
+  if (variable_struct_exists(_ed, _slot) && _ed[$ _slot] != undefined) return _ed[$ _slot];
   var _src = GM3D_Scene.loadGltf(working_directory + _rel_path);
 
   if (_src == undefined) {
     static _warned = {};
 
-    if (!variable_struct_exists(_warned, _warn_tag))  variable_struct_set(_warned, _warn_tag, true);
+    if (!variable_struct_exists(_warned, _warn_tag)) variable_struct_set(_warned, _warn_tag, true);
     return undefined;
   }
 
@@ -319,12 +320,12 @@ function __polygon_tex_stage(_ed) {
   if (variable_struct_exists(_ed, "tex_stage") && is_struct(_ed.tex_stage)) {
     var _hit = _ed.tex_stage;
 
-    if (_hit.ts != undefined && _hit.renderer != undefined && _hit.cam != undefined)  return _hit;
+    if (_hit.ts != undefined && _hit.renderer != undefined && _hit.cam != undefined) return _hit;
   }
 
   var _st = __polygon_thumb_make_stage();
 
-  if (_st == undefined)  return undefined;
+  if (_st == undefined) return undefined;
   var _comp = _st.cam.getCameraComponent();
 
   if (_comp != undefined) {
@@ -344,7 +345,7 @@ function __polygon_tex_stage(_ed) {
 // Finds a cached material preview sprite (undefined when missing).
 function __polygon_mat_pv_find(_ed, _key) {
   if (is_struct(_ed) && variable_struct_exists(_ed, "mat_pv_map") && is_struct(_ed.mat_pv_map)
-    && variable_struct_exists(_ed.mat_pv_map, _key)) {
+  && variable_struct_exists(_ed.mat_pv_map, _key)) {
     var _hit = _ed.mat_pv_map[$ _key];
     return sprite_exists(_hit) ? _hit : undefined;
   }
@@ -361,7 +362,8 @@ function __polygon_mat_pv_find(_ed, _key) {
 
 // Registers a material preview in queue + O(1) map.
 function __polygon_mat_pv_put(_ed, _key, _spr) {
-  if (!is_struct(_ed))  return;
+  if (!is_struct(_ed)) return;
+
   if (!variable_struct_exists(_ed, "mat_pv_map") || !is_struct(_ed.mat_pv_map)) {
     _ed.mat_pv_map = {};
   }
@@ -373,12 +375,12 @@ function __polygon_mat_pv_put(_ed, _key, _spr) {
 function __polygon_mat_thumb(_ed, _mm) {
   var _key = __polygon_mat_key(_mm);
 
-  if (_ed == undefined || _key == undefined)  return undefined;
-  if (!variable_struct_exists(_ed, "mat_pv") || !is_array(_ed.mat_pv))  _ed.mat_pv = [];
+  if (_ed == undefined || _key == undefined) return undefined;
+  if (!variable_struct_exists(_ed, "mat_pv") || !is_array(_ed.mat_pv)) _ed.mat_pv = [];
   var _hit = __polygon_mat_pv_find(_ed, _key);
 
-  if (_hit != undefined)  return _hit;
-  if (!variable_struct_exists(_ed, "mat_queue") || !is_array(_ed.mat_queue))  _ed.mat_queue = [];
+  if (_hit != undefined) return _hit;
+  if (!variable_struct_exists(_ed, "mat_queue") || !is_array(_ed.mat_queue)) _ed.mat_queue = [];
   var _queued = false;
 
   for (var _q = 0, _nq = array_length(_ed.mat_queue); _q < _nq; _q++) {
@@ -401,13 +403,13 @@ function __polygon_mat_thumb(_ed, _mm) {
 function __polygon_mat_thumb_render(_ed, _mm) {
   var _src = __polygon_mat_sphere_src(_ed);
 
-  if (_src == undefined)  return undefined;
+  if (_src == undefined) return undefined;
   var _st = __polygon_mat_stage(_ed);
 
-  if (_st == undefined)  return undefined;
+  if (_st == undefined) return undefined;
   var _node = _src.spawnInto(_st.ts, undefined);
 
-  if (_node == undefined)  return undefined;
+  if (_node == undefined) return undefined;
   // Generic preview: clone the material and force the neutral static shader
   var _preview = _mm;
   var _clone_fn = _mm[$ "clone"];
@@ -424,7 +426,7 @@ function __polygon_mat_thumb_render(_ed, _mm) {
   var _comps = [];
   __polygon_walk_collect_tree(_node, _comps);
 
-  for (var _c = 0, _n = array_length(_comps); _c < _n; _c++)  _comps[_c].comp.setMaterial(_preview);
+  for (var _c = 0, _n = array_length(_comps); _c < _n; _c++) _comps[_c].comp.setMaterial(_preview);
   __polygon_thumb_frame_tight(_st.cam);
   _st.ts.update(0);
   var _spr = __polygon_pv_shoot_sprite(_st, 128);
@@ -436,11 +438,11 @@ function __polygon_mat_thumb_render(_ed, _mm) {
 
 // Frees material preview cache, texture thumbnails, queue and sphere source.
 function __polygon_mat_pv_free(_ed) {
-  if (_ed == undefined)  return;
+  if (_ed == undefined) return;
   __polygon_mat_tex_pv_free(_ed);
 
   if (variable_struct_exists(_ed, "mat_pv") && is_array(_ed.mat_pv)) {
-    for (var _i = 0, _n = array_length(_ed.mat_pv); _i < _n; _i++)  if (sprite_exists(_ed.mat_pv[_i].spr))  sprite_delete(_ed.mat_pv[_i].spr);
+    for (var _i = 0, _n = array_length(_ed.mat_pv); _i < _n; _i++) if (sprite_exists(_ed.mat_pv[_i].spr)) sprite_delete(_ed.mat_pv[_i].spr);
     _ed.mat_pv = [];
   }
 
@@ -454,7 +456,7 @@ function __polygon_mat_pv_free(_ed) {
   }
 
   if (variable_struct_exists(_ed, "tex_stage") && is_struct(_ed.tex_stage)) {
-    if (_ed.tex_stage.ts != undefined)  _ed.tex_stage.ts.destroy();
+    if (_ed.tex_stage.ts != undefined) _ed.tex_stage.ts.destroy();
     _ed.tex_stage = undefined;
   }
 
@@ -464,7 +466,7 @@ function __polygon_mat_pv_free(_ed) {
   }
 
   if (variable_struct_exists(_ed, "mat_stage") && is_struct(_ed.mat_stage)) {
-    if (_ed.mat_stage.ts != undefined)  _ed.mat_stage.ts.destroy();
+    if (_ed.mat_stage.ts != undefined) _ed.mat_stage.ts.destroy();
     _ed.mat_stage = undefined;
   }
 }
@@ -480,13 +482,13 @@ function __polygon_anim_pv_stage(_ed) {
 
 // Finds animation component recursively in a spawned node.
 function __polygon_anim_pv_find(_node) {
-  if (_node == undefined)  return undefined;
+  if (_node == undefined) return undefined;
   var _find = _node[$ "findAnimationComponent"];
 
   if (_find != undefined) {
     var _found = method(_node, _find)();
 
-    if (_found != undefined)  return _found;
+    if (_found != undefined) return _found;
   }
 
   var _get = _node[$ "getAnimationComponent"];
@@ -494,7 +496,7 @@ function __polygon_anim_pv_find(_node) {
   if (_get != undefined) {
     var _comp = method(_node, _get)();
 
-    if (_comp != undefined)  return _comp;
+    if (_comp != undefined) return _comp;
   }
 
   var _kids = _node.getChildren();
@@ -502,7 +504,7 @@ function __polygon_anim_pv_find(_node) {
   for (var _i = 0, _n = array_length(_kids); _i < _n; _i++) {
     var _nested = __polygon_anim_pv_find(_kids[_i]);
 
-    if (_nested != undefined)  return _nested;
+    if (_nested != undefined) return _nested;
   }
 
   return undefined;
@@ -512,8 +514,9 @@ function __polygon_anim_pv_find(_node) {
 function __polygon_anim_pv_ensure(_ed, _model, _index, _loop = true) {
   var _st = __polygon_anim_pv_stage(_ed);
 
-  if (_st == undefined || _model == undefined)  return false;
-  if (variable_struct_exists(_ed, "anim_pv") && is_struct(_ed.anim_pv) && _ed.anim_pv.model == _model && _ed.anim_pv.index == _index && _ed.anim_pv.node != undefined)  return true;
+  if (_st == undefined || _model == undefined) return false;
+  if (variable_struct_exists(_ed, "anim_pv") && is_struct(_ed.anim_pv) && _ed.anim_pv.model == _model && _ed.anim_pv.index == _index && _ed.anim_pv.node != undefined) return true;
+
   if (variable_struct_exists(_ed, "anim_pv") && is_struct(_ed.anim_pv) && _ed.anim_pv.node != undefined) {
     __polygon_destroy_subtree(_ed.anim_pv.node);
     _st.ts.update(0);
@@ -522,7 +525,7 @@ function __polygon_anim_pv_ensure(_ed, _model, _index, _loop = true) {
   _ed.anim_pv = undefined;
   var _node = __polygon_pv_spawn_lit(_ed, _st, _model);
 
-  if (_node == undefined)  return false;
+  if (_node == undefined) return false;
   __polygon_thumb_frame(_st.cam, _model);
   var _anim = __polygon_anim_pv_find(_node);
 
@@ -540,13 +543,13 @@ function __polygon_anim_pv_ensure(_ed, _model, _index, _loop = true) {
 
 // Returns animation duration in seconds (1.0 fallback).
 function __polygon_anim_pv_duration(_model, _index) {
-  if (_model == undefined)  return 1.0;
+  if (_model == undefined) return 1.0;
   var _get = _model[$ "getAnimation"];
 
-  if (_get == undefined)  return 1.0;
+  if (_get == undefined) return 1.0;
   var _anim = method(_model, _get)(_index);
 
-  if (_anim != undefined && is_real(_anim.duration) && _anim.duration > 0.01)  return _anim.duration;
+  if (_anim != undefined && is_real(_anim.duration) && _anim.duration > 0.01) return _anim.duration;
   return 1.0;
 }
 
@@ -556,7 +559,7 @@ function __polygon_anim_pv_close(_ed) {
     __polygon_destroy_subtree(_ed.anim_pv.node);
     _ed.anim_pv = undefined;
 
-    if (variable_struct_exists(_ed, "anim_stage") && is_struct(_ed.anim_stage) && _ed.anim_stage.ts != undefined)  _ed.anim_stage.ts.update(0);
+    if (variable_struct_exists(_ed, "anim_stage") && is_struct(_ed.anim_stage) && _ed.anim_stage.ts != undefined) _ed.anim_stage.ts.update(0);
   }
 }
 
@@ -565,7 +568,7 @@ function __polygon_anim_pv_restart(_comp, _ui, _pv, _loop) {
   _ui.restart = false;
   var _set_time = _comp[$ "setTime"];
 
-  if (_set_time != undefined)  method(_comp, _set_time)(0.0);
+  if (_set_time != undefined) method(_comp, _set_time)(0.0);
   _ui.playing = true;
   _ui.finished = false;
   var _resume = _comp[$ "resume"];
@@ -581,7 +584,8 @@ function __polygon_anim_pv_restart(_comp, _ui, _pv, _loop) {
 
 // Syncs loop flag, pause state and finish detection for component playback.
 function __polygon_anim_pv_sync_comp(_comp, _ui, _pv, _loop, _dur) {
-  if (_ui.restart == true)  __polygon_anim_pv_restart(_comp, _ui, _pv, _loop);
+  if (_ui.restart == true) __polygon_anim_pv_restart(_comp, _ui, _pv, _loop);
+
   if (_loop != (_pv.loop == true)) {
     var _get_time = _comp[$ "getTime"];
     var _t = _get_time != undefined ? method(_comp, _get_time)() : undefined;
@@ -590,7 +594,7 @@ function __polygon_anim_pv_sync_comp(_comp, _ui, _pv, _loop, _dur) {
     if (is_real(_t)) {
       var _set_time = _comp[$ "setTime"];
 
-      if (_set_time != undefined)  method(_comp, _set_time)(_t);
+      if (_set_time != undefined) method(_comp, _set_time)(_t);
     }
 
     _pv.loop = _loop;
@@ -600,7 +604,7 @@ function __polygon_anim_pv_sync_comp(_comp, _ui, _pv, _loop, _dur) {
     if (is_real(_t) && _t >= _dur - 0.001) {
       var _rewind = _comp[$ "setTime"];
 
-      if (_rewind != undefined)  method(_comp, _rewind)(0.0);
+      if (_rewind != undefined) method(_comp, _rewind)(0.0);
     }
   }
 
@@ -617,7 +621,7 @@ function __polygon_anim_pv_sync_comp(_comp, _ui, _pv, _loop, _dur) {
   } else if (_ui.playing != true && _pv.playing == true) {
     var _pause = _comp[$ "pause"];
 
-    if (_pause != undefined)  method(_comp, _pause)();
+    if (_pause != undefined) method(_comp, _pause)();
     _pv.playing = false;
   }
 
@@ -636,11 +640,11 @@ function __polygon_anim_pv_sync_comp(_comp, _ui, _pv, _loop, _dur) {
 // Blits the animation stage to the 200px surface.
 function __polygon_anim_pv_blit(_ed, _st) {
   if (!surface_exists(_ed.anim_surf) || surface_get_width(_ed.anim_surf) != 200 || surface_get_height(_ed.anim_surf) != 200) {
-    if (surface_exists(_ed.anim_surf))  __polygon_surf_retire(_ed, _ed.anim_surf);
+    if (surface_exists(_ed.anim_surf)) __polygon_surf_retire(_ed, _ed.anim_surf);
     _ed.anim_surf = surface_create(200, 200);
   }
 
-  if (!surface_exists(_ed.anim_surf))  return;
+  if (!surface_exists(_ed.anim_surf)) return;
   surface_set_target(_ed.anim_surf);
   draw_clear_alpha(c_black, 0);
   _st.renderer.render(_st.ts);
@@ -660,16 +664,16 @@ function __polygon_anim_pv_tick(_ed, _dt) {
   _dt = clamp(_dt, 0, 0.05);
   var _loop = _ui.loop != false;
 
-  if (!__polygon_anim_pv_ensure(_ed, _ui.model, _ui.index, _loop))  return;
+  if (!__polygon_anim_pv_ensure(_ed, _ui.model, _ui.index, _loop)) return;
   var _st = __polygon_anim_pv_stage(_ed);
 
-  if (_st == undefined || !variable_struct_exists(_ed, "anim_pv") || !is_struct(_ed.anim_pv))  return;
+  if (_st == undefined || !variable_struct_exists(_ed, "anim_pv") || !is_struct(_ed.anim_pv)) return;
   var _pv = _ed.anim_pv;
   var _speed = is_real(_ui.speed) ? max(_ui.speed, 0) : 1;
   var _dur = 1.0;
 
   if (is_struct(_pv) && variable_struct_exists(_pv, "dur") && is_real(_pv.dur) && _pv.dur > 0.01
-    && variable_struct_exists(_pv, "dur_idx") && _pv.dur_idx == _ui.index && _pv.dur_model == _ui.model) {
+  && variable_struct_exists(_pv, "dur_idx") && _pv.dur_idx == _ui.index && _pv.dur_model == _ui.model) {
     _dur = _pv.dur;
   } else {
     _dur = __polygon_anim_pv_duration(_ui.model, _ui.index);
@@ -684,7 +688,7 @@ function __polygon_anim_pv_tick(_ed, _dt) {
   if (_pv.comp != undefined) {
     var _set_speed = _pv.comp[$ "setSpeed"];
 
-    if (_set_speed != undefined)  method(_pv.comp, _set_speed)(_speed);
+    if (_set_speed != undefined) method(_pv.comp, _set_speed)(_speed);
     __polygon_anim_pv_sync_comp(_pv.comp, _ui, _pv, _loop, _dur);
     _st.ts.update(_dt);
   } else {
@@ -695,7 +699,7 @@ function __polygon_anim_pv_tick(_ed, _dt) {
       _ui.finished = false;
     }
 
-    if (_ui.playing == true)  _pv.t += _dt * _speed;
+    if (_ui.playing == true) _pv.t += _dt * _speed;
     var _apply = _st.ts[$ "applyAnimation"];
 
     if (_apply != undefined) {
@@ -720,14 +724,14 @@ function __polygon_anim_pv_tick(_ed, _dt) {
 
 // Frees animation preview node, stage and surface.
 function __polygon_anim_pv_free(_ed) {
-  if (_ed == undefined)  return;
-  if (variable_struct_exists(_ed, "anim_pv") && is_struct(_ed.anim_pv) && _ed.anim_pv.node != undefined)  __polygon_destroy_subtree(_ed.anim_pv.node);
+  if (_ed == undefined) return;
+  if (variable_struct_exists(_ed, "anim_pv") && is_struct(_ed.anim_pv) && _ed.anim_pv.node != undefined) __polygon_destroy_subtree(_ed.anim_pv.node);
   _ed.anim_pv = undefined;
 
-  if (variable_struct_exists(_ed, "anim_stage") && is_struct(_ed.anim_stage) && _ed.anim_stage.ts != undefined)  _ed.anim_stage.ts.destroy();
+  if (variable_struct_exists(_ed, "anim_stage") && is_struct(_ed.anim_stage) && _ed.anim_stage.ts != undefined) _ed.anim_stage.ts.destroy();
   _ed.anim_stage = undefined;
 
-  if (variable_struct_exists(_ed, "anim_surf") && surface_exists(_ed.anim_surf))  __polygon_surf_retire(_ed, _ed.anim_surf);
+  if (variable_struct_exists(_ed, "anim_surf") && surface_exists(_ed.anim_surf)) __polygon_surf_retire(_ed, _ed.anim_surf);
   _ed.anim_surf = undefined;
   _ed.anim_ui = undefined;
 }

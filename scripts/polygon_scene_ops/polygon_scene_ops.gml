@@ -27,10 +27,10 @@ function __polygon_rect_norm(_r) {
 
 // Destroys node and all children.
 function __polygon_destroy_subtree(_node) {
-  if (_node == undefined)  return;
+  if (_node == undefined) return;
   var _kids = _node.getChildren();
 
-  for (var _i = 0, _n = array_length(_kids); _i < _n; _i++)  __polygon_destroy_subtree(_kids[_i]);
+  for (var _i = 0, _n = array_length(_kids); _i < _n; _i++) __polygon_destroy_subtree(_kids[_i]);
   _node.destroy();
 }
 
@@ -43,7 +43,7 @@ function __polygon_new_scene(_ed) {
   __polygon_drop_preview_clear(_ed);
   var _tracked = __polygon_root_tracked(_ed);
 
-  for (var _i = 0, _n = array_length(_tracked); _i < _n; _i++)  __polygon_destroy_subtree(_tracked[_i]);
+  for (var _i = 0, _n = array_length(_tracked); _i < _n; _i++) __polygon_destroy_subtree(_tracked[_i]);
   _ed.rt.scene.update(0);
   __polygon_reg_clear(_ed);
   var _main_cam = __polygon_gamecam_ensure(_ed);
@@ -60,7 +60,7 @@ function __polygon_new_scene(_ed) {
       __polygon_camera_apply(_main_cam, __polygon_camera_read(_ed.rt.cam));
       var _seed_en = __polygon_registry_find(_ed, _main_cam);
 
-      if (_seed_en != undefined)  _seed_en.data = __polygon_camera_read(_main_cam);
+      if (_seed_en != undefined) _seed_en.data = __polygon_camera_read(_main_cam);
     }
 
     var _cam_entry = __polygon_registry_find(_ed, _main_cam);
@@ -74,7 +74,7 @@ function __polygon_new_scene(_ed) {
   __polygon_default_sun(_ed);
   var _env = __polygon_create_env(_ed);
 
-  if (_env != undefined)  __polygon_hidden_set(_ed, _env, false);
+  if (_env != undefined) __polygon_hidden_set(_ed, _env, false);
   _ed.rt.scene.update(0);
   __polygon_viewcam_seed(_ed);
   // Tracked cameras stay muted while editing (same invariant as enable
@@ -99,7 +99,7 @@ function __polygon_default_sun(_ed) {
   static _sun_dir = [ 0.35, 0.8, 0.45 ];
   var _sun = __polygon_create_light(_ed, "directional");
 
-  if (_sun == undefined)  return undefined;
+  if (_sun == undefined) return undefined;
   _sun.setLocalPosition(new GM3D_Vec3(_sun_pos[0], _sun_pos[1], _sun_pos[2]));
   var _dir = new GM3D_Vec3(_sun_dir[0], _sun_dir[1], _sun_dir[2]);
   _sun.setLocalRotation(
@@ -147,12 +147,12 @@ function __polygon_discard_changes(_ed) {
 // Asks for confirmation when deleting multiple nodes, deletes directly
 // when a single node (or less) is affected.
 function __polygon_delete_ask(_ed) {
-  if (array_length(_ed.sel) == 0)  return;
-  if (variable_struct_exists(_ed, "delete_confirm") && _ed.delete_confirm != undefined)  return;
+  if (array_length(_ed.sel) == 0) return;
+  if (variable_struct_exists(_ed, "delete_confirm") && _ed.delete_confirm != undefined) return;
   var _victims = 0;
 
   for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++) {
-    if (_ed.rt != undefined && __polygon_node_same(_ed.sel[_i], _ed.rt.cam))  continue;
+    if (_ed.rt != undefined && __polygon_node_same(_ed.sel[_i], _ed.rt.cam)) continue;
     _victims++;
   }
 
@@ -166,15 +166,15 @@ function __polygon_delete_ask(_ed) {
 
 // Deletes selected nodes with undo.
 function __polygon_delete_sel(_ed) {
-  if (array_length(_ed.sel) == 0)  return;
+  if (array_length(_ed.sel) == 0) return;
   var _victims = [];
 
   for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++) {
-    if (_ed.rt != undefined && __polygon_node_same(_ed.sel[_i], _ed.rt.cam))  continue;
+    if (_ed.rt != undefined && __polygon_node_same(_ed.sel[_i], _ed.rt.cam)) continue;
     array_push(_victims, _ed.sel[_i]);
   }
 
-  if (array_length(_victims) == 0)  return;
+  if (array_length(_victims) == 0) return;
   var _before = __polygon_history_snap(_ed);
 
   for (var _j = 0, _nv = array_length(_victims); _j < _nv; _j++) {
@@ -191,10 +191,10 @@ function __polygon_delete_sel(_ed) {
 function __polygon_duplicate_asset(_ed, _src, _off) {
   var _key = __polygon_asset_name(_ed, _src);
 
-  if (_key == undefined)  return undefined;
+  if (_key == undefined) return undefined;
   var _model = __polygon_asset_find(_ed, _key);
 
-  if (_model == undefined)  return undefined;
+  if (_model == undefined) return undefined;
   var _pos = _src.getLocalPosition();
   var _sca = _src.getLocalScale();
   var _copy = __polygon_place(
@@ -207,7 +207,7 @@ function __polygon_duplicate_asset(_ed, _src, _off) {
     __polygon_fresh_label(_ed, __polygon_label_get(_ed, _src))
   );
 
-  if (_copy == undefined)  return undefined;
+  if (_copy == undefined) return undefined;
   var _src_en = __polygon_registry_find(_ed, _src);
 
   if (_src_en != undefined && is_struct(_src_en.data)) {
@@ -229,7 +229,7 @@ function __polygon_duplicate_asset(_ed, _src, _off) {
 function __polygon_duplicate_sel(_ed) {
   var _n = array_length(_ed.sel);
 
-  if (_n == 0)  return;
+  if (_n == 0) return;
   var _before = __polygon_history_snap(_ed);
   var _out = [];
   var _off = _ed.cfg.duplicate_offset;
@@ -245,10 +245,10 @@ function __polygon_duplicate_sel(_ed) {
       _copy = __polygon_duplicate_asset(_ed, _src, _off);
     }
 
-    if (_copy != undefined)  array_push(_out, _copy);
+    if (_copy != undefined) array_push(_out, _copy);
   }
 
-  if (array_length(_out) > 0)  _ed.sel = _out;
+  if (array_length(_out) > 0) _ed.sel = _out;
   __polygon_history_commit(_ed, _before);
 }
 
@@ -256,7 +256,7 @@ function __polygon_duplicate_sel(_ed) {
 // entry data must stay data-shaped, not descriptor-shaped, or the
 // inspector/overlay reads wrong fields on the duplicate).
 function __polygon_duplicate_prop_data(_src_data) {
-  if (!is_struct(_src_data))  return undefined;
+  if (!is_struct(_src_data)) return undefined;
   return json_parse(json_stringify(_src_data));
 }
 
@@ -264,11 +264,11 @@ function __polygon_duplicate_prop_data(_src_data) {
 function __polygon_duplicate_prop(_ed, _src, _kind, _off) {
   var _en = __polygon_registry_find(_ed, _src);
 
-  if (_en == undefined || !is_struct(_en.data))  return undefined;
+  if (_en == undefined || !is_struct(_en.data)) return undefined;
   var _label = __polygon_fresh_label(_ed, __polygon_label_get(_ed, _src));
   var _node = _ed.rt.scene.createNode(__polygon_wrap_new(_ed));
 
-  if (_node == undefined)  return undefined;
+  if (_node == undefined) return undefined;
   var _pos = _src.getLocalPosition();
   _node.setLocalPosition(new GM3D_Vec3(_pos.x + _off, _pos.y, _pos.z + _off));
   _node.setLocalScale(_src.getLocalScale().clone());
@@ -297,8 +297,8 @@ function __polygon_duplicate_prop(_ed, _src, _kind, _off) {
     _data
   );
 
-  if (__polygon_hidden_get(_ed, _src))  __polygon_hidden_set(_ed, _node, true);
-  if (__polygon_locked_get(_ed, _src))  __polygon_locked_set(_ed, _node, true);
+  if (__polygon_hidden_get(_ed, _src)) __polygon_hidden_set(_ed, _node, true);
+  if (__polygon_locked_get(_ed, _src)) __polygon_locked_set(_ed, _node, true);
   __polygon_cameras_mute(_ed);
   return _node;
 }
@@ -311,14 +311,15 @@ function __polygon_duplicate_prop(_ed, _src, _kind, _off) {
 function __polygon_focus_target(_ed) {
   var _n = array_length(_ed.sel);
 
-  if (_n == 0)  return undefined;
+  if (_n == 0) return undefined;
   var _mn = undefined;
   var _mx = undefined;
 
   for (var _i = 0; _i < _n; _i++) {
     var _box = __polygon_node_aabb(_ed.sel[_i]);
 
-    if (_box == undefined || !_box.valid)  continue;
+    if (_box == undefined || !_box.valid) continue;
+
     if (_mn == undefined) {
       _mn = _box.min.clone();
       _mx = _box.max.clone();
@@ -346,7 +347,7 @@ function __polygon_focus_target(_ed) {
 
   var _pivot = __polygon_gizmo_pivot(_ed.sel);
 
-  if (_pivot == undefined)  return undefined;
+  if (_pivot == undefined) return undefined;
   return { center: _pivot, radius: 1.0 };
 }
 
@@ -356,13 +357,13 @@ function __polygon_view_right(_fwd) {
   var _rz = -_fwd.x;
   var _len = sqrt(_rx * _rx + _rz * _rz);
 
-  if (_len < 0.0001)  return [ 1.0, 0.0, 0.0 ];
+  if (_len < 0.0001) return [ 1.0, 0.0, 0.0 ];
   return [ _rx / _len, 0.0, _rz / _len ];
 }
 
 // Computes fit distance for a focus target.
 function __polygon_fit_dist(_ed, _t, _fwd, _fov) {
-  if (!variable_struct_exists(_t, "mn"))  return (_t.radius / max(sin(_fov * 0.5), 0.1)) * 1.2 + 0.3;
+  if (!variable_struct_exists(_t, "mn")) return (_t.radius / max(sin(_fov * 0.5), 0.1)) * 1.2 + 0.3;
   var _back = [ -_fwd.x, -_fwd.y, -_fwd.z ];
   var _right = __polygon_view_right(_fwd);
   var _up = [
@@ -377,7 +378,7 @@ function __polygon_fit_dist(_ed, _t, _fwd, _fov) {
   var _tan_y = max(tan(_fov * 0.5), 0.05);
   var _aspect = 16.0 / 9.0;
 
-  if (_ed.gw > 0 && _ed.gh > 0)  _aspect = _ed.gw / _ed.gh;
+  if (_ed.gw > 0 && _ed.gh > 0) _aspect = _ed.gw / _ed.gh;
   var _tan_x = _tan_y * max(_aspect, 0.1);
   return max(_h / _tan_y, _w / _tan_x) * 1.2 + _d + 0.3;
 }
@@ -386,8 +387,8 @@ function __polygon_fit_dist(_ed, _t, _fwd, _fov) {
 function __polygon_focus_selection(_ed) {
   var _t = __polygon_focus_target(_ed);
 
-  if (_t == undefined)  return false;
-  if (_ed.rt == undefined)  return false;
+  if (_t == undefined) return false;
+  if (_ed.rt == undefined) return false;
   var _vp = __polygon_viewport(_ed);
   var _fwd = __polygon_view_forward_cached(_ed);
   var _fov = clamp(_vp.fovY, 0.05, 3.1);
@@ -412,7 +413,7 @@ function __polygon_focus_selection(_ed) {
 
 // Selects and focuses single node.
 function __polygon_focus_node(_ed, _node) {
-  if (_node == undefined)  return false;
+  if (_node == undefined) return false;
   __polygon_sel_assign(_ed, [ _node ]);
   return __polygon_focus_selection(_ed);
 }
@@ -423,14 +424,14 @@ function __polygon_focus_node(_ed, _node) {
 
 // Selects single scene node.
 function __polygon_scene_select(_ed, _node) {
-  if (__polygon_locked_get(_ed, _node))  return;
+  if (__polygon_locked_get(_ed, _node)) return;
   __polygon_sel_assign(_ed, [ _node ]);
   _ed.scene_anchor = _node;
 }
 
 // Toggles single node in current selection (Shift+Click).
 function __polygon_scene_toggle(_ed, _node) {
-  if (__polygon_locked_get(_ed, _node) && !__polygon_sel_has(_ed, _node))  return;
+  if (__polygon_locked_get(_ed, _node) && !__polygon_sel_has(_ed, _node)) return;
   __polygon_sel_toggle(_ed, _node);
   _ed.giz.drag = -1;
   _ed.scene_anchor = _node;
@@ -439,7 +440,7 @@ function __polygon_scene_toggle(_ed, _node) {
 
 // Extracts the node from a hierarchy row ({ node, ... } or bare node).
 function __polygon_row_node(_item) {
-  if (is_struct(_item) && variable_struct_exists(_item, "node"))  return _item.node;
+  if (is_struct(_item) && variable_struct_exists(_item, "node")) return _item.node;
   return _item;
 }
 
@@ -450,12 +451,12 @@ function __polygon_scene_range(
   _anchor_node,
   _clicked_node,
   _additive
-) {
+  ) {
   if (
     !is_array(_visible) ||
     array_length(_visible) == 0 ||
     _clicked_node == undefined
-  ) {
+    ) {
     return false;
   }
 
@@ -465,11 +466,12 @@ function __polygon_scene_range(
   for (var _i = 0, _n = array_length(_visible); _i < _n; _i++) {
     var _node = __polygon_row_node(_visible[_i]);
 
-    if (__polygon_node_same(_node, _anchor_node))  _ai = _i;
-    if (__polygon_node_same(_node, _clicked_node))  _ci = _i;
+    if (__polygon_node_same(_node, _anchor_node)) _ai = _i;
+    if (__polygon_node_same(_node, _clicked_node)) _ci = _i;
   }
 
-  if (_ci < 0)  return false;
+  if (_ci < 0) return false;
+
   if (_ai < 0) {
     __polygon_scene_select(_ed, _clicked_node);
     return true;
@@ -478,12 +480,13 @@ function __polygon_scene_range(
   var _from = min(_ai, _ci);
   var _to = max(_ai, _ci);
 
-  if (!_additive)  _ed.sel = [];
+  if (!_additive) _ed.sel = [];
+
   for (var _k = _from; _k <= _to; _k++) {
     var _cand = __polygon_row_node(_visible[_k]);
 
-    if (__polygon_locked_get(_ed, _cand))  continue;
-    if (!__polygon_sel_has(_ed, _cand))  array_push(_ed.sel, _cand);
+    if (__polygon_locked_get(_ed, _cand)) continue;
+    if (!__polygon_sel_has(_ed, _cand)) array_push(_ed.sel, _cand);
   }
 
   _ed.giz.drag = -1;
@@ -493,10 +496,10 @@ function __polygon_scene_range(
 
 // Commits rubber-band rectangle selection over hierarchy rows.
 function __polygon_hier_rect_commit(_ed, _y0, _y1) {
-  if (!is_array(_ed.hier_rows))  return;
+  if (!is_array(_ed.hier_rows)) return;
   var _rh = _ed.hier_row_h;
 
-  if (!is_numeric(_rh) || _rh <= 0)  return;
+  if (!is_numeric(_rh) || _rh <= 0) return;
   var _add = keyboard_check(vk_shift);
   var _picked = [];
   var _n = array_length(_ed.hier_rows);
@@ -504,25 +507,25 @@ function __polygon_hier_rect_commit(_ed, _y0, _y1) {
   for (var _i = 0; _i < _n; _i++) {
     var _sy = _ed.hier_row_y[$ string(_i)];
 
-    if (_sy == undefined)  continue;
-    if (max(_y0, _sy) > min(_y1, _sy + _rh))  continue;
+    if (_sy == undefined) continue;
+    if (max(_y0, _sy) > min(_y1, _sy + _rh)) continue;
     var _nd = __polygon_row_node(_ed.hier_rows[_i]);
 
-    if (_nd == undefined || __polygon_locked_get(_ed, _nd))  continue;
-    if (_add && __polygon_sel_has(_ed, _nd))  continue;
+    if (_nd == undefined || __polygon_locked_get(_ed, _nd)) continue;
+    if (_add && __polygon_sel_has(_ed, _nd)) continue;
     array_push(_picked, _nd);
   }
 
   if (_add) {
-    if (array_length(_picked) == 0)  return;
-    for (var _k = 0, _nk = array_length(_picked); _k < _nk; _k++)  array_push(_ed.sel, _picked[_k]);
+    if (array_length(_picked) == 0) return;
+    for (var _k = 0, _nk = array_length(_picked); _k < _nk; _k++) array_push(_ed.sel, _picked[_k]);
   } else {
     _ed.sel = _picked;
   }
 
   _ed.giz.drag = -1;
 
-  if (array_length(_picked) > 0)  _ed.scene_anchor = _picked[array_length(_picked) - 1];
+  if (array_length(_picked) > 0) _ed.scene_anchor = _picked[array_length(_picked) - 1];
   _ed.scene_click_idx = -1;
   _ed.scene_click_time = -10000;
   __polygon_sel_apply_tool(_ed);
@@ -530,12 +533,13 @@ function __polygon_hier_rect_commit(_ed, _y0, _y1) {
 
 // Handles scene list click, Shift toggle and Ctrl range, plus doubleclick.
 function __polygon_scene_click(_ed, _nd, _row, _visible = undefined) {
-  if (__polygon_locked_get(_ed, _nd))  return;
+  if (__polygon_locked_get(_ed, _nd)) return;
   var _now = current_time;
   var _ctrl = keyboard_check(vk_control);
   var _shift = keyboard_check(vk_shift);
 
-  if (!variable_struct_exists(_ed, "scene_anchor"))  _ed.scene_anchor = undefined;
+  if (!variable_struct_exists(_ed, "scene_anchor")) _ed.scene_anchor = undefined;
+
   if (_shift && !_ctrl) {
     __polygon_scene_toggle(_ed, _nd);
     _ed.scene_click_idx = _row;
@@ -556,7 +560,7 @@ function __polygon_scene_click(_ed, _nd, _row, _visible = undefined) {
     _now - _ed.scene_click_time <= 400 &&
     !_ctrl &&
     !_shift
-  ) {
+    ) {
     __polygon_scene_select(_ed, _nd);
     __polygon_focus_node(_ed, _nd);
     _ed.scene_click_idx = -1;
@@ -573,7 +577,7 @@ function __polygon_scene_commit_rename(_ed, _node, _new_label) {
   var _before = __polygon_history_snap(_ed);
   var _en = __polygon_registry_find(_ed, _node);
 
-  if (_en != undefined)  _en.label = _new_label;
+  if (_en != undefined) _en.label = _new_label;
   __polygon_history_commit(_ed, _before);
 }
 
@@ -584,14 +588,15 @@ function __polygon_scene_list_commit(_ed, _ren, _foc, _dup, _del) {
     __polygon_rename_begin(_ed, _ren);
   }
 
-  if (_foc != undefined)  __polygon_focus_node(_ed, _foc);
+  if (_foc != undefined) __polygon_focus_node(_ed, _foc);
+
   if (_dup != undefined) {
-    if (!__polygon_sel_has(_ed, _dup) || array_length(_ed.sel) <= 1)  __polygon_scene_select(_ed, _dup);
+    if (!__polygon_sel_has(_ed, _dup) || array_length(_ed.sel) <= 1) __polygon_scene_select(_ed, _dup);
     __polygon_duplicate_sel(_ed);
   }
 
   if (_del != undefined) {
-    if (!__polygon_sel_has(_ed, _del) || array_length(_ed.sel) <= 1)  __polygon_scene_select(_ed, _del);
+    if (!__polygon_sel_has(_ed, _del) || array_length(_ed.sel) <= 1) __polygon_scene_select(_ed, _del);
     __polygon_delete_ask(_ed);
   }
 }

@@ -14,7 +14,7 @@ function __polygon_overlay_seg(_vp, _a, _b, _wd, _col) {
   var _a_in = _ca.w >= _eps;
   var _b_in = _cb.w >= _eps;
 
-  if (!_a_in && !_b_in)  return;
+  if (!_a_in && !_b_in) return;
   var _pa = _a;
   var _pb = _b;
 
@@ -32,10 +32,10 @@ function __polygon_overlay_seg(_vp, _a, _b, _wd, _col) {
   var _sa = __polygon_world_to_screen(_vp, _pa, true);
   var _sb = __polygon_world_to_screen(_vp, _pb, true);
 
-  if (_sa == undefined || _sb == undefined)  return;
+  if (_sa == undefined || _sb == undefined) return;
   var _clipped = __polygon_clip_seg(_sa[0], _sa[1], _sb[0], _sb[1], _vp.winW, _vp.winH);
 
-  if (_clipped == undefined)  return;
+  if (_clipped == undefined) return;
   __polygon_vp_line(_clipped[0], _clipped[1], _clipped[2], _clipped[3], _wd, _col);
 }
 
@@ -59,7 +59,7 @@ function __polygon_overlay_sprite(_sp, _sprname, _tint) {
 
   var _e = _cache[$ _sprname];
 
-  if (_e.spr == -1)  return false;
+  if (_e.spr == -1) return false;
   var _scale = 2.5;
   draw_sprite_ext(_e.spr, 0, _sp[0] + _scale * (_e.ox - _e.w * 0.5), _sp[1] + _scale * (_e.oy - _e.h * 0.5), _scale, _scale, 0, _tint, 1);
   return true;
@@ -71,7 +71,8 @@ function __polygon_overlay_icon(_sp, _col, _sel, _sprname) {
   var _r = 9;
   var _spr_drawn = false;
 
-  if (_sprname != "")  _spr_drawn = __polygon_overlay_sprite(_sp, _sprname, _tint);
+  if (_sprname != "") _spr_drawn = __polygon_overlay_sprite(_sp, _sprname, _tint);
+
   if (!_spr_drawn) {
     if (_sel) {
       draw_primitive_begin(pr_trianglefan);
@@ -103,7 +104,7 @@ function __polygon_travel_dir(_node) {
   var _fwd = _node.getWorldForward();
   var _len = sqrt(_fwd.x * _fwd.x + _fwd.y * _fwd.y + _fwd.z * _fwd.z);
 
-  if (_len > 0.0001)  return new GM3D_Vec3(-_fwd.x / _len, -_fwd.y / _len, -_fwd.z / _len);
+  if (_len > 0.0001) return new GM3D_Vec3(-_fwd.x / _len, -_fwd.y / _len, -_fwd.z / _len);
   return new GM3D_Vec3(0, 0, -1);
 }
 
@@ -145,7 +146,7 @@ function __polygon_basis_ring(_center, _u, _v, _r, _seg = 12) {
 
 // Draws a closed ring polyline as overlay segments.
 function __polygon_overlay_ring(_vp, _pts, _wd, _col) {
-  for (var _i = 0, _n = array_length(_pts) - 1; _i < _n; _i++)  __polygon_overlay_seg(_vp, _pts[_i], _pts[_i + 1], _wd, _col);
+  for (var _i = 0, _n = array_length(_pts) - 1; _i < _n; _i++) __polygon_overlay_seg(_vp, _pts[_i], _pts[_i + 1], _wd, _col);
 }
 
 // Box edges shared by frustum and environment boxes.
@@ -158,7 +159,7 @@ function __polygon_box_edges() {
 function __polygon_overlay_box(_vp, _corners, _wd, _col) {
   var _edges = __polygon_box_edges();
 
-  for (var _e = 0; _e < 12; _e++)  __polygon_overlay_seg(_vp, _corners[_edges[_e][0]], _corners[_edges[_e][1]], _wd, _col);
+  for (var _e = 0; _e < 12; _e++) __polygon_overlay_seg(_vp, _corners[_edges[_e][0]], _corners[_edges[_e][1]], _wd, _col);
 }
 
 // ---------------------------------------------------------------------------
@@ -175,8 +176,8 @@ function __polygon_overlay_draw(_ed, _vp) {
     var _en = _pairs[_i].en;
     var _kind = is_string(_en.kind) ? _en.kind : undefined;
 
-    if (_kind != "light" && _kind != "camera" && _kind != "environment")  continue;
-    if (_en.hidden == true)  continue;
+    if (_kind != "light" && _kind != "camera" && _kind != "environment") continue;
+    if (_en.hidden == true) continue;
     var _wp = _node.getWorldPosition();
     var _sp = __polygon_world_to_screen(_vp, _wp);
     var _sel = __polygon_sel_in(_selset, _node, _en);
@@ -221,7 +222,8 @@ function __polygon_overlay_dir_light(_vp, _wp, _fwd, _col) {
     );
   }
 
-  for (var _e = 0; _e < 12; _e++)  __polygon_overlay_seg(_vp, _rim[_e], _rim[_e + 1], 1, _col);
+  for (var _e = 0; _e < 12; _e++) __polygon_overlay_seg(_vp, _rim[_e], _rim[_e + 1], 1, _col);
+
   for (var _r = 0; _r < 5; _r++) {
     var _a = (_r / 5) * pi * 2;
     var _ox = (cos(_a) * _u.x + sin(_a) * _v.x) * _rad;
@@ -255,7 +257,7 @@ function __polygon_overlay_spot_cone(_vp, _wp, _fwd, _range, _outer_deg, _col) {
     new GM3D_Vec3(_center.x - _v.x * _rad, _center.y - _v.y * _rad, _center.z - _v.z * _rad),
   ];
 
-  for (var _q = 0; _q < 4; _q++)  __polygon_overlay_seg(_vp, _wp, _spokes[_q], 1.5, _col);
+  for (var _q = 0; _q < 4; _q++) __polygon_overlay_seg(_vp, _wp, _spokes[_q], 1.5, _col);
 }
 
 // Draws light gizmos and range indicators.
@@ -265,7 +267,7 @@ function __polygon_overlay_light(_vp, _nd, _en, _wp, _sp, _sel) {
   var _fwd = __polygon_travel_dir(_nd);
 
   if (_d.type == "directional") {
-    if (_sel)  __polygon_overlay_dir_light(_vp, _wp, _fwd, _col);
+    if (_sel) __polygon_overlay_dir_light(_vp, _wp, _fwd, _col);
   } else {
     var _ws = __polygon_gizmo_world_size(_vp, _wp, 120);
     var _px = (_ws > 0.0001 ? _d.range / _ws : 0) * 120;
@@ -276,7 +278,7 @@ function __polygon_overlay_light(_vp, _nd, _en, _wp, _sp, _sel) {
       draw_set_alpha(1);
     }
 
-    if (_sel && _d.type == "spot")  __polygon_overlay_spot_cone(_vp, _wp, _fwd, _d.range, _d.outer, _col);
+    if (_sel && _d.type == "spot") __polygon_overlay_spot_cone(_vp, _wp, _fwd, _d.range, _d.outer, _col);
   }
 
   if (_sp != undefined) {
@@ -295,7 +297,7 @@ function __polygon_overlay_camera(_vp, _nd, _en, _wp, _sp, _sel) {
   var _d = (_en != undefined && is_struct(_en.data)) ? _en.data : __polygon_camera_defaults();
 
   if (!_sel) {
-    if (_sp != undefined)  __polygon_overlay_icon(_sp, _col, _sel, "sprPolygonEditorIconCamera");
+    if (_sp != undefined) __polygon_overlay_icon(_sp, _col, _sel, "sprPolygonEditorIconCamera");
     return;
   }
 
@@ -350,7 +352,7 @@ function __polygon_overlay_camera(_vp, _nd, _en, _wp, _sp, _sel) {
   __polygon_overlay_box(_vp, _corners, 1.5, _col);
   __polygon_overlay_seg(_vp, _wp, _cn, 1.5, _col);
 
-  if (_sp != undefined)  __polygon_overlay_icon(_sp, _col, _sel, "sprPolygonEditorIconCamera");
+  if (_sp != undefined) __polygon_overlay_icon(_sp, _col, _sel, "sprPolygonEditorIconCamera");
 }
 
 // Draws environment volume box and icon.
@@ -377,5 +379,5 @@ function __polygon_overlay_env(_vp, _en, _wp, _sp, _sel) {
     draw_set_alpha(1);
   }
 
-  if (_sp != undefined)  __polygon_overlay_icon(_sp, _col, _sel, "sprPolygonEditorIconPointLight");
+  if (_sp != undefined) __polygon_overlay_icon(_sp, _col, _sel, "sprPolygonEditorIconPointLight");
 }

@@ -39,12 +39,12 @@ function __polygon_imgui_dock_fresh(_ed) {
 // Checks if the dock layout still needs (re)building.
 function __polygon_dock_needs_build(_ed) {
   if (variable_struct_exists(_ed.imgui, "dock_built") && _ed.imgui.dock_built == true
-    && !(variable_struct_exists(_ed.imgui, "dock_rebuild") && _ed.imgui.dock_rebuild == true)) {
+  && !(variable_struct_exists(_ed.imgui, "dock_rebuild") && _ed.imgui.dock_rebuild == true)) {
     return false;
   }
 
-  if (!variable_struct_exists(_ed.imgui, "dock_tries"))  _ed.imgui.dock_tries = 0;
-  if (_ed.imgui.dock_tries > 5)  return false;
+  if (!variable_struct_exists(_ed.imgui, "dock_tries")) _ed.imgui.dock_tries = 0;
+  if (_ed.imgui.dock_tries > 5) return false;
   _ed.imgui.dock_tries++;
   return true;
 }
@@ -53,7 +53,7 @@ function __polygon_dock_needs_build(_ed) {
 function __polygon_dock_split(_node, _dir, _ratio) {
   var _parts = ImGui.DockBuilderSplitNode(_node, _dir, _ratio);
 
-  if (!is_array(_parts) || array_length(_parts) < 2)  return undefined;
+  if (!is_array(_parts) || array_length(_parts) < 2) return undefined;
   var _rest = array_length(_parts) > 2 ? _parts[2] : _parts[array_length(_parts) - 1];
   return [ _parts[0], _rest ];
 }
@@ -65,8 +65,8 @@ function __polygon_dock_split(_node, _dir, _ratio) {
 // Runs once per session and on Reset Layout. Undocked windows keep working
 // floating via their SetNextWindowPos/Size fallbacks.
 function __polygon_imgui_dock_build(_ed, _root) {
-  if (_root == undefined)  return;
-  if (!__polygon_dock_needs_build(_ed))  return;
+  if (_root == undefined) return;
+  if (!__polygon_dock_needs_build(_ed)) return;
   var _lay = __polygon_layout();
   var _gw = max(800, _ed.gw);
   var _gh = max(500, _ed.gh);
@@ -87,15 +87,15 @@ function __polygon_imgui_dock_build(_ed, _root) {
 
   var _split_left = __polygon_dock_split(_root, ImGuiDir.Left, _r_left);
 
-  if (_split_left == undefined)  return;
+  if (_split_left == undefined) return;
   var _left = _split_left[0];
   var _split_bot = __polygon_dock_split(_split_left[1], ImGuiDir.Down, _r_bot);
 
-  if (_split_bot == undefined)  return;
+  if (_split_bot == undefined) return;
   var _bottom = _split_bot[0];
   var _split_right = __polygon_dock_split(_split_bot[1], ImGuiDir.Right, _r_right);
 
-  if (_split_right == undefined)  return;
+  if (_split_right == undefined) return;
   var _right = _split_right[0];
   var _center = _split_right[1];
   ImGui.DockBuilderDockWindow("Scene", _center);
@@ -145,11 +145,11 @@ function __polygon_theme() {
 
 // Applies editor ImGui theme once.
 function __polygon_imgui_style_once(_ed) {
-  if (_ed.imgui.style_init)  return;
+  if (_ed.imgui.style_init) return;
   _ed.imgui.style_init = true;
   var _theme = __polygon_theme();
 
-  for (var _i = 0, _n = array_length(_theme); _i < _n; _i++)  __polygon_imgui_style_color(_theme[_i][0], _theme[_i][1], _theme[_i][2]);
+  for (var _i = 0, _n = array_length(_theme); _i < _n; _i++) __polygon_imgui_style_color(_theme[_i][0], _theme[_i][1], _theme[_i][2]);
 }
 
 // ---------------------------------------------------------------------------
@@ -158,9 +158,9 @@ function __polygon_imgui_style_once(_ed) {
 
 // Tests if the mouse is over a panel body (below the titlebar).
 function __polygon_panel_body_hit(_r, _mx, _my) {
-  if (!is_struct(_r))  return false;
-  if (!is_real(_mx) || !is_real(_my) || !is_real(_r.x) || !is_real(_r.y) || !is_real(_r.w) || !is_real(_r.h))  return false;
-  if (_mx < _r.x || _mx > _r.x + _r.w || _my < _r.y || _my > _r.y + _r.h)  return false;
+  if (!is_struct(_r)) return false;
+  if (!is_real(_mx) || !is_real(_my) || !is_real(_r.x) || !is_real(_r.y) || !is_real(_r.w) || !is_real(_r.h)) return false;
+  if (_mx < _r.x || _mx > _r.x + _r.w || _my < _r.y || _my > _r.y + _r.h) return false;
   var _title_h = is_real(_r.t) && _r.t > 0 ? _r.t : 19;
   return _my > _r.y + _title_h;
 }
@@ -186,7 +186,7 @@ function __polygon_imgui_panel_flags(_ed, _key) {
 
   var _flags = _none;
 
-  if (__polygon_panel_body_hit(_ed.imgui._winrect[$ _key], ImGui.GetMousePosX(), ImGui.GetMousePosY()))  _flags = _nomove;
+  if (__polygon_panel_body_hit(_ed.imgui._winrect[$ _key], ImGui.GetMousePosX(), ImGui.GetMousePosY())) _flags = _nomove;
   _ed.imgui._winflags[$ _key] = _flags;
   return _flags;
 }
@@ -198,11 +198,12 @@ function __polygon_imgui_panel_save(_ed, _key) {
   var _w = ImGui.GetWindowWidth();
   var _h = ImGui.GetWindowHeight();
 
-  if (!is_real(_x) || !is_real(_y) || !is_real(_w) || !is_real(_h))  return;
+  if (!is_real(_x) || !is_real(_y) || !is_real(_w) || !is_real(_h)) return;
   var _title_h = 19;
   var _fh = ImGui.GetFrameHeight();
 
-  if (is_real(_fh) && _fh > 0)  _title_h = _fh;
+  if (is_real(_fh) && _fh > 0) _title_h = _fh;
+
   if (!variable_struct_exists(_ed.imgui, "_winrect")) {
     _ed.imgui._winrect = {};
   }

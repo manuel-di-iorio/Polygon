@@ -9,13 +9,13 @@ function __polygon_gizmo_draw(_ed, _vp) {
   static _cols = [ c_red, c_lime, c_blue ];
   static _high = [ make_colour_rgb(255, 150, 60), make_colour_rgb(255, 255, 120), make_colour_rgb(110, 200, 255) ];
 
-  if (array_length(_ed.sel) == 0)  return;
-  if (!__polygon_gizmo_allowed(_ed))  return;
+  if (array_length(_ed.sel) == 0) return;
+  if (!__polygon_gizmo_allowed(_ed)) return;
   var _pivot = __polygon_gizmo_pivot(_ed.sel);
   var _ps = __polygon_world_to_screen(_vp, _pivot);
 
   if (_ps == undefined) {
-    if (_ed.giz.tool == PolygonEditorTool.Translate && _ed.giz.drag != -1)  __polygon_gizmo_draw_trail_far(_ed, _vp);
+    if (_ed.giz.tool == PolygonEditorTool.Translate && _ed.giz.drag != -1) __polygon_gizmo_draw_trail_far(_ed, _vp);
     return;
   }
 
@@ -47,8 +47,8 @@ function __polygon_gizmo_draw_translate_quads(_ed, _vp, _pivot, _dirs, _ws, _col
     for (var _q = 0; _q < 3; _q++) {
       var _poly = __polygon_clip_screen_poly(_vp, __polygon_gizmo_quad(_pivot, _dirs, _q, _ws * 0.3, _view));
 
-      if (array_length(_poly) < 3)  continue;
-      if (_ed.giz.drag != 3 + _q && __polygon_screen_poly_area(_poly) < 200)  continue;
+      if (array_length(_poly) < 3) continue;
+      if (_ed.giz.drag != 3 + _q && __polygon_screen_poly_area(_poly) < 200) continue;
       var _hot = (_ed.giz.hover == 3 + _q && _ed.giz.drag == -1) || _ed.giz.drag == 3 + _q;
       var _col = _hot ? _high[_q] : _cols[_q];
       var _al = _hot ? 0.55 : 0.3;
@@ -60,7 +60,7 @@ function __polygon_gizmo_draw_translate_quads(_ed, _vp, _pivot, _dirs, _ws, _col
 
       draw_primitive_begin(pr_trianglefan);
 
-      for (var _v = 0, _n = array_length(_poly); _v < _n; _v++)  draw_vertex_colour(_poly[_v][0], _poly[_v][1], _col, _al);
+      for (var _v = 0, _n = array_length(_poly); _v < _n; _v++) draw_vertex_colour(_poly[_v][0], _poly[_v][1], _col, _al);
       draw_primitive_end();
       draw_set_alpha(_al <= 0.2 ? 0.35 : 0.8);
 
@@ -93,7 +93,7 @@ function __polygon_gizmo_draw_axes(_ed, _vp, _pivot, _ps, _dirs, _ws, _cols, _hi
         new GM3D_Vec3(_pivot.x + _dirs[_a].x * _ws, _pivot.y + _dirs[_a].y * _ws, _pivot.z + _dirs[_a].z * _ws)
       );
 
-      if (_tip == undefined)  continue;
+      if (_tip == undefined) continue;
       __polygon_gizmo_shaft(_ps[0], _ps[1], _tip[0], _tip[1], _col, _al);
       __polygon_arrow(_ps[0], _ps[1], _tip[0], _tip[1], _col, _hot ? 12 : 9, _al);
     } else if (_ed.giz.tool == PolygonEditorTool.Scale) {
@@ -102,7 +102,7 @@ function __polygon_gizmo_draw_axes(_ed, _vp, _pivot, _ps, _dirs, _ws, _cols, _hi
         new GM3D_Vec3(_pivot.x + _dirs[_a].x * _ws, _pivot.y + _dirs[_a].y * _ws, _pivot.z + _dirs[_a].z * _ws)
       );
 
-      if (_box == undefined)  continue;
+      if (_box == undefined) continue;
       __polygon_gizmo_shaft(_ps[0], _ps[1], _box[0], _box[1], _col, _al);
       draw_set_alpha(_al);
       draw_rectangle_color(_box[0] - 5, _box[1] - 5, _box[0] + 5, _box[1] + 5, _col, _col, _col, _col, false);
@@ -118,7 +118,7 @@ function __polygon_gizmo_draw_axes(_ed, _vp, _pivot, _ps, _dirs, _ws, _cols, _hi
       draw_set_alpha(_al);
 
       for (var _p = 0, _n = array_length(_pts); _p < _n - 1; _p++) {
-        if (_pts[_p].s == undefined || _pts[_p + 1].s == undefined || !_pts[_p].front || !_pts[_p + 1].front)  continue;
+        if (_pts[_p].s == undefined || _pts[_p + 1].s == undefined || !_pts[_p].front || !_pts[_p + 1].front) continue;
         __polygon_vp_line(_pts[_p].s[0], _pts[_p].s[1], _pts[_p + 1].s[0], _pts[_p + 1].s[1], _th, _col);
       }
 
@@ -140,7 +140,7 @@ function __polygon_gizmo_disc_radius(_pts, _ps) {
     var _dy = _pts[_i][1] - _ps[1];
     var _d2 = _dx * _dx + _dy * _dy;
 
-    if (_d2 > _rr)  _rr = _d2;
+    if (_d2 > _rr) _rr = _d2;
   }
 
   return sqrt(_rr);
@@ -169,10 +169,10 @@ function __polygon_gizmo_draw_viewring(_ed, _vp, _pivot, _look, _ws) {
     var _col = _ring_hot ? c_yellow : c_white;
     var _al = 1;
 
-    if (_ed.giz.drag != -1 && _ed.giz.drag != 6)  _al = 0.2;
+    if (_ed.giz.drag != -1 && _ed.giz.drag != 6) _al = 0.2;
     draw_set_alpha(_al);
 
-    for (var _v = 0, _n = array_length(_pts); _v < _n - 1; _v++)  __polygon_vp_line(_pts[_v][0], _pts[_v][1], _pts[_v + 1][0], _pts[_v + 1][1], _th, _col);
+    for (var _v = 0, _n = array_length(_pts); _v < _n - 1; _v++) __polygon_vp_line(_pts[_v][0], _pts[_v][1], _pts[_v + 1][0], _pts[_v + 1][1], _th, _col);
     draw_set_alpha(1);
   }
 }
@@ -239,12 +239,12 @@ function __polygon_gizmo_draw_scale_disc(_ed, _ps) {
 // Draws shift screen-space move square or scale uniform handle.
 function __polygon_gizmo_draw_center(_ed, _ps) {
   if (_ed.giz.tool == PolygonEditorTool.Translate) {
-    if (!__polygon_gizmo_shift_square(_ed) && _ed.giz.drag != -2)  return;
+    if (!__polygon_gizmo_shift_square(_ed) && _ed.giz.drag != -2) return;
     __polygon_gizmo_draw_move_square(_ed, _ps);
     return;
   }
 
-  if (_ed.giz.tool == PolygonEditorTool.Scale)  __polygon_gizmo_draw_scale_disc(_ed, _ps);
+  if (_ed.giz.tool == PolygonEditorTool.Scale) __polygon_gizmo_draw_scale_disc(_ed, _ps);
 }
 
 // ---------------------------------------------------------------------------
@@ -263,7 +263,7 @@ function __polygon_sweep_pts(_ed, _vp, _pivot, _ws, _t0, _sweep) {
     var _t = _t0 + _sweep * (_i / _steps);
     var _pt = __polygon_world_to_screen(_vp, __polygon_gizmo_ring_point_fast(_pivot, _u, _v, _ws, _t));
 
-    if (_pt != undefined)  array_push(_arc, _pt);
+    if (_pt != undefined) array_push(_arc, _pt);
   }
 
   return _arc;
@@ -274,7 +274,7 @@ function __polygon_sweep_fan(_ps, _arc, _col, _al) {
   draw_primitive_begin(pr_trianglefan);
   draw_vertex_colour(_ps[0], _ps[1], _col, _al);
 
-  for (var _i = 0, _n = array_length(_arc); _i < _n; _i++)  draw_vertex_colour(_arc[_i][0], _arc[_i][1], _col, _al);
+  for (var _i = 0, _n = array_length(_arc); _i < _n; _i++) draw_vertex_colour(_arc[_i][0], _arc[_i][1], _col, _al);
   draw_primitive_end();
 }
 
@@ -282,7 +282,7 @@ function __polygon_sweep_fan(_ps, _arc, _col, _al) {
 function __polygon_gizmo_draw_rotate_sweep(_ed, _vp, _pivot, _ps, _ws, _high) {
   var _sweep = _ed.giz.display_ang;
 
-  if (abs(_sweep) <= 0.01)  return;
+  if (abs(_sweep) <= 0.01) return;
   var _t0 = _ed.giz.sector_t0;
   var _draw_sweep = clamp(_sweep, -2 * pi, 2 * pi);
   var _arc = __polygon_sweep_pts(_ed, _vp, _pivot, _ws, _t0, _draw_sweep);
@@ -312,12 +312,12 @@ function __polygon_gizmo_draw_rotate_sweep(_ed, _vp, _pivot, _ps, _ws, _high) {
 
     draw_set_alpha(min(0.8 + _boost, 1.0));
 
-    for (var _e = 0, _ne = array_length(_arc) - 1; _e < _ne - 1; _e++)  __polygon_vp_line(_arc[_e][0], _arc[_e][1], _arc[_e + 1][0], _arc[_e + 1][1], 2, _col);
+    for (var _e = 0, _ne = array_length(_arc) - 1; _e < _ne - 1; _e++) __polygon_vp_line(_arc[_e][0], _arc[_e][1], _arc[_e + 1][0], _arc[_e + 1][1], 2, _col);
     var _start = __polygon_world_to_screen(_vp, __polygon_gizmo_ring_point_fast(_pivot, _bu, _bv, _ws, _t0));
     var _current = __polygon_world_to_screen(_vp, __polygon_gizmo_ring_point_fast(_pivot, _bu, _bv, _ws, _t0 + _sweep));
 
-    if (_start != undefined)  __polygon_vp_line(_ps[0], _ps[1], _start[0], _start[1], 1, _rim);
-    if (_current != undefined)  __polygon_vp_line(_ps[0], _ps[1], _current[0], _current[1], 1, _rim);
+    if (_start != undefined) __polygon_vp_line(_ps[0], _ps[1], _start[0], _start[1], 1, _rim);
+    if (_current != undefined) __polygon_vp_line(_ps[0], _ps[1], _current[0], _current[1], 1, _rim);
     draw_set_alpha(1);
   }
 }
@@ -338,20 +338,20 @@ function __polygon_gizmo_draw_trail_far(_ed, _vp) {
   var _sx = _ed.giz.piv_sx;
   var _sy = _ed.giz.piv_sy;
 
-  if (!is_real(_sx) || !is_real(_sy))  return;
+  if (!is_real(_sx) || !is_real(_sy)) return;
   var _ww = 1366;
   var _wh = 768;
 
   if (_vp != undefined) {
-    if (is_real(_vp.winW) && _vp.winW > 0)  _ww = _vp.winW;
-    if (is_real(_vp.winH) && _vp.winH > 0)  _wh = _vp.winH;
+    if (is_real(_vp.winW) && _vp.winW > 0) _ww = _vp.winW;
+    if (is_real(_vp.winH) && _vp.winH > 0) _wh = _vp.winH;
   }
 
   var _ex = _sx;
   var _ey = _sy;
 
   if (variable_struct_exists(_ed.giz, "trail_sx") && variable_struct_exists(_ed.giz, "trail_sy")
-    && is_real(_ed.giz.trail_sx) && is_real(_ed.giz.trail_sy)) {
+  && is_real(_ed.giz.trail_sx) && is_real(_ed.giz.trail_sy)) {
     _ex = clamp(_ed.giz.trail_sx, -50, _ww + 50);
     _ey = clamp(_ed.giz.trail_sy, -50, _wh + 50);
   }
@@ -372,7 +372,7 @@ function __polygon_arrow(_x1, _y1, _x2, _y2, _col, _sz, _al) {
   var _dy = _y2 - _y1;
   var _len = sqrt(_dx * _dx + _dy * _dy);
 
-  if (_len < 0.001)  return;
+  if (_len < 0.001) return;
   _dx /= _len;
   _dy /= _len;
   var _tipx = _x2 + _dx * _sz;

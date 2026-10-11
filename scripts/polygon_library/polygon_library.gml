@@ -8,15 +8,16 @@
 // Used for library display and for matching live nodes back to models.
 // Identity of placed nodes is the wrapper id, not this name.
 function __polygon_model_key(_model) {
-  if (_model == undefined)  return undefined;
+  if (_model == undefined) return undefined;
   var _nodes = undefined;
   _nodes = _model.getNodes();
-  if (!is_array(_nodes))  return undefined;
+  if (!is_array(_nodes)) return undefined;
+
   for (var _i = 0, _n = array_length(_nodes); _i < _n; _i++) {
     var _node = _nodes[_i];
 
-    if (_node == undefined || _node.parent != undefined)  continue;
-    if (is_string(_node.name) && _node.name != "")  return _node.name;
+    if (_node == undefined || _node.parent != undefined) continue;
+    if (is_string(_node.name) && _node.name != "") return _node.name;
   }
 
   return undefined;
@@ -25,8 +26,8 @@ function __polygon_model_key(_model) {
 // Checks if a library id is already registered.
 // Finds library entry by key.
 function __polygon_asset_get(_ed, _key) {
-  if (_ed == undefined || !is_string(_key) || !is_array(_ed.assets))  return undefined;
-  for (var _i = 0, _n = array_length(_ed.assets); _i < _n; _i++)  if (is_struct(_ed.assets[_i]) && _ed.assets[_i].key == _key)  return _ed.assets[_i];
+  if (_ed == undefined || !is_string(_key) || !is_array(_ed.assets)) return undefined;
+  for (var _i = 0, _n = array_length(_ed.assets); _i < _n; _i++) if (is_struct(_ed.assets[_i]) && _ed.assets[_i].key == _key) return _ed.assets[_i];
   return undefined;
 }
 
@@ -38,7 +39,7 @@ function __polygon_asset_find(_ed, _key) {
 
 // Returns a non-empty string field of a struct, else "".
 function __polygon_asset_str(_entry, _field) {
-  if (is_struct(_entry) && variable_struct_exists(_entry, _field) && is_string(_entry[$ _field]) && _entry[$ _field] != "")  return _entry[$ _field];
+  if (is_struct(_entry) && variable_struct_exists(_entry, _field) && is_string(_entry[$ _field]) && _entry[$ _field] != "") return _entry[$ _field];
   return "";
 }
 
@@ -46,10 +47,10 @@ function __polygon_asset_str(_entry, _field) {
 function __polygon_asset_label(_entry) {
   var _label = __polygon_asset_str(_entry, "label");
 
-  if (_label != "")  return _label;
+  if (_label != "") return _label;
   var _name = __polygon_asset_str(_entry, "name");
 
-  if (_name != "")  return _name;
+  if (_name != "") return _name;
   return __polygon_asset_str(_entry, "key");
 }
 
@@ -64,10 +65,10 @@ function __polygon_asset_label(_entry) {
 function polygon_asset_add(_model, _kind = "prefab", _label = undefined, _path = undefined) {
   var _ed = __polygon_inst();
 
-  if (_ed == undefined)  return undefined;
-  if (!variable_struct_exists(_ed, "assets") || !is_array(_ed.assets))  _ed.assets = [];
-  if (_model == undefined)  return undefined;
-  if (!is_string(_kind) || _kind == "")  _kind = "prefab";
+  if (_ed == undefined) return undefined;
+  if (!variable_struct_exists(_ed, "assets") || !is_array(_ed.assets)) _ed.assets = [];
+  if (_model == undefined) return undefined;
+  if (!is_string(_kind) || _kind == "") _kind = "prefab";
   var _root = __polygon_model_key(_model);
   var _key = undefined;
 
@@ -77,20 +78,20 @@ function polygon_asset_add(_model, _kind = "prefab", _label = undefined, _path =
     _key = _root;
   }
 
-  if (!is_string(_key) || _key == "")  return undefined;
-  if (__polygon_asset_get(_ed, _key) != undefined)  return undefined;
+  if (!is_string(_key) || _key == "") return undefined;
+  if (__polygon_asset_get(_ed, _key) != undefined) return undefined;
   var _entry = { key: _key, model: _model, kind: _kind };
 
-  if (is_string(_root) && _root != "")  _entry.name = _root;
-  if (is_string(_label) && _label != "")  _entry.label = _label;
+  if (is_string(_root) && _root != "") _entry.name = _root;
+  if (is_string(_label) && _label != "") _entry.label = _label;
   array_push(_ed.assets, _entry);
   return _key;
 }
 
 // Returns the library asset selected in the Models panel, if still valid.
 function __polygon_lib_sel_asset(_ed) {
-  if (_ed == undefined || !variable_struct_exists(_ed, "lib_sel") || !is_real(_ed.lib_sel))  return undefined;
-  if (!is_array(_ed.assets) || _ed.lib_sel < 0 || _ed.lib_sel >= array_length(_ed.assets))  return undefined;
+  if (_ed == undefined || !variable_struct_exists(_ed, "lib_sel") || !is_real(_ed.lib_sel)) return undefined;
+  if (!is_array(_ed.assets) || _ed.lib_sel < 0 || _ed.lib_sel >= array_length(_ed.assets)) return undefined;
   return _ed.assets[_ed.lib_sel];
 }
 
@@ -98,7 +99,7 @@ function __polygon_lib_sel_asset(_ed) {
 function polygon_asset_clear() {
   var _ed = __polygon_inst();
 
-  if (_ed == undefined)  return;
+  if (_ed == undefined) return;
   __polygon_thumbs_free(_ed);
   _ed.assets = [];
   _ed.lib_sel = undefined;
@@ -111,7 +112,8 @@ function polygon_asset_clear() {
 
 // Returns editable default spawn transform for a library asset.
 function __polygon_spawn_t(_entry) {
-  if (!is_struct(_entry))  return undefined;
+  if (!is_struct(_entry)) return undefined;
+
   if (!variable_struct_exists(_entry, "spawn_t") || !is_struct(_entry.spawn_t)) {
     _entry.spawn_t = { rot: [ 0, 0, 0 ], sca: [ 1, 1, 1 ] };
   }
@@ -121,7 +123,8 @@ function __polygon_spawn_t(_entry) {
 
 // Returns editable default shadow flags for a library asset.
 function __polygon_spawn_shadow(_entry) {
-  if (!is_struct(_entry))  return undefined;
+  if (!is_struct(_entry)) return undefined;
+
   if (!variable_struct_exists(_entry, "spawn_shadow") || !is_struct(_entry.spawn_shadow)) {
     _entry.spawn_shadow = { cast: true, recv: true };
   }
@@ -151,10 +154,10 @@ function __polygon_spawn_apply(_entry) {
 function __polygon_spawn_shadow_apply(_ed, _entry, _node) {
   var _sh = __polygon_spawn_shadow(_entry);
 
-  if (_sh == undefined || _node == undefined)  return;
+  if (_sh == undefined || _node == undefined) return;
   var _en = __polygon_registry_find(_ed, _node);
 
-  if (_en == undefined || !is_struct(_en.data))  return;
+  if (_en == undefined || !is_struct(_en.data)) return;
   _en.data.castShadows = _sh.cast == true;
   _en.data.receiveShadows = _sh.recv == true;
   __polygon_flags_apply(_node, _en.data.castShadows, _en.data.receiveShadows);
@@ -174,18 +177,18 @@ function __polygon_spawn_shadow_apply(_ed, _entry, _node) {
 /// Shape: { min:[x,y,z], max:[x,y,z], size:[x,y,z], bottom, top, height,
 ///          pivot_ratio (0=base, 0.5=center), origin ("base"|"center"|"custom") }
 function __polygon_asset_measure(_model) {
-  if (_model == undefined)  return undefined;
+  if (_model == undefined) return undefined;
   var _get = _model[$ "getBoundingBox"];
 
-  if (_get == undefined)  return undefined;
+  if (_get == undefined) return undefined;
   var _bb = method(_model, _get)();
 
-  if (!is_struct(_bb))  return undefined;
-  if (!variable_struct_exists(_bb, "min") || !variable_struct_exists(_bb, "max"))  return undefined;
+  if (!is_struct(_bb)) return undefined;
+  if (!variable_struct_exists(_bb, "min") || !variable_struct_exists(_bb, "max")) return undefined;
   var _mn = _bb.min;
   var _mx = _bb.max;
 
-  if (_mn == undefined || _mx == undefined)  return undefined;
+  if (_mn == undefined || _mx == undefined) return undefined;
   var _min = [ _mn.x, _mn.y, _mn.z ];
   var _max = [ _mx.x, _mx.y, _mx.z ];
   var _sx = _max[0] - _min[0];
@@ -194,7 +197,7 @@ function __polygon_asset_measure(_model) {
   var _h = _sy;
   var _ratio = 0.0;
 
-  if (_h > 0.000001)  _ratio = (0.0 - _min[1]) / _h;
+  if (_h > 0.000001) _ratio = (0.0 - _min[1]) / _h;
   var _origin = "custom";
 
   if (abs(_min[1]) <= 0.02) {
@@ -217,10 +220,10 @@ function __polygon_asset_measure(_model) {
 
 // Returns cached model-space bounds for a library entry, measuring lazily.
 function __polygon_asset_bounds(_entry) {
-  if (!is_struct(_entry) || _entry.model == undefined)  return undefined;
-  if (variable_struct_exists(_entry, "bounds_local") && is_struct(_entry.bounds_local))  return _entry.bounds_local;
+  if (!is_struct(_entry) || _entry.model == undefined) return undefined;
+  if (variable_struct_exists(_entry, "bounds_local") && is_struct(_entry.bounds_local)) return _entry.bounds_local;
   var _b = __polygon_asset_measure(_entry.model);
 
-  if (_b != undefined)  _entry.bounds_local = _b;
+  if (_b != undefined) _entry.bounds_local = _b;
   return _b;
 }

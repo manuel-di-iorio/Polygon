@@ -4,7 +4,8 @@
 function __polygon_imgui_about(_ed) {
   var _dlg = _ed.about;
 
-  if (_dlg == undefined)  return;
+  if (_dlg == undefined) return;
+
   if (_dlg.open == false) {
     _ed.about = undefined;
     return;
@@ -21,6 +22,6 @@ function __polygon_imgui_about(_ed) {
   ImGui.Text("Released under the MIT License - 2026.");
   ImGui.Text("Third-party assets belong to their owners.");
 
-  if (ImGui.Button("OK", 0, 0))  _ed.about = undefined;
+  if (ImGui.Button("OK", 0, 0)) _ed.about = undefined;
   __polygon_modal_end();
 }

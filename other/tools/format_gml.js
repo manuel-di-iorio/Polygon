@@ -1,8 +1,7 @@
-// GML formatter. Run with: node format_gml.js
-//
-// Scope:
-// - Recursively formats .gml files only (excluding .git, Build, and node_modules).
-// - Normalizes indentation and spaces inside single-line array literals, e.g.
+// GML formatter. Run with: node format_gml.js [--no-compact]
+// First collapses single-statement braced if/for/while blocks onto one
+// line (skip with --no-compact), then normalizes indentation and spaces
+// inside single-line array literals, e.g.
 //   [ c_red, c_lime, c_blue ]. Array accessors such as _comp[$ _m] are unchanged.
 //
 // Control-block spacing:
@@ -16,19 +15,27 @@
 // - Do not add a blank line after a control block when the next code line is a
 //   closing brace; remove an existing blank line there as well.
 // - Keep else and else-if branches attached to the preceding if block.
+//
+// Continuation lines:
+// - Lines inside unclosed parens/brackets indent one level past the statement
+//   that opened the group; pure-closer lines (`);`, `];`) realign to it.
+// - Lines starting with &&, ||, ? or : (or following a line ending with a
+//   binary operator) align one past their statement's first line.
+// - Runs of 2+ spaces after an if/for/while header's `)` collapse to one.
 
 const fs = require("node:fs");
 const path = require("node:path");
 
 const projectRoot = path.resolve(__dirname, "..", "..");
 const ignoredDirectories = new Set([".git", "Build", "node_modules"]);
+const ignoredFiles = new Set(["polygon_merged.gml"]);
 const indentUnit = "  ";
 
 function collectGmlFiles(directory, files = []) {
 	for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
 		if (entry.isDirectory() && !ignoredDirectories.has(entry.name)) {
 			collectGmlFiles(path.join(directory, entry.name), files);
-		} else if (entry.isFile() && entry.name.toLowerCase().endsWith(".gml")) {
+		} else if (entry.isFile() && entry.name.toLowerCase().endsWith(".gml") && !ignoredFiles.has(entry.name)) {
 			files.push(path.join(directory, entry.name));
 		}
 	}
@@ -39,7 +46,12 @@ function collectGmlFiles(directory, files = []) {
 function formatIndentation(source) {
 	const newline = source.includes("\r\n") ? "\r\n" : "\n";
 	const lines = source.split(/\r\n|\n/);
+	// Stack entries: { ch, block, stmtDepth }. Braces always open blocks.
+	// Parens/brackets open continuation groups: content lines inside them
+	// indent one level past the statement that opened the outermost group,
+	// and pure-closer lines realign to it.
 	const delimiterStack = [];
+	const depthOfLine = [];
 	let inBlockComment = false;
 	let quote = null;
 	let escaped = false;
@@ -48,25 +60,169 @@ function formatIndentation(source) {
 		const line = lines[i];
 		const content = line.replace(/^\s+/, "");
 
-		if (content.length === 0) continue;
+		if (content.length === 0) {
+			depthOfLine.push(null);
+			continue;
+		}
 
 		// Preprocessor directives and lines inside a multiline literal keep their
 		// original indentation; their contents can have language-specific meaning.
 		if (quote !== null || content.startsWith("#")) {
-			updateLexicalState(line);
+			updateLexicalState(line, 0);
+			depthOfLine.push(null);
 			continue;
 		}
 
-		const leadingClosers = countLeadingClosers(content, delimiterStack);
-		const depth = Math.max(0, delimiterStack.length - leadingClosers);
+		// Peek at leading closers WITHOUT mutating the stack (the single
+		// pop site stays updateLexicalState below; popping twice here
+		// would drain one block level per `}` line).
+		const popped = [];
+		let rest = content;
+		let tempTop = delimiterStack.length - 1;
+		while (rest.length > 0) {
+			const c = rest[0];
+			if (c !== ")" && c !== "]" && c !== "}") break;
+			const top = delimiterStack[tempTop];
+			const expected = c === ")" ? "(" : c === "]" ? "[" : "{";
+			if (!top || top.ch !== expected) break;
+			popped.push(top);
+			tempTop--;
+			rest = rest.slice(1);
+		}
+
+		const blockDepth = delimiterStack.reduce((n, e) => n + (e.block ? 1 : 0), 0) -
+			popped.reduce((n, e) => n + (e.block ? 1 : 0), 0);
+		const hasGroup =
+			delimiterStack.some((e) => !e.block) || popped.some((e) => !e.block);
+		const restTrim = rest.trim();
+		let depth;
+
+		if (!hasGroup) {
+			depth = Math.max(0, blockDepth);
+		} else if (restTrim === "" || /^[,;]+$/.test(restTrim)) {
+			// Pure-closer line: realign to the statement that opened the
+			// outermost group closed here (or to the block depth).
+			const poppedGroups = popped.filter((e) => !e.block);
+			if (poppedGroups.length > 0) {
+				depth = poppedGroups[poppedGroups.length - 1].stmtDepth;
+			} else {
+				depth = Math.max(0, blockDepth);
+			}
+		} else if (/[\)\]]\s*\{\s*(?:\/\/.*)?$/.test(rest)) {
+			// Line closes a group into a block opening (e.g. `cond) {`):
+			// align with the statement that opened the group.
+			const top = delimiterStack[delimiterStack.length - 1];
+			const groups = delimiterStack.filter((e) => !e.block);
+			depth = groups.length > 0 ? groups[groups.length - 1].stmtDepth : Math.max(0, blockDepth);
+			void top;
+		} else {
+			// Content inside a group: one level past the innermost
+			// open group's statement.
+			const top = delimiterStack[delimiterStack.length - 1];
+			if (top && !top.block) {
+				depth = top.stmtDepth + 1;
+			} else {
+				depth = Math.max(0, blockDepth);
+			}
+		}
+
+		// Operator continuation without open groups: continuation lines of a
+		// split statement all indent one past the statement's first line
+		// (so `?`/`:` pairs and `&&` chains align instead of cascading).
+		// A trailing comma never continues here (struct fields / array
+		// elements either live in groups or keep block indent).
+		if (!hasGroup && restTrim !== "" && !/^[,;]+$/.test(restTrim)) {
+			const startsOp = /^(?:&&|\|\||\?|:)(?![=:])/.test(restTrim);
+			if (startsOp || endsWithOperator(lines, i)) {
+				const base = statementStartDepth(lines, depthOfLine, i);
+				if (base !== null) depth = base + 1;
+			}
+		}
+
+		depthOfLine.push(depth);
 		lines[i] = indentUnit.repeat(depth) + content;
-		updateLexicalState(line);
+		updateLexicalState(line, depth);
 	}
 
-	const spacedControlBlocks = addControlBlockSpacing(lines);
+	// Depth of the first line of the statement continued on line idx:
+	// walks up past chain links. A link either starts with an operator
+	// or ends with one while the line above also ends with one (which
+	// tells chain middles apart from statement starts).
+	function statementStartDepth(allLines, depths, idx) {
+		let s = idx - 1;
+		while (s >= 0 && allLines[s].trim() === "") s--;
+		while (s >= 0) {
+			const t = stripLineComment(allLines[s].trim());
+			if (t === "") { s--; continue; }
+			if (/^(?:&&|\|\||\?|:)(?![=:])/.test(t)) { s--; continue; }
+			if (endsWithOp(t)) {
+				let p = s - 1;
+				while (p >= 0 && allLines[p].trim() === "") p--;
+				if (p >= 0 && endsWithOp(stripLineComment(allLines[p].trim()))) { s = p; continue; }
+			}
+			break;
+		}
+		if (s < 0) return null;
+		const d = depths[s];
+		return d === null || d === undefined ? null : d;
+	}
+
+	function endsWithOp(text) {
+		return /(&&|\|\||\?|:|[+\-*/%=])$/.test(text) && !/^(?:case|default)\b/.test(text);
+	}
+
+	const spacedControlBlocks = addControlBlockSpacing(lines.map(normalizeControlSpacing));
 	return addSingleLineArraySpacing(spacedControlBlocks).join(newline);
 
-	function updateLexicalState(line) {
+	// Collapse runs of 2+ spaces after a control header's closing paren
+	// (`if (c)  x;` -> `if (c) x;`). Comment-safe: code part only.
+	function normalizeControlSpacing(line) {
+		let codeEnd = line.length;
+		let q = null;
+		for (let i = 0; i < line.length - 1; i++) {
+			const c = line[i];
+			if (q !== null) {
+				if (c === "\\") i++;
+				else if (c === q) q = null;
+			} else if (c === "\"" || c === "'") {
+				q = c;
+			} else if (c === "/" && line[i + 1] === "/") {
+				codeEnd = i;
+				break;
+			}
+		}
+		const code = line.slice(0, codeEnd);
+		const comment = line.slice(codeEnd);
+		return code.replace(/^(\s*)(if|for|while)\b(.*)\)\s{2,}(\S)/, "$1$2$3) $4") + comment;
+	}
+
+	function endsWithOperator(allLines, idx) {
+		for (let p = idx - 1; p >= 0; p--) {
+			const t = allLines[p].trim();
+			if (t === "") continue;
+			const code = stripLineComment(t);
+			return endsWithOp(code);
+		}
+		return false;
+	}
+
+	function stripLineComment(text) {
+		let q = null;
+		for (let i = 0; i < text.length - 1; i++) {
+			const c = text[i];
+			if (q !== null) {
+				if (c === "\\") i++;
+				else if (c === q) q = null;
+			} else if (c === "\"" || c === "'") {
+				q = c;
+			} else if (c === "/" && text[i + 1] === "/") {
+				return text.slice(0, i).trimEnd();
+			}
+		}
+		return text.trimEnd();
+	}
+
+	function updateLexicalState(line, depth) {
 		for (let i = 0; i < line.length; i++) {
 			const char = line[i];
 			const next = line[i + 1];
@@ -103,25 +259,14 @@ function formatIndentation(source) {
 			}
 
 			if (char === "(" || char === "[" || char === "{") {
-				delimiterStack.push(char);
+				delimiterStack.push({ ch: char, block: char === "{", stmtDepth: depth });
 			} else if (char === ")" || char === "]" || char === "}") {
 				const expected = char === ")" ? "(" : char === "]" ? "[" : "{";
-				if (delimiterStack[delimiterStack.length - 1] === expected) {
+				if (delimiterStack[delimiterStack.length - 1]?.ch === expected) {
 					delimiterStack.pop();
 				}
 			}
 		}
-	}
-
-	function countLeadingClosers(text, stack) {
-		let count = 0;
-		for (const char of text) {
-			if (char !== ")" && char !== "]" && char !== "}") break;
-			const expected = char === ")" ? "(" : char === "]" ? "[" : "{";
-			if (stack[stack.length - 1 - count] !== expected) break;
-			count++;
-		}
-		return count;
 	}
 }
 
@@ -437,11 +582,12 @@ function addSingleLineArraySpacing(lines) {
 }
 
 const files = collectGmlFiles(projectRoot).sort();
+const skipCompact = process.argv.includes("--no-compact");
 let changed = 0;
 
 for (const file of files) {
 	const original = fs.readFileSync(file, "utf8");
-	const formatted = formatIndentation(original);
+	const formatted = formatIndentation(skipCompact ? original : collapseSingleStatements(original));
 	if (formatted !== original) {
 		fs.writeFileSync(file, formatted, "utf8");
 		changed++;
@@ -450,3 +596,85 @@ for (const file of files) {
 }
 
 console.log(`Formatted ${changed} of ${files.length} GML files.`);
+
+// Collapse single-statement braced if/for/while blocks onto one line
+// (`if (c) {\n  stmt;\n}` -> `if (c) stmt;`), dropping a directly
+// following blank line. Whitespace-only change; runs before indentation.
+function collapseSingleStatements(source) {
+	const newline = source.includes("\r\n") ? "\r\n" : "\n";
+	let lines = source.split(/\r\n|\n/);
+	let changed = true;
+	let pass = 0;
+	while (changed && pass < 10) {
+		changed = false;
+		pass++;
+		const out = [];
+		for (let i = 0; i < lines.length; i++) {
+			const a = lines[i], b = lines[i + 1], c = lines[i + 2];
+			const m = /^([ \t]*)(if|for|while)\b(.*)\{\s*$/.exec(a);
+			let done = false;
+			if (m && b !== undefined && c !== undefined) {
+				const indent = m[1], kw = m[2], cond = m[3];
+				const bt = b.replace(/^\s+/, "");
+				const condStripped = stripForCollapse(cond);
+				const stmtStripped = stripForCollapse(b);
+				if (bt !== "" && bt[0] !== "#" &&
+					/;\s*$/.test(bt) &&
+					condStripped.indexOf("{") < 0 && condStripped.indexOf("}") < 0 &&
+					stmtStripped.indexOf("{") < 0 && stmtStripped.indexOf("}") < 0 &&
+					!hasInlineComment(a) && !hasInlineComment(b) &&
+					/^[ \t]*\}\s*$/.test(c)) {
+					const d = lines[i + 3] || "";
+					if (!/^\s*else\b/.test(d)) {
+						const opens = (condStripped.match(/\(/g) || []).length;
+						const closes = (condStripped.match(/\)/g) || []).length;
+						if (opens === closes) {
+							out.push(indent + kw + cond.replace(/\s+$/, "") + " " + bt);
+							let j = i + 3;
+							while (j < lines.length && lines[j].trim() === "") j++;
+							i = j - 1;
+							changed = true;
+							done = true;
+						}
+					}
+				}
+			}
+			if (!done) out.push(a);
+		}
+		lines = out;
+	}
+	return lines.join(newline);
+}
+
+function stripForCollapse(line) {
+	let out = "", q = null, esc = false;
+	for (let i = 0; i < line.length; i++) {
+		const c = line[i];
+		if (q) {
+			if (esc) esc = false;
+			else if (c === "\\") esc = true;
+			else if (c === q) q = null;
+		} else if (c === "\"" || c === "'") {
+			q = c;
+		} else {
+			out += c;
+		}
+	}
+	return out;
+}
+
+function hasInlineComment(line) {
+	let q = null;
+	for (let i = 0; i < line.length - 1; i++) {
+		const c = line[i];
+		if (q !== null) {
+			if (c === "\\") i++;
+			else if (c === q) q = null;
+		} else if (c === "\"" || c === "'") {
+			q = c;
+		} else if (c === "/" && line[i + 1] === "/") {
+			return true;
+		}
+	}
+	return false;
+}

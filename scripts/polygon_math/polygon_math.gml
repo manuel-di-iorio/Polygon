@@ -94,7 +94,7 @@ function __polygon_quat_to_euler(_q) {
   var _qz = _q.z;
   var _qw = _q.w;
 
-  if (is_nan(_qx) || is_nan(_qy) || is_nan(_qz) || is_nan(_qw))  return [ 0, 0, 0 ];
+  if (is_nan(_qx) || is_nan(_qy) || is_nan(_qz) || is_nan(_qw)) return [ 0, 0, 0 ];
   var _len = sqrt(_qx * _qx + _qy * _qy + _qz * _qz + _qw * _qw);
 
   if (_len > 0.000001) {
@@ -129,16 +129,16 @@ function __polygon_euler_to_quat(_ex, _ey, _ez) {
 // Returns the quaternion with roll (about the view axis) removed,
 // keeping yaw and pitch. No-ops when looking straight up/down.
 function __polygon_quat_no_roll(_q) {
-  if (_q == undefined)  return new GM3D_Quaternion();
+  if (_q == undefined) return new GM3D_Quaternion();
   var _f = __polygon_quat_forward(_q);
   var _fl = sqrt(_f.x * _f.x + _f.y * _f.y + _f.z * _f.z);
 
-  if (_fl < 0.000001)  return _q;
+  if (_fl < 0.000001) return _q;
   var _fv = new GM3D_Vec3(-_f.x / _fl, -_f.y / _fl, -_f.z / _fl);
   var _w = new GM3D_Vec3(-_fv.x * _fv.y, 1 - _fv.y * _fv.y, -_fv.z * _fv.y);
   var _wl = sqrt(_w.x * _w.x + _w.y * _w.y + _w.z * _w.z);
 
-  if (_wl < 0.001)  return _q;
+  if (_wl < 0.001) return _q;
   _w.x /= _wl;
   _w.y /= _wl;
   _w.z /= _wl;
@@ -220,7 +220,7 @@ function __polygon_point_seg_dist2(_px, _py, _ax, _ay, _bx, _by) {
 function __polygon_point_polyline_dist2(_px, _py, _pts) {
   var _n = array_length(_pts);
 
-  if (_n < 2)  return 1000000000;
+  if (_n < 2) return 1000000000;
   var _best = 1000000000;
 
   for (var _i = 0; _i < _n - 1; _i++) {
@@ -228,7 +228,7 @@ function __polygon_point_polyline_dist2(_px, _py, _pts) {
     var _b = _pts[_i + 1];
     var _d = __polygon_point_seg_dist2(_px, _py, _a[0], _a[1], _b[0], _b[1]);
 
-    if (_d < _best)  _best = _d;
+    if (_d < _best) _best = _d;
   }
 
   return _best;
@@ -250,7 +250,7 @@ function __polygon_tri_hit(_px, _py, _ax, _ay, _bx, _by, _cx, _cy) {
 
 // Snaps value to nearest step increment.
 function __polygon_snap(_v, _step) {
-  if (_step <= 0)  return _v;
+  if (_step <= 0) return _v;
   return round(_v / _step) * _step;
 }
 
@@ -259,8 +259,8 @@ function __polygon_snap_step(_ed) {
   var _grid_linked = variable_struct_exists(_ed, "snap_to_grid") && _ed.snap_to_grid == true;
   var _grid_step = variable_struct_exists(_ed, "grid_step") && is_real(_ed.grid_step);
 
-  if (_grid_linked && _grid_step)  return clamp(_ed.grid_step, 0.1, 8);
-  if (variable_struct_exists(_ed, "snap_pos") && is_real(_ed.snap_pos))  return max(0.01, _ed.snap_pos);
+  if (_grid_linked && _grid_step) return clamp(_ed.grid_step, 0.1, 8);
+  if (variable_struct_exists(_ed, "snap_pos") && is_real(_ed.snap_pos)) return max(0.01, _ed.snap_pos);
   return 0.5;
 }
 

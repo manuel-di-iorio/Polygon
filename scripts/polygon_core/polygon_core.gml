@@ -14,7 +14,7 @@ enum PolygonEditorTool {
 // Returns the editor state, or undefined when the editor object is absent.
 // Lets the game call editor entry points unconditionally (drop-in safe).
 function __polygon_inst() {
-  if (!variable_global_exists("polygon_inst"))  return undefined;
+  if (!variable_global_exists("polygon_inst")) return undefined;
   return global.polygon_inst;
 }
 
@@ -23,24 +23,26 @@ function __polygon_inst() {
 function __polygon_init_rt(_src) {
   var _rtc = { scene: GM3D_Scene.createEmpty() };
 
-  if (variable_struct_exists(_src, "on_spawn"))  _rtc.on_spawn = _src.on_spawn;
-  if (variable_struct_exists(_src, "on_close"))  _rtc.on_close = _src.on_close;
-  if (variable_struct_exists(_src, "cam"))  _rtc.cam = _src.cam;
-  if (variable_struct_exists(_src, "scene"))  _rtc.live_scene = _src.scene;
+  if (variable_struct_exists(_src, "on_spawn")) _rtc.on_spawn = _src.on_spawn;
+  if (variable_struct_exists(_src, "on_close")) _rtc.on_close = _src.on_close;
+  if (variable_struct_exists(_src, "cam")) _rtc.cam = _src.cam;
+  if (variable_struct_exists(_src, "scene")) _rtc.live_scene = _src.scene;
   return _rtc;
 }
 
 // Registers prefab entries from the adapter assets list.
 function __polygon_init_assets(_src) {
-  if (!variable_struct_exists(_src, "assets") || !is_array(_src.assets))  return;
+  if (!variable_struct_exists(_src, "assets") || !is_array(_src.assets)) return;
+
   for (var _i = 0, _n = array_length(_src.assets); _i < _n; _i++) {
     var _entry = _src.assets[_i];
 
-    if (!is_struct(_entry))  continue;
+    if (!is_struct(_entry)) continue;
     var _kind = "prefab";
 
-    if (variable_struct_exists(_entry, "kind") && is_string(_entry.kind) && _entry.kind != "")  _kind = _entry.kind;
-    if (_kind != "prefab")  continue;
+    if (variable_struct_exists(_entry, "kind") && is_string(_entry.kind) && _entry.kind != "") _kind = _entry.kind;
+    if (_kind != "prefab") continue;
+
     if (variable_struct_exists(_entry, "model")) {
       var _label = _entry[$ "label"];
       var _path = _entry[$ "path"];
@@ -56,18 +58,18 @@ function __polygon_import_live(_ed) {
   __polygon_drop_preview_clear(_ed);
   var _tracked = __polygon_root_tracked(_ed);
 
-  for (var _d = 0, _nd = array_length(_tracked); _d < _nd; _d++)  __polygon_destroy_subtree(_tracked[_d]);
+  for (var _d = 0, _nd = array_length(_tracked); _d < _nd; _d++) __polygon_destroy_subtree(_tracked[_d]);
   _ed.rt.scene.update(0);
   __polygon_reg_clear(_ed);
   var _nodes = undefined;
 
-  if (variable_struct_exists(_ed.rt, "live_scene") && _ed.rt.live_scene != undefined)  _nodes = _ed.rt.live_scene.getNodes();
-  if (_nodes != undefined)  for (var _i = 0, _n = array_length(_nodes); _i < _n; _i++)  __polygon_track_adopt_auto(_ed, _nodes[_i]);
+  if (variable_struct_exists(_ed.rt, "live_scene") && _ed.rt.live_scene != undefined) _nodes = _ed.rt.live_scene.getNodes();
+  if (_nodes != undefined) for (var _i = 0, _n = array_length(_nodes); _i < _n; _i++) __polygon_track_adopt_auto(_ed, _nodes[_i]);
   _ed.rt.scene.update(0);
 
-  if (__polygon_gamecam_resolve(_ed) == undefined)  __polygon_gamecam_ensure(_ed);
-  if (__polygon_light_count(_ed) == 0)  __polygon_default_sun(_ed);
-  if (__polygon_env_node(_ed) == undefined)  __polygon_create_env(_ed);
+  if (__polygon_gamecam_resolve(_ed) == undefined) __polygon_gamecam_ensure(_ed);
+  if (__polygon_light_count(_ed) == 0) __polygon_default_sun(_ed);
+  if (__polygon_env_node(_ed) == undefined) __polygon_create_env(_ed);
   _ed.rt.scene.update(0);
   __polygon_seq_reseed(_ed);
 }
@@ -107,7 +109,7 @@ function polygon_init(_rt) {
 function polygon_step() {
   var _ed = __polygon_inst();
 
-  if (_ed == undefined)  return;
+  if (_ed == undefined) return;
   __polygon_step(_ed, delta_time * 0.000001);
   __polygon_ai_step(_ed);
   __polygon_imgui_draw(_ed);
@@ -117,12 +119,12 @@ function polygon_step() {
 function polygon_prerender() {
   var _ed = __polygon_inst();
 
-  if (_ed == undefined)  return;
-  if (variable_struct_exists(_ed, "shaders_warmed") && _ed.shaders_warmed == true)  return;
+  if (_ed == undefined) return;
+  if (variable_struct_exists(_ed, "shaders_warmed") && _ed.shaders_warmed == true) return;
   _ed.shaders_warmed = true;
   var _surf = surface_create(8, 8);
 
-  if (_surf == undefined || !surface_exists(_surf))  return;
+  if (_surf == undefined || !surface_exists(_surf)) return;
   surface_set_target(_surf);
   draw_clear(c_black);
   var _shaders = __polygon_editor_shaders();
@@ -135,7 +137,7 @@ function polygon_prerender() {
 
   surface_reset_target();
 
-  if (surface_exists(_surf))  surface_free(_surf);
+  if (surface_exists(_surf)) surface_free(_surf);
 }
 
 // Frame render hooks: shader warmup, then outline mask + GPU pick.
@@ -149,8 +151,16 @@ function polygon_draw() {
 function polygon_postrender() {
   var _ed = __polygon_inst();
 
-  if (_ed == undefined)  return;
+  if (_ed == undefined) return;
+
   if (_ed.active) {
+    // Single per-frame world-matrix refresh, placed here so every pass
+    // below (pick, outline, panel render + overlays) shares one consistent
+    // camera pose. Refreshing in Step instead left matrices one camera
+    // move behind while the cache key (local TRS) already looked fresh,
+    // which lagged all gizmos/icons a frame behind during navigation.
+    _ed.rt.scene.update(0);
+    _ed.vp = __polygon_viewport_cached(_ed);
     __polygon_thumbs_pump(_ed);
     __polygon_mat_queue_pump(_ed);
     __polygon_anim_pv_tick(_ed, delta_time * 0.000001);
@@ -173,7 +183,8 @@ function polygon_postrender() {
 
 // Shoots one startup thumbnail and finishes the queue when drained.
 function __polygon_thumbs_pump(_ed) {
-  if (_ed.thumbs_done != true)  polygon_capture_thumbnails();
+  if (_ed.thumbs_done != true) polygon_capture_thumbnails();
+
   if (_ed.thumb_initializing == true && is_array(_ed.thumb_queue) && array_length(_ed.thumb_queue) > 0) {
     var _entry = array_pop(_ed.thumb_queue);
     var _spr = __polygon_thumb_shoot(_ed, _ed.thumb_stage, _entry);
@@ -206,7 +217,7 @@ function __polygon_thumbs_pump(_ed) {
 
 // Frees one expired thumbnail graveyard entry.
 function __polygon_thumb_graveyard_free(_entry) {
-  if (sprite_exists(_entry.spr))  sprite_delete(_entry.spr);
+  if (sprite_exists(_entry.spr)) sprite_delete(_entry.spr);
 }
 
 // Merges one rendered material preview into the cache (one per frame).
@@ -229,7 +240,7 @@ function __polygon_mat_queue_merge(_ed, _key, _spr) {
 
 // Renders at most one queued material preview per frame.
 function __polygon_mat_queue_pump(_ed) {
-  if (!variable_struct_exists(_ed, "mat_queue") || !is_array(_ed.mat_queue) || array_length(_ed.mat_queue) == 0)  return;
+  if (!variable_struct_exists(_ed, "mat_queue") || !is_array(_ed.mat_queue) || array_length(_ed.mat_queue) == 0) return;
   // Bound auxiliary 3D rendering to one material preview per frame.
   var _req = array_pop(_ed.mat_queue);
   var _spr = __polygon_mat_thumb_render(_ed, _req.mat);
@@ -252,7 +263,7 @@ function __polygon_mat_queue_pump(_ed) {
 // Draws the rubber-band rectangle into the scene surface.
 function __polygon_compose_rect(_ed) {
   static _fill = make_colour_rgb(90, 140, 250);
-  if (_ed.rect == undefined || !_ed.rect.on || !variable_struct_exists(_ed, "svp") || !is_struct(_ed.svp))  return;
+  if (_ed.rect == undefined || !_ed.rect.on || !variable_struct_exists(_ed, "svp") || !is_struct(_ed.svp)) return;
   var _r = __polygon_rect_norm(_ed.rect);
   var _ox = _ed.svp.x;
   var _oy = _ed.svp.y;
@@ -269,7 +280,7 @@ function __polygon_compose_speedtip(_ed, _vp) {
   static _edge = make_colour_rgb(90, 103, 120);
   static _bar = make_colour_rgb(80, 210, 190);
   static _txt = make_colour_rgb(170, 184, 199);
-  if (!(_ed.cam_speed_notice > 0))  return;
+  if (!(_ed.cam_speed_notice > 0)) return;
   var _w = 174;
   var _h = 36;
   var _x = clamp(_vp.winW - _w - 12, 8, _vp.winW - _w - 8);
@@ -301,7 +312,7 @@ function __polygon_compose_viewport(_ed) {
   gpu_set_blendmode_ext_sepalpha(bm_src_alpha, bm_inv_src_alpha, bm_inv_dest_alpha, bm_one);
   __polygon_outline_composite(_ed);
 
-  if (variable_struct_exists(_ed, "outline") && is_struct(_ed.outline) && _ed.outline.mass_active == true)  __polygon_outline_mass_draw(_vp, _ed.outline);
+  if (variable_struct_exists(_ed, "outline") && is_struct(_ed.outline) && _ed.outline.mass_active == true) __polygon_outline_mass_draw(_vp, _ed.outline);
   __polygon_gizmo_draw(_ed, _vp);
   __polygon_overlay_draw(_ed, _vp);
   __polygon_viewcube_draw(_ed);
@@ -331,11 +342,11 @@ function __polygon_compose_viewport(_ed) {
 // Draws the drag ghost label outside the viewport.
 function __polygon_draw_drag_ghost(_ed) {
   static _ghost = make_colour_rgb(90, 140, 250);
-  if (!(_ed.drag_lib != undefined && _ed.drag_moved))  return;
+  if (!(_ed.drag_lib != undefined && _ed.drag_moved)) return;
   var _mx = device_mouse_x_to_gui(0);
   var _my = device_mouse_y_to_gui(0);
 
-  if (__polygon_drag_in_viewport(_ed, _mx, _my))  return;
+  if (__polygon_drag_in_viewport(_ed, _mx, _my)) return;
   draw_set_color(_ghost);
   draw_rectangle(_mx + 14, _my + 10, _mx + 150, _my + 32, false);
   draw_set_color(c_white);
@@ -348,7 +359,7 @@ function __polygon_draw_drag_ghost(_ed) {
 function polygon_draw_ui() {
   var _ed = __polygon_inst();
 
-  if (_ed == undefined)  return;
+  if (_ed == undefined) return;
   var _modal = _ed.confirm != undefined || _ed.about != undefined || _ed.scene_dlg != undefined;
 
   if (_modal) {
@@ -362,7 +373,7 @@ function polygon_draw_ui() {
     return;
   }
 
-  if (_ed.active)  __polygon_draw_drag_ghost(_ed);
+  if (_ed.active) __polygon_draw_drag_ghost(_ed);
   draw_set_color(c_white);
   draw_set_alpha(1);
   draw_set_halign(fa_left);
@@ -371,8 +382,8 @@ function polygon_draw_ui() {
 
 // Frees the surface graveyard.
 function __polygon_graveyard_free(_ed) {
-  if (!variable_struct_exists(_ed, "surf_graveyard") || !is_array(_ed.surf_graveyard))  return;
-  for (var _i = 0, _n = array_length(_ed.surf_graveyard); _i < _n; _i++)  if (surface_exists(_ed.surf_graveyard[_i].surf))  surface_free(_ed.surf_graveyard[_i].surf);
+  if (!variable_struct_exists(_ed, "surf_graveyard") || !is_array(_ed.surf_graveyard)) return;
+  for (var _i = 0, _n = array_length(_ed.surf_graveyard); _i < _n; _i++) if (surface_exists(_ed.surf_graveyard[_i].surf)) surface_free(_ed.surf_graveyard[_i].surf);
   _ed.surf_graveyard = [];
 }
 
@@ -380,7 +391,7 @@ function __polygon_graveyard_free(_ed) {
 function polygon_cleanup(_ed = undefined) {
   _ed ??= __polygon_inst();
 
-  if (_ed == undefined)  return;
+  if (_ed == undefined) return;
   __polygon_outline_cleanup(_ed);
   __polygon_gpupick_cleanup(_ed);
   __polygon_ai_disconnect(_ed);
@@ -389,7 +400,7 @@ function polygon_cleanup(_ed = undefined) {
   __polygon_anim_pv_free(_ed);
   __polygon_graveyard_free(_ed);
 
-  if (surface_exists(_ed.scene_surf))  surface_free(_ed.scene_surf);
+  if (surface_exists(_ed.scene_surf)) surface_free(_ed.scene_surf);
   _ed.scene_surf = undefined;
   _ed.renderer = undefined;
   __polygon_ui_save(_ed);
@@ -403,7 +414,7 @@ function polygon_cleanup(_ed = undefined) {
   if (_ed.viewcam != undefined) {
     var _vcc = _ed.viewcam.getCameraComponent();
 
-    if (_vcc != undefined)  _vcc.setEnabled(false);
+    if (_vcc != undefined) _vcc.setEnabled(false);
   }
 
   __polygon_grid_remove(_ed);
@@ -424,8 +435,8 @@ function polygon_cleanup(_ed = undefined) {
     _ed.grid_src = undefined;
   }
 
-  if (variable_global_exists("polygon_inst") && global.polygon_inst == _ed)  global.polygon_inst = undefined;
-  if (variable_global_exists("polygon_active"))  global.polygon_active = false;
+  if (variable_global_exists("polygon_inst") && global.polygon_inst == _ed) global.polygon_inst = undefined;
+  if (variable_global_exists("polygon_active")) global.polygon_active = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -434,24 +445,25 @@ function polygon_cleanup(_ed = undefined) {
 
 // Applies dark background and hides layer.
 function __polygon_bg_apply(_ed) {
-  if (_ed == undefined)  return;
-  if (!variable_struct_exists(_ed, "prev_win_colour") || _ed.prev_win_colour == undefined)  _ed.prev_win_colour = window_get_colour();
+  if (_ed == undefined) return;
+  if (!variable_struct_exists(_ed, "prev_win_colour") || _ed.prev_win_colour == undefined) _ed.prev_win_colour = window_get_colour();
   window_set_colour(#181825);
   var _layer = layer_get_id("Background");
   _ed.bg_layer = _layer;
 
-  if (_layer != -1)  layer_set_visible(_layer, false);
+  if (_layer != -1) layer_set_visible(_layer, false);
 }
 
 // Restores previous window background color.
 function __polygon_bg_restore(_ed) {
-  if (_ed == undefined)  return;
+  if (_ed == undefined) return;
+
   if (variable_struct_exists(_ed, "prev_win_colour") && _ed.prev_win_colour != undefined) {
     window_set_colour(_ed.prev_win_colour);
     _ed.prev_win_colour = undefined;
   }
 
-  if (variable_struct_exists(_ed, "bg_layer") && _ed.bg_layer != undefined && _ed.bg_layer != -1)  layer_set_visible(_ed.bg_layer, true);
+  if (variable_struct_exists(_ed, "bg_layer") && _ed.bg_layer != undefined && _ed.bg_layer != -1) layer_set_visible(_ed.bg_layer, true);
   _ed.bg_layer = undefined;
 }
 
@@ -460,16 +472,17 @@ function __polygon_view_sync(_ed) {
   var _ww = window_get_width();
   var _wh = window_get_height();
 
-  if (_ww <= 0 || _wh <= 0)  return;
+  if (_ww <= 0 || _wh <= 0) return;
+
   if (!variable_struct_exists(_ed, "view_sync")) {
     _ed.view_sync = { w: -1, h: -1 };
   }
 
-  if (_ed.view_sync.w == _ww && _ed.view_sync.h == _wh)  return;
+  if (_ed.view_sync.w == _ww && _ed.view_sync.h == _wh) return;
   _ed.view_sync.w = _ww;
   _ed.view_sync.h = _wh;
 
-  if (surface_exists(application_surface))  surface_resize(application_surface, _ww, _wh);
+  if (surface_exists(application_surface)) surface_resize(application_surface, _ww, _wh);
   display_set_gui_size(_ww, _wh);
 }
 
@@ -489,12 +502,12 @@ function __polygon_view_save(_ed) {
 
 // Restores previously saved surface sizes.
 function __polygon_view_restore(_ed) {
-  if (_ed == undefined || !is_struct(_ed.view_prev))  return;
+  if (_ed == undefined || !is_struct(_ed.view_prev)) return;
   var _view = _ed.view_prev;
   _ed.view_prev = undefined;
 
-  if (_view.sw > 0 && _view.sh > 0 && surface_exists(application_surface))  surface_resize(application_surface, _view.sw, _view.sh);
-  if (_view.gw > 0 && _view.gh > 0)  display_set_gui_size(_view.gw, _view.gh);
+  if (_view.sw > 0 && _view.sh > 0 && surface_exists(application_surface)) surface_resize(application_surface, _view.sw, _view.sh);
+  if (_view.gw > 0 && _view.gh > 0) display_set_gui_size(_view.gw, _view.gh);
 }
 
 // ---------------------------------------------------------------------------
@@ -513,7 +526,7 @@ function __polygon_deactivate(_ed) {
   if (_ed.viewcam != undefined) {
     var _vcc = _ed.viewcam.getCameraComponent();
 
-    if (_vcc != undefined)  _vcc.setEnabled(false);
+    if (_vcc != undefined) _vcc.setEnabled(false);
   }
 
   __polygon_cam_home(_ed);
@@ -522,7 +535,7 @@ function __polygon_deactivate(_ed) {
   _ed.show_unlit = false;
   __polygon_unlit_apply(_ed);
 
-  if (variable_struct_exists(_ed.rt, "on_close"))  _ed.rt.on_close();
+  if (variable_struct_exists(_ed.rt, "on_close")) _ed.rt.on_close();
 }
 
 // Sets up editor chrome when opening (fresh mirror of the live scene).
@@ -543,7 +556,7 @@ function __polygon_activate(_ed) {
 
 // Toggles editor active state with setup.
 function __polygon_set_active(_ed, _on) {
-  if (_ed == undefined)  return;
+  if (_ed == undefined) return;
   var _was = _ed.active;
   _ed.active = _on;
   global.polygon_active = _on;
@@ -569,7 +582,7 @@ function polygon_disable() {
 function polygon_is_active() {
   var _ed = __polygon_inst();
 
-  if (_ed == undefined)  return false;
+  if (_ed == undefined) return false;
   return _ed.active == true;
 }
 
@@ -827,11 +840,11 @@ function __polygon_step(_ed, _dt) {
   _ed.gh = max(200, display_get_gui_height());
   var _keys = _ed.cfg.keys;
 
-  if (!_ed.active)  return;
-  if (keyboard_check_pressed(vk_f9))  _ed.show_fps = !_ed.show_fps;
+  if (!_ed.active) return;
+  if (keyboard_check_pressed(vk_f9)) _ed.show_fps = !_ed.show_fps;
   __polygon_view_sync(_ed);
 
-  if (_ed.open_snapshot == undefined && _ed.dirty != true)  _ed.open_snapshot = __polygon_serialize_scene(_ed);
+  if (_ed.open_snapshot == undefined && _ed.dirty != true) _ed.open_snapshot = __polygon_serialize_scene(_ed);
   var _input = __polygon_input_context(_ed, _keys);
   var _vp = _input.vp;
   _ed.vp = _vp;
@@ -852,17 +865,12 @@ function __polygon_step(_ed, _dt) {
   _input.camera_keys = (_input.typing == false || (keyboard_check(vk_alt) && !_input.text_input)) && _camera_owner_ok;
   _input.camera_viewport = _input.vin && _camera_owner_ok;
 
-  if (!_input.camera_viewport && keyboard_check(vk_alt))  _input.camera_viewport = _camera_owner_ok && __polygon_drag_in_viewport(_ed, _input.mx, _input.my);
+  if (!_input.camera_viewport && keyboard_check(vk_alt)) _input.camera_viewport = _camera_owner_ok && __polygon_drag_in_viewport(_ed, _input.mx, _input.my);
   _input.camera_zoom = _input.camera_viewport && _ed.drag_lib == undefined && _camera_owner_ok;
   __polygon_cam_fly(_ed, _input, _dt);
   _input.owner = __polygon_input_owner_sync(_ed);
   _input.gesture_active = _input.owner != undefined && !__polygon_input_owner_is_camera(_input.owner);
   __polygon_cam_anim_step(_ed, _dt);
-  // World matrices refresh AFTER camera motion (they only update here):
-  // the viewport rebuilt below must see the new camera pose, otherwise
-  // every gizmo/icon lags one frame behind during navigation.
-  _ed.rt.scene.update(0);
-  _ed.vp = __polygon_viewport_cached(_ed);
   __polygon_grid_ensure(_ed);
   __polygon_grid_follow(_ed);
   __polygon_sky_ensure(_ed);
@@ -871,9 +879,9 @@ function __polygon_step(_ed, _dt) {
   __polygon_step_hotkeys(_ed, _input);
   __polygon_step_cancel(_ed, _input);
 
-  if (__polygon_step_gizmo(_ed, _input))  return;
-  if (__polygon_step_libdrop(_ed, _input))  return;
-  if (__polygon_step_rect(_ed, _input))  return;
+  if (__polygon_step_gizmo(_ed, _input)) return;
+  if (__polygon_step_libdrop(_ed, _input)) return;
+  if (__polygon_step_rect(_ed, _input)) return;
   __polygon_step_hover(_ed, _input);
 }
 
@@ -884,7 +892,7 @@ function __polygon_step(_ed, _dt) {
 // Spawns the drag preview wrapper on first update (model inside,
 // so commit registers an already-wrapped node).
 function __polygon_drop_preview_spawn(_ed, _asset, _spawn) {
-  if (_asset == undefined || _asset.model == undefined)  return undefined;
+  if (_asset == undefined || _asset.model == undefined) return undefined;
   var _wrap = __polygon_spawn(_ed, {
     kind: "instance",
     asset: _asset,
@@ -896,18 +904,18 @@ function __polygon_drop_preview_spawn(_ed, _asset, _spawn) {
     skip_register: true,
   });
 
-  if (_wrap == undefined)  return undefined;
+  if (_wrap == undefined) return undefined;
   _ed.drag_preview = _wrap;
   return _wrap;
 }
 
 // Updates asset drag preview position.
 function __polygon_drop_preview_update(_ed, _drop) {
-  if (_ed == undefined || _ed.drag_lib == undefined || _drop == undefined)  return;
-  if (_ed.drag_preview == undefined)  __polygon_drop_preview_spawn(_ed, _ed.drag_lib.asset, __polygon_spawn_apply(_ed.drag_lib.asset));
+  if (_ed == undefined || _ed.drag_lib == undefined || _drop == undefined) return;
+  if (_ed.drag_preview == undefined) __polygon_drop_preview_spawn(_ed, _ed.drag_lib.asset, __polygon_spawn_apply(_ed.drag_lib.asset));
   var _pv = _ed.drag_preview;
 
-  if (_pv == undefined)  return;
+  if (_pv == undefined) return;
   _pv.setLocalPosition(new GM3D_Vec3(_drop.x, _drop.y, _drop.z));
 
   _ed.rt.scene.update(0);
@@ -915,11 +923,12 @@ function __polygon_drop_preview_update(_ed, _drop) {
 
 // Removes asset drag preview node.
 function __polygon_drop_preview_clear(_ed) {
-  if (_ed == undefined)  return;
+  if (_ed == undefined) return;
+
   if (_ed.drag_preview != undefined) {
     __polygon_destroy_subtree(_ed.drag_preview);
     _ed.drag_preview = undefined;
 
-    if (_ed.rt != undefined && _ed.rt.scene != undefined)  _ed.rt.scene.update(0);
+    if (_ed.rt != undefined && _ed.rt.scene != undefined) _ed.rt.scene.update(0);
   }
 }
