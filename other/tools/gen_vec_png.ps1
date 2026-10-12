@@ -24,7 +24,7 @@ $edge = @(
 if (-not $edge) { throw 'Microsoft Edge non trovato: impossibile rasterizzare.' }
 
 Add-Type -AssemblyName System.Drawing
-$tmp = Join-Path ([IO.Path]::GetTempPath()) 'polygon_vec_png'
+$tmp = Join-Path ([IO.Path]::GetTempPath()) 'poly_vec_png'
 New-Item -ItemType Directory -Force $tmp | Out-Null
 $profile = Join-Path $tmp ('profile_' + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force $profile | Out-Null

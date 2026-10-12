@@ -82,9 +82,9 @@ funcs.forEach(function (fn) {
   if (body.length > 4) return;
   var c = (calls[fn.name] ? calls[fn.name].n : 0) - 1; // minus def
   if (c > 1) return;
-  // pure if body is single return/call/assign delegating to another __polygon_*
+  // pure if body is single return/call/assign delegating to another __poly_*
   var joined = body.join(" ");
-  if (/__polygon_/.test(joined) || body.length <= 2) {
+  if (/__poly_/.test(joined) || body.length <= 2) {
     console.log(fn.file.replace(ROOT, "").replace(/\\/g, "/") + ":" + (fn.start + 1) +
       " " + fn.name + "(" + fn.params.join(", ") + ") callers=" + c + " bodyLines=" + body.length);
   }

@@ -1,1 +1,1 @@
-if (!polygon_is_active()) demo_draw();
+if (!poly_is_active()) demo_draw();

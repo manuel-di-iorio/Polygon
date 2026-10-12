@@ -1,1 +1,1 @@
-polygon_step();
+poly_step();

@@ -1,2 +1,2 @@
-polygon_init(config);
-polygon_enable(); // This actually opens the editor
+poly_create(config);
+poly_enable(); // This actually opens the editor

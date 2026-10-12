@@ -1,10 +1,10 @@
-// Count code lines in all editor .gml scripts (polygon_ed_*).
+// Count code lines in all editor .gml scripts (poly_ed_*).
 // Run: node tools/count_lines.js
 var fs = require("fs");
 var path = require("path");
 
 var SCRIPTS_DIR = path.join(__dirname, "..", "..", "scripts");
-var PREFIX = "polygon_";
+var PREFIX = "poly_";
 var EXT = ".gml";
 
 function collectGmlFiles(dir) {

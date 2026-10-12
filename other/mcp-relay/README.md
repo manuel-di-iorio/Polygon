@@ -3,7 +3,7 @@
 Local bridge between MCP-compatible AI clients (OpenCode, Claude Code, Codex, ...) and
 the Polygon GameMaker 3D editor. The relay speaks **MCP over stdio** to the
 AI and **newline-delimited JSON over TCP** to the game
-(`scripts/polygon_ai/polygon_ai.gml`).
+(`scripts/poly_ai/poly_ai.gml`).
 
 ```
 AI client <--stdio/MCP--> relay --TCP 127.0.0.1:5192--> game (editor open + bridge on)
@@ -42,27 +42,27 @@ Logs go to stderr only; stdout is reserved for MCP transport.
 Claude Code:
 
 ```bat
-claude mcp add polygon -- node C:\...\polygon\other\mcp-relay\server.js
+claude mcp add poly -- node C:\...\poly\other\mcp-relay\server.js
 ```
 
 opencode (locale, nel progetto):
 
 ```bat
-opencode mcp add polygon -- "C:\Program Files\nodejs\node.exe" C:\...\polygon\other\mcp-relay\server.js
+opencode mcp add poly -- "C:\Program Files\nodejs\node.exe" C:\...\poly\other\mcp-relay\server.js
 opencode mcp list
 ```
 
 > Usa il percorso completo di Node 24: il `node` nel PATH potrebbe essere
 > una versione vecchia (il relay richiede Node 18+). Verifica con
-> `opencode mcp list` → `✓ polygon connected`, i tool compaiono come
-> `polygon_*`.
+> `opencode mcp list` → `✓ poly connected`, i tool compaiono come
+> `poly_*`.
 
 Codex (`~/.codex/config.toml`):
 
 ```toml
-[mcp_servers.polygon]
+[mcp_servers.poly]
 command = "node"
-args = ["C:/.../polygon/other/mcp-relay/server.js"]
+args = ["C:/.../poly/other/mcp-relay/server.js"]
 ```
 
 Claude Desktop / Cursor: same command+args in the `mcpServers` JSON block.
@@ -70,13 +70,13 @@ No secrets or credentials are involved.
 
 ## Tools (16)
 
-Status/inspect: `polygon_get_status`, `polygon_get_scene_hierarchy`,
-`polygon_get_selection`, `polygon_get_object_details`, `polygon_get_assets`,
-`polygon_raycast_down`.
-Edit: `polygon_select_objects`, `polygon_focus_object`,
-`polygon_create_object`, `polygon_set_transform`, `polygon_rename_object`,
-`polygon_delete_objects`, `polygon_save_scene`, `polygon_apply_batch`,
-`polygon_drop_to_ground`, `polygon_place_on`.
+Status/inspect: `poly_get_status`, `poly_get_scene_hierarchy`,
+`poly_get_selection`, `poly_get_object_details`, `poly_get_assets`,
+`poly_raycast_down`.
+Edit: `poly_select_objects`, `poly_focus_object`,
+`poly_create_object`, `poly_set_transform`, `poly_rename_object`,
+`poly_delete_objects`, `poly_save_scene`, `poly_apply_batch`,
+`poly_drop_to_ground`, `poly_place_on`.
 
 Conventions (also in each tool description): nodes are addressed by stable
 id (`__PolygonEditor__N`), never by label; transforms are **local**;
@@ -86,9 +86,9 @@ rejected while an editor dialog/drag owns the scene (`busy` error).
 Positioning without guessing Y: read ops report world-space AABBs
 (`bounds`: min/max/size/bottom/top) and assets report model-space bounds
 plus pivot (`bottom` offset, `origin` base|center|custom). To rest objects
-exactly, prefer `polygon_create_object` with `base_y` (world bottom Y) or
+exactly, prefer `poly_create_object` with `base_y` (world bottom Y) or
 `on_top_of` (support id) + `gap`, or snap existing nodes with
-`polygon_drop_to_ground` (`ground_y`, default 0) / `polygon_place_on`
+`poly_drop_to_ground` (`ground_y`, default 0) / `poly_place_on`
 (`on` + `gap`). Both are batchable; `on_top_of`/`on` must reference an
 already existing node (create supports first, then stack).
 
@@ -96,7 +96,7 @@ already existing node (create supports first, then stack).
 
 TCP client = game (`network_connect_raw` to 127.0.0.1:port), one frame per
 line: compact JSON + `\n`, UTF-8. Game says
-`{ "v": 1, "hello": "polygon-ai" }`; relay answers
+`{ "v": 1, "hello": "poly-ai" }`; relay answers
 `{ "v": 1, "hello": "polygon-mcp-relay" }` (either side drops on version
 mismatch). Requests `{ "id", "op", "params" }` → responses
 `{ "id", "ok": true, "result" }` / `{ "id", "ok": false, "error": "code: msg" }`.

@@ -57,15 +57,16 @@ Polygon only needs a small **config** struct. It never touches your game instanc
 
 ```gml
 // oGame / Create
+var assets = {};
+assets[$ "models/tree.glb"] = { model: my_model_a, label: "Tree" };
+assets[$ "models/rock.glb"] = { model: my_model_b, label: "Rock", on_create: my_rock_setup };
+
 var config = {
   scene: my_scene,          // your live GM3D_Scene (mirrored on enable)
   cam: my_camera_node,      // your gameplay camera node (seeds the editor view)
-  on_spawn: my_on_spawn,    // optional: called for every spawned node
+  on_create: my_on_create,    // optional: called for every spawned node
   on_close: my_on_close,    // optional: called when the editor closes
-  assets: [
-    { model: my_model_a, label: "Tree", path: "models/tree.glb" },
-    { model: my_model_b, label: "Rock", path: "models/rocks.glb" },
-  ],
+  assets,           // struct keyed by asset id: { model, label?, on_create? }
 };
 
 instance_create_layer(0, 0, layer, oEditor, { config });
@@ -75,21 +76,21 @@ Wire the `oEditor` events:
 
 | Event               | Code                |
 |---------------------|---------------------|
-| Create              | `polygon_init(config); polygon_enable();` |
-| Step                | `polygon_step();`   |
-| Draw                | `polygon_draw();`   |
-| Draw GUI            | `polygon_draw_ui();`|
-| Async Networking    | `polygon_ai_net();` |
-| Clean Up            | `polygon_cleanup();`|
+| Create              | `poly_create(config); poly_enable();` |
+| Step                | `poly_step();`   |
+| Draw                | `poly_draw();`   |
+| Draw GUI            | `poly_draw_ui();`|
+| Async Networking    | `poly_ai_net();` |
+| Clean Up            | `poly_cleanup();`|
 
 Toggle the editor from your game:
 
 ```gml
 // oGame / Key Press F1
-if (!polygon_is_active()) polygon_enable();
+if (!poly_is_active()) poly_enable();
 
 // pause your own world while the editor is open
-if (!polygon_is_active()) my_game_step();
+if (!poly_is_active()) my_game_step();
 ```
 
 Close it from the editor with **File → Close Editor** (Ctrl+W).
@@ -100,8 +101,8 @@ Close it from the editor with **File → Close Editor** (Ctrl+W).
 |------------|-------------|
 | `scene`    | Live scene. On every enable, Polygon imports it (see below). |
 | `cam`      | Gameplay camera node, used to seed the editor camera. |
-| `assets`   | Array of `{ model, label?, path? }`. `path` is the stable asset id used in scene files. |
-| `on_spawn` | `function(wrapperNode, assetKey, model)`. Use it to assign shaders and start animations. Walk the subtree: the model root lives inside the wrapper. |
+| `assets`   | Struct `{ assetKey: { model, label?, on_create? } }`. The key is the stable asset id used in scene files (usually the load path). `on_create` is an optional per-model hook, called after the global one. |
+| `on_create` | `function(node, asset, model, id, label)`. Called for every spawned node: global hook first, then the per-model `on_create` from the library entry. Use it to assign shaders and start animations. Walk the subtree: the model root lives inside the wrapper. |
 | `on_close` | Called after the editor closes. |
 
 ### How the live scene is imported
@@ -171,16 +172,39 @@ Scenes are saved from **File → Save / Save As** into `working_directory/__Poly
 Load a scene in your game, without the editor, with:
 
 ```gml
-// models: struct mapping asset key (the `path` you registered) to its model
-var models = {};
-models[$ "models/tree.glb"] = my_model_a;
-models[$ "models/rocks.glb"] = my_model_b;
+// assets: same struct shape as the poly_create config
+var assets = {};
+assets[$ "models/tree.glb"] = { model: my_model_a, label: "Tree" };
+assets[$ "models/rock.glb"] = { model: my_model_b, label: "Rock", on_create: my_rock_setup };
 
-var report = polygon_load(my_scene, "__PolygonEditor__/scenes/level1.json", models);
-// report = { placed, failed }
+var report = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", assets, my_on_create);
+// report = { placed, failed, companions, warnings, placements }
+// placements = [{ node, asset, id, label, model, instance }]
 ```
 
-`polygon_load` spawns instances, lights, cameras and environments, preserving node ids.
+`poly_load` spawns instances, lights, cameras and environments, preserving node ids. For every instance it calls, in order:
+
+1. the global `on_create(node, asset, model, id, label)` (4th argument, optional),
+2. the per-model `on_create` from `assets[key]` (optional),
+3. the companion spawn below (when configured).
+
+### Actors (companions)
+
+In the Models panel, selecting a model shows an **Actor** section in the Inspector. Enabling **Spawn actor** and picking a GameMaker object + layer stores a per-model binding in the scene file:
+
+```json
+{ "assets": { "models/fox.glb": { "type": "model", "actor": { "object": "oEnemy", "layer": "Actors" } } } }
+```
+
+At load, every instance of a bound model spawns a companion via `instance_create_layer(0, 0, layer, obj, { node, poly_id, poly_asset, poly_label })` — the object reads the node from its creation variables and drives it in its own Step/Draw events. Missing objects or layers never fail the load: they become `report.warnings` entries. Layer defaults to `"Instances"`.
+
+Kill actors only through the helper, never with `node.destroy` / `instance_destroy` directly, or the other half is left orphaned:
+
+```gml
+poly_actor_destroy(id);    // from inside the companion, or any instance id
+poly_actor_destroy(node);  // from a scene node (finds the companion)
+poly_actor_of(node);       // companion instance id bound to a node, or undefined
+```
 
 ---
 
@@ -190,22 +214,27 @@ var report = polygon_load(my_scene, "__PolygonEditor__/scenes/level1.json", mode
 {
   "version": 2,
   "seq": 12,
+  "assets": {
+    "models/tree.glb": { "type": "model", "actor": { "object": "oTree", "layer": "Actors" } }
+  },
   "nodes": [
     {
       "kind": "instance",
       "id": "__PolygonEditor__3",
       "label": "Tree",
-      "asset": "models/tree.glb",
-      "position": [0, 0, 0],
-      "rotation": [0, 0, 0, 1],
-      "scale": [1, 1, 1],
-      "flags": { "castShadows": true, "receiveShadows": true }
+      "assetId": "models/tree.glb",
+      "transform": {
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0, 1],
+        "scale": [1, 1, 1]
+      },
+      "shadows": { "cast": true, "receive": true }
     }
   ]
 }
 ```
 
-`kind` is one of `instance`, `light`, `camera`, `environment` (the last three carry a `light` / `camera` / `environment` sub-object). Rotation is a quaternion `[x, y, z, w]`. Node ids are stable and are what the AI bridge uses.
+`kind` is one of `instance`, `light`, `camera`, `environment` (the last three carry a `light` / `camera` / `environment` sub-object). The transform lives in `transform: { position, rotation, scale }` (rotation is a quaternion `[x, y, z, w]`). Instances link their model via `assetId`. Node ids are stable and are what the AI bridge uses.
 
 ---
 
@@ -230,22 +259,22 @@ No socket is ever opened unless the editor is active and the bridge is on. Only 
 
 ```
 objects/oEditor            editor object (event wiring)
-scripts/polygon_core       init, frame entry points, state
-scripts/polygon_input      hotkeys, gizmo/library/rect/hover steps
-scripts/polygon_gizmo*     transform handles and drawing
-scripts/polygon_gpu_pick   ID-buffer picking
-scripts/polygon_outline    selection outline
-scripts/polygon_imgui_*    Hierarchy, Inspector, Models, Scene, toolbar, dock
-scripts/polygon_registry   tracked node registry and spawn pipeline
-scripts/polygon_serialize  descriptors, validation, save/load
-scripts/polygon_ai         AI bridge (TCP client)
+scripts/poly_core       init, frame entry points, state
+scripts/poly_input      hotkeys, gizmo/library/rect/hover steps
+scripts/poly_gizmo*     transform handles and drawing
+scripts/poly_gpu_pick   ID-buffer picking
+scripts/poly_outline    selection outline
+scripts/poly_imgui_*    Hierarchy, Inspector, Models, Scene, toolbar, dock
+scripts/poly_registry   tracked node registry and spawn pipeline
+scripts/poly_serialize  descriptors, validation, save/load
+scripts/poly_ai         AI bridge (TCP client)
 scripts/scr_demo           demo world
 ```
 
 ## Troubleshooting
 
 - **No grid or sky:** check that `grid.glb` and `skybox.glb` are in `__PolygonEditor__/models/` in Included Files.
-- **Pink / magenta meshes:** a model has no material; Polygon paints it magenta as a fallback. Assign materials in your `on_spawn` hook or fix the model.
+- **Pink / magenta meshes:** a model has no material; Polygon paints it magenta as a fallback. Assign materials in your `on_create` hook or fix the model.
 - **Library thumbnails missing:** they are rendered once at startup; make sure the models loaded successfully.
 - **AI shows "AI Server not available":** start the relay first; the editor gives up after 3 attempts.
 

@@ -11,22 +11,22 @@ const dir = path.dirname(fileURLToPath(import.meta.url));
 const serverJs = path.join(dir, "..", "server.js");
 
 const EXPECTED_TOOLS = [
-  "polygon_get_status",
-  "polygon_get_scene_hierarchy",
-  "polygon_get_selection",
-  "polygon_get_object_details",
-  "polygon_get_assets",
-  "polygon_select_objects",
-  "polygon_focus_object",
-  "polygon_create_object",
-  "polygon_set_transform",
-  "polygon_rename_object",
-  "polygon_delete_objects",
-  "polygon_save_scene",
-  "polygon_apply_batch",
-  "polygon_drop_to_ground",
-  "polygon_place_on",
-  "polygon_raycast_down",
+  "poly_get_status",
+  "poly_get_scene_hierarchy",
+  "poly_get_selection",
+  "poly_get_object_details",
+  "poly_get_assets",
+  "poly_select_objects",
+  "poly_focus_object",
+  "poly_create_object",
+  "poly_set_transform",
+  "poly_rename_object",
+  "poly_delete_objects",
+  "poly_save_scene",
+  "poly_apply_batch",
+  "poly_drop_to_ground",
+  "poly_place_on",
+  "poly_raycast_down",
 ];
 
 function launch() {
@@ -71,7 +71,7 @@ describe("MCP server", async () => {
     const res = await request("initialize", {
       protocolVersion: "2024-11-05",
       capabilities: {},
-      clientInfo: { name: "polygon-test", version: "0" },
+      clientInfo: { name: "poly-test", version: "0" },
     });
     assert.ok(res.result, `initialize failed: ${JSON.stringify(res)}`);
     assert.ok(res.result.serverInfo);
@@ -89,14 +89,14 @@ describe("MCP server", async () => {
   });
 
   it("reports not_connected instead of faking success", async () => {
-    const res = await request("tools/call", { name: "polygon_get_status", arguments: {} });
+    const res = await request("tools/call", { name: "poly_get_status", arguments: {} });
     assert.equal(res.result.isError, true);
     const text = JSON.stringify(res.result.content);
     assert.match(text, /not_connected/);
   });
 
   it("rejects unknown tools", async () => {
-    const res = await request("tools/call", { name: "polygon_nope", arguments: {} });
+    const res = await request("tools/call", { name: "poly_nope", arguments: {} });
     assert.ok(res.error || res.result?.isError, "expected an error for unknown tool");
   });
 });

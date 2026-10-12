@@ -1,1 +1,1 @@
-polygon_cleanup();
+poly_cleanup();

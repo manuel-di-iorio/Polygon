@@ -4,7 +4,7 @@ import net from "node:net";
 import { randomUUID } from "node:crypto";
 
 export const BRIDGE_PROTOCOL_VERSION = 1;
-export const BRIDGE_HELLO_GAME = "polygon-ai";
+export const BRIDGE_HELLO_GAME = "poly-ai";
 export const BRIDGE_HELLO_RELAY = "polygon-mcp-relay";
 
 export class BridgeError extends Error {

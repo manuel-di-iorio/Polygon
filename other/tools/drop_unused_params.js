@@ -7,7 +7,7 @@ var path = require("path");
 var ROOT = path.join(__dirname, "..", "..");
 
 var RULES = {
-  "__polygon_overlay_light": [0]
+  "__poly_overlay_light": [0]
 };
 
 function collect(dir, out) {

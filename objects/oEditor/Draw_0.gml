@@ -1,1 +1,1 @@
-polygon_draw();
+poly_draw();

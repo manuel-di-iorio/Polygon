@@ -2,7 +2,7 @@
  * GM3D ID picking shader (static geometry).
  * Same vertex transform as shGM3DMask: world-view-projection only, no
  * lighting, no fog, no textures. The fragment outputs the flat u_id colour
- * assigned per placement (see polygon_gpu_pick): R==B carries the id low
+ * assigned per placement (see poly_gpu_pick): R==B carries the id low
  * byte, G the high byte, so decode is immune to BGRA/RGBA readback order.
  */
 

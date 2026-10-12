@@ -7,7 +7,7 @@ import { BridgeLink, BridgeError } from "../bridge.js";
 function stubGame(port, onRequest) {
   return new Promise((resolve, reject) => {
     const sock = net.connect(port, "127.0.0.1", () => {
-      sock.write(JSON.stringify({ v: 1, hello: "polygon-ai" }) + "\n");
+      sock.write(JSON.stringify({ v: 1, hello: "poly-ai" }) + "\n");
     });
     let buf = "";
     sock.setEncoding("utf8");
@@ -56,7 +56,7 @@ describe("BridgeLink", () => {
     const port = bridge.server.address().port;
     await new Promise((resolve) => {
       const sock = net.connect(port, "127.0.0.1", () => {
-        sock.write(JSON.stringify({ v: 999, hello: "polygon-ai" }) + "\n");
+        sock.write(JSON.stringify({ v: 999, hello: "poly-ai" }) + "\n");
       });
       sock.on("close", resolve);
     });

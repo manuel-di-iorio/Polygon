@@ -144,23 +144,22 @@
             ><button class="copy" data-copy="qs2">Copy</button>
           </div>
           <pre id="qs2"><code class="lang-gml">// Game Create
-var assets = [
-    { model: my_load_model("tree.glb"), path: "tree.glb" },
-    { model: my_load_model("rock.glb"), path: "rock.glb", label: "Rock" },  // optional display label
-];
+var assets = {};
+assets[$ "tree.glb"] = { model: my_load_model("tree.glb") };
+assets[$ "rock.glb"] = { model: my_load_model("rock.glb"), label: "Rock" };  // optional display label
 
-polygon_init({
+poly_create({
     scene: global.my_scene,
     assets,
     cam: global.my_camera,
-    on_spawn: my_on_spawn,  // assign shaders to freshly spawned nodes
+    on_create: my_on_create,  // assign shaders to freshly spawned nodes
 });
 
 // Game Step
-if (!polygon_is_active()) my_game_step(); // live world only while closed
+if (!poly_is_active()) my_game_step(); // live world only while closed
 
 // Game Draw
-if (!polygon_is_active()) my_game_render(); // editor shows its own viewport
+if (!poly_is_active()) my_game_render(); // editor shows its own viewport
 
 // Game Clean Up
 my_game_destroy();</code></pre>
@@ -168,7 +167,7 @@ my_game_destroy();</code></pre>
         <p class="sub">
           While the editor is open it works on its own scene copy: what
           you edit never touches the game world. Save to JSON and reload
-          deterministically with <code>polygon_load</code> when the game wants
+          deterministically with <code>poly_load</code> when the game wants
           it.
         </p>
       </section>
@@ -184,21 +183,23 @@ my_game_destroy();</code></pre>
           </thead>
           <tbody>
             <tr>
-              <td><code>polygon_init(config)</code></td>
+              <td><code>poly_create(config)</code></td>
               <td>
                 Boot editor state from
-                <code>{ scene?, assets?, cam?, on_spawn?, on_close? }</code>:
+                <code>{ scene?, assets?, cam?, on_create?, on_close? }</code>:
+                <code>assets</code> is <code>{ key: { model, label?, on_create? } }</code>;
                 owns its scene (empty at boot; the live
                 <code>scene</code> is mirrored as copies on every enable,
                 else camera/sun/env defaults spawn).
-                <code>on_spawn</code> receives the wrapper node — walk the
+                <code>on_create(node, asset, model, id, label)</code> fires first,
+                then the per-model hook — walk the
                 subtree for model content
               </td>
             </tr>
             <tr>
               <td>
-                <code>polygon_step()</code> /
-                <code>polygon_draw()</code>
+                <code>poly_step()</code> /
+                <code>poly_draw()</code>
               </td>
               <td>
                 Per-frame update (Step) + 3D overlay in Draw GUI (gizmo,
@@ -206,32 +207,40 @@ my_game_destroy();</code></pre>
               </td>
             </tr>
             <tr>
-              <td><code>polygon_render()</code></td>
+              <td><code>poly_render()</code></td>
               <td>
                 Draw-event hook (used by the <code>oEditor</code> Draw
                 event): shader warmup, outline mask + GPU pick
               </td>
             </tr>
             <tr>
-              <td><code>polygon_cleanup()</code></td>
+              <td><code>poly_cleanup()</code></td>
               <td>Autosave-if-dirty, destroy, cleanup</td>
             </tr>
             <tr>
               <td>
-                <code>polygon_enable / disable / is_active()</code>
+                <code>poly_enable / disable / is_active()</code>
               </td>
               <td>Open/close the editor</td>
             </tr>
             <tr>
               <td>
-                <code>polygon_asset_add(model, kind?, label?, path?)</code> /
-                <code>polygon_asset_clear()</code>
+                <code>poly_asset_add(model, kind?, label?, path?, on_create?)</code> /
+                <code>poly_asset_clear()</code>
               </td>
               <td>Library entry, identified by relative load
               <code>path</code> (<code>label</code> is display-only)</td>
             </tr>
             <tr>
-              <td><code>polygon_track(kind, asset, node, label?)</code></td>
+              <td><code>poly_actor_destroy(ref)</code> / <code>poly_actor_of(node)</code></td>
+              <td>
+                Kill a companion and its scene node together (accepts the
+                instance id, the node, or the creation struct); look up the
+                live companion bound to a node
+              </td>
+            </tr>
+            <tr>
+              <td><code>poly_track(kind, asset, node, label?)</code></td>
               <td>
                 Import one live game node into the editor scene as a copy
                 (<code>asset</code> is the model path;
@@ -241,11 +250,14 @@ my_game_destroy();</code></pre>
               </td>
             </tr>
             <tr>
-              <td><code>polygon_load(scene, fname, models)</code></td>
+              <td><code>poly_load(scene, fname, assets, on_create?)</code></td>
               <td>
                 Load a saved scene into a live game scene (no editor);
-                <code>models</code> is <code>{ asset: loadedModel }</code>,
-                returns <code>{ placed, failed }</code>
+                <code>assets</code> is <code>{ key: { model, label?, on_create? } }</code>
+                (same shape as init config);
+                per instance calls global <code>on_create</code>, then the per-model
+                hook, then the companion spawn for Actor-bound models;
+                returns <code>{ placed, failed, companions, warnings, placements }</code>
               </td>
             </tr>
           </tbody>
@@ -255,11 +267,12 @@ my_game_destroy();</code></pre>
       <section id="format" class="reveal">
         <h2>Scene file format</h2>
         <p class="sub">
-          <code>{ "version": 2, "seq": 14, "nodes": [...] }</code>, one
-          descriptor per node. Every descriptor has a
+          <code>{ "version": 2, "seq": 14, "assets": {...}, "nodes": [...] }</code>, one
+          descriptor per node. <code>assets</code> holds per-model file metadata
+          (e.g. Actor bindings). Every descriptor has a
           <code>id</code>, a
-          <code>label</code> (display name) and a generic
-          <code>asset</code> field:
+          <code>label</code> (display name) and, for instances, an
+          <code>assetId</code> field linking the model:
         </p>
         <div class="codeblock terminal">
           <div class="term-bar">
@@ -270,11 +283,13 @@ my_game_destroy();</code></pre>
   "kind": "instance",
   "id": "__PolygonEditor__7",
   "label": "Tree 2",
-  "asset": "models/tree.glb",
-  "position": [1.0, 0.0, 2.0],
-  "rotation": [0.0, 0.0, 0.0, 1.0],
-  "scale": [1.0, 1.0, 1.0],
-  "flags": { "castShadows": true, "receiveShadows": true }
+  "assetId": "models/tree.glb",
+  "transform": {
+    "position": [1.0, 0.0, 2.0],
+    "rotation": [0.0, 0.0, 0.0, 1.0],
+    "scale": [1.0, 1.0, 1.0]
+  },
+  "shadows": { "cast": true, "receive": true }
 }</code></pre>
         </div>
         <p class="sub">
@@ -298,23 +313,26 @@ my_game_destroy();</code></pre>
         </p>
         <h3>In-game loading (no editor)</h3>
         <p class="sub">
-          <code>polygon_load(scene, fname, models)</code> spawns a saved scene into
+          <code>poly_load(scene, fname, assets, on_create?)</code> spawns a saved scene into
           any live <code>GM3D_Scene</code>. Load and freeze each model once,
-          then pass them as <code>{ asset: model }</code> — the
-          <code>asset</code> field is the key into this struct (the relative
-          load path, e.g. <code>"models/tree.glb"</code>),
-          <code>name</code> is just the instance label:
+          then pass them as <code>{ key: { model, label?, on_create? } }</code> — the
+          key is the asset id (the relative load path, e.g. <code>"models/tree.glb"</code>).
+          Per instance it calls the global <code>on_create(node, asset, model, id, label)</code>,
+          then the per-model hook, then the companion spawn for Actor-bound
+          models (configured in the model Inspector, saved as top-level
+          <code>"assets"</code> in the file); the companion receives
+          <code>{ node, poly_id, poly_asset, poly_label }</code>:
         </p>
         <div class="codeblock terminal">
           <div class="term-bar">
             <span></span><span></span><span></span
             ><button class="copy" data-copy="fmt-load">Copy</button>
           </div>
-          <pre id="fmt-load"><code class="lang-gml">var _models = {};
-_models[$ "models/tree.glb"] = my_load_model("models/tree.glb");
-_models[$ "models/rock.glb"] = my_load_model("models/rock.glb");
-var _rep = polygon_load(my_scene, "__PolygonEditor__/scenes/level1.json", _models);
-// _rep = { placed: 9, failed: 0 }
+          <pre id="fmt-load"><code class="lang-gml">var _assets = {};
+_assets[$ "models/tree.glb"] = { model: my_load_model("models/tree.glb") };
+_assets[$ "models/rock.glb"] = { model: my_load_model("models/rock.glb") };
+var _rep = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", _assets, my_on_create);
+// _rep = { placed: 9, failed: 0, companions: 2, warnings: [], placements: [...] }
 // After loading, assign Forward+Shadow shaders per spawned node (see Shadows above).</code></pre>
         </div>
       </section>

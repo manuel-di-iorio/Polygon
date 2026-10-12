@@ -159,6 +159,22 @@ function demo_load_model(_path, _label = undefined) {
   return { model: _src, label: _lab, path: _path };
 }
 
+// Loads every model path and returns the poly assets struct:
+// { path: { model, label } }. Skips paths that fail to load.
+function demo_load_models(_paths) {
+  var _assets = {};
+
+  if (!is_array(_paths)) return _assets;
+
+  for (var _i = 0, _n = array_length(_paths); _i < _n; _i++) {
+    var _r = demo_load_model(_paths[_i]);
+
+    if (_r != undefined) _assets[$ _paths[_i]] = { model: _r.model, label: _r.label };
+  }
+
+  return _assets;
+}
+
 // ---------------------------------------------------------------------------
 // Spawning
 // ---------------------------------------------------------------------------
@@ -191,14 +207,14 @@ function demo_spawn_prop(_prop) {
   _node.setLocalScale(demo_scale3(_prop));
 
   if (variable_struct_exists(_prop, "yaw") && is_real(_prop.yaw)) _node.setLocalRotation(demo_yaw_quat(_prop.yaw));
-  demo_on_spawn(_node, _res.path, _res.model);
+  demo_on_create(_node, _res.path, _res.model);
   return _node;
 }
 
-// Editor spawn hook: assigns shaders and starts the idle animation.
+// Editor create hook: assigns shaders and starts the idle animation.
 // Signature is fixed by the editor (wrapper node, model id, model):
 // walk the subtree, the model root lives inside the wrapper.
-function demo_on_spawn(_node, _model_id, _src) {
+function demo_on_create(_node, _model_id, _src) {
   if (_node == undefined || _src == undefined) return;
   demo_assign_instance_shaders(_node);
 

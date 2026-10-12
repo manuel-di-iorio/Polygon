@@ -1,0 +1,524 @@
+// poly_imgui_scene — Hierarchy window (rows, filter, rubber band).
+
+// ---------------------------------------------------------------------------
+// Window
+// ---------------------------------------------------------------------------
+
+// Draws Hierarchy window (scene nodes tree).
+function __poly_imgui_scene_win(_ed) {
+  var _ui = _ed.imgui;
+
+  if (!_ui.win_hier.open) return;
+  var _place = __poly_imgui_place(_ed).hier;
+
+  if (!__poly_imgui_dock_fresh(_ed)) {
+    ImGui.SetNextWindowPos(_place.x, _place.y, _ui.cond);
+    ImGui.SetNextWindowSize(_place.w, _place.h, _ui.cond);
+  }
+
+  ImGui.SetNextWindowBgAlpha(1);
+
+  var _flags = __poly_imgui_panel_flags(_ed, "hier");
+
+  if (__poly_imgui_lock_move(_ed)) _flags = _flags | ImGuiWindowFlags.NoMove;
+
+  if (!ImGui.Begin("Hierarchy", _ui.win_hier, _flags)) {
+    __poly_imgui_panel_save(_ed, "hier");
+    ImGui.End();
+    return;
+  }
+
+  __poly_imgui_panel_save(_ed, "hier");
+  __poly_imgui_scene_list(_ed);
+  ImGui.End();
+}
+
+// ---------------------------------------------------------------------------
+// Eye and lock buttons
+// ---------------------------------------------------------------------------
+
+// Draws visibility toggle eye button.
+function __poly_imgui_eye(_hidden, _ghost, _tipkey) {
+  static _eye_open = -2;
+  static _eye_shut = -2;
+
+  if (_eye_open == -2) _eye_open = asset_get_index("sprPolygonEditorIconEye");
+  if (_eye_shut == -2) _eye_shut = asset_get_index("sprPolygonEditorIconEyeClosed");
+  var _spr = _hidden ? _eye_shut : _eye_open;
+  var _tint = c_white;
+
+  if (_spr == -1 && _hidden) {
+    _spr = _eye_open;
+    _tint = make_colour_rgb(105, 115, 135);
+  }
+
+  var _hit = false;
+
+  if (_spr != -1) {
+    _hit = ImGui.ImageButton("eye", _spr, 0, _tint, _ghost ? 0 : 1, c_black, 0, sprite_get_width(_spr), sprite_get_height(_spr));
+  } else {
+    _hit = ImGui.SmallButton(_hidden ? "Show##eye" : "Hide##eye");
+  }
+
+  if (ImGui.IsItemHovered()) __poly_imgui_tip_delayed(_tipkey, _hidden ? "Show in viewport" : "Hide from viewport", true);
+  return _hit;
+}
+
+// Draws selection lock toggle handpoint button.
+function __poly_imgui_lock(_locked, _ghost, _tipkey) {
+  static _hand = -2;
+  static _hand_off = -2;
+
+  if (_hand == -2) _hand = asset_get_index("sprPolygonEditorIconHandpoint");
+  if (_hand_off == -2) _hand_off = asset_get_index("sprPolygonEditorIconHandpointDisabled");
+  var _tint = c_white;
+  var _spr = _hand;
+
+  if (_locked && _hand_off != -1) {
+    _spr = _hand_off;
+  } else if (_hand == -1 && _locked) {
+    _tint = make_colour_rgb(105, 115, 135);
+  }
+
+  var _hit = false;
+
+  if (_spr != -1) {
+    var _sx = ImGui.GetCursorScreenPosX();
+    var _sy = ImGui.GetCursorScreenPosY();
+    ImGui.SetCursorScreenPos(_sx + 1, _sy - 3);
+    _hit = ImGui.ImageButton("lock", _spr, 0, _tint, _ghost ? 0 : 1, c_black, 0, sprite_get_width(_spr), sprite_get_height(_spr));
+  } else {
+    _hit = ImGui.SmallButton(_locked ? "Unlock##lock" : "Lock##lock");
+  }
+
+  if (ImGui.IsItemHovered()) __poly_imgui_tip_delayed(_tipkey, _locked ? "Unlock selection" : "Lock selection", true);
+  return _hit;
+}
+
+// ---------------------------------------------------------------------------
+// Rename
+// ---------------------------------------------------------------------------
+
+// Starts in-place node rename mode.
+function __poly_rename_begin(_ed, _node) {
+  if (_node == undefined) return;
+  if (_ed.giz.drag != -1) return;
+  if (__poly_registry_find(_ed, _node) == undefined) return;
+  var _label = __poly_label_get(_ed, _node);
+
+  if (!is_string(_label) || _label == "") return;
+  _ed.rename_name = _label;
+  _ed.rename_id = _node.name;
+  _ed.imgui.win_hier.open = true;
+}
+
+// Cancels active node rename.
+function __poly_rename_cancel(_ed) {
+  _ed.rename_name = undefined;
+  _ed.rename_id = undefined;
+}
+
+// Checks node matches rename target id.
+// ---------------------------------------------------------------------------
+// Kind icons
+// ---------------------------------------------------------------------------
+
+// Resolves the icon sprite and tooltip for a node kind.
+function __poly_kind_icon_info(_ed, _node, _kind, _cache) {
+  if (_kind == "camera") {
+    return { spr: _cache.cam, tip: "Camera", dir: false };
+  }
+
+  if (_kind == "environment") {
+    return { spr: _cache.pt, tip: "Environment", dir: false };
+  }
+
+  if (_kind == "light") {
+    var _en = __poly_registry_find(_ed, _node);
+
+    if (_en != undefined && is_struct(_en.data) && variable_struct_exists(_en.data, "type") && _en.data.type == "directional") {
+      return { spr: _cache.dir, tip: "Directional light", dir: true };
+    }
+
+    return { spr: _cache.pt, tip: "Point light", dir: false };
+  }
+
+  return { spr: _cache.obj, tip: "Model", dir: false };
+}
+
+// Draws node type icon with tooltip.
+function __poly_imgui_kind_icon(_ed, _node, _kind, _hidden, _idx) {
+  static _cache = undefined;
+
+  _cache ??= {
+    obj: asset_get_index("sprPolygonEditorIconObject"),
+    cam: asset_get_index("sprPolygonEditorIconCamera"),
+    pt: asset_get_index("sprPolygonEditorIconPointLight"),
+    dir: asset_get_index("sprPolygonEditorIconDirectionalLight"),
+  };
+
+  var _info = __poly_kind_icon_info(_ed, _node, _kind, _cache);
+
+  if (_info.spr == -1) return;
+  var _iw = sprite_get_width(_info.spr);
+  var _ih = sprite_get_height(_info.spr);
+  var _tint = _hidden ? make_colour_rgb(105, 115, 135) : c_white;
+
+  if (_info.dir) {
+    ImGui.Dummy(1, 0);
+    ImGui.SameLine(0, 0);
+  }
+
+  ImGui.Image(_info.spr, 0, _tint, 1, _iw, _ih);
+
+  if (ImGui.IsItemHovered()) {
+    __poly_imgui_tip_delayed("hier|icon|" + string(_idx), _info.tip, true);
+    _ed.imgui.scene_eye_idx = _idx;
+    _ed.imgui.scene_eye_till = current_time + 500;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Row metadata and rubber band
+// ---------------------------------------------------------------------------
+
+// Builds one metadata record per node with a single registry lookup.
+// Pass the entry and/or selection set when known (no lookup at all).
+function __poly_scene_row_meta(_ed, _node, _en = undefined, _selset = undefined) {
+  _en ??= __poly_registry_find(_ed, _node);
+
+  var _label = "node";
+
+  if (_en != undefined && is_string(_en.label) && _en.label != "") {
+    _label = _en.label;
+  } else if (is_string(_node.name)) {
+    _label = _node.name;
+  }
+
+  var _kind = undefined;
+
+  if (_en != undefined && is_string(_en.kind) && _en.kind != "") {
+    _kind = _en.kind;
+  } else if (_node.getLightComponent() != undefined) {
+    _kind = "light";
+  } else if (_node.getCameraComponent() != undefined) {
+    _kind = "camera";
+  } else if (_node.getEnvironmentVolumeComponent() != undefined) {
+    _kind = "environment";
+  } else if (_en != undefined) {
+    _kind = "instance";
+  }
+
+  var _sel = _selset != undefined ? __poly_sel_in(_selset, _node, _en) : __poly_node_list_has(_ed.sel, _node);
+  return {
+    node: _node,
+    label: _label,
+    kind: _kind,
+    hidden: _en != undefined && _en.hidden == true,
+    locked: _en != undefined && _en.locked == true,
+    sel: _sel,
+  };
+}
+
+// Steps the hierarchy rubber-band selection (call inside the rows child).
+function __poly_hier_rect_step(_ed) {
+  var _down = false;
+  _down = ImGui.IsMouseDown(0);
+  var _was_down = _ed.hier_mdown == true;
+  _ed.hier_mdown = _down;
+
+  if (_ed.hier_rect == undefined) {
+    if (!_down || _was_down || _ed.rename_name != undefined) return;
+    if (!__poly_imgui_safe("IsWindowHovered", false)) return;
+    var _mx = ImGui.GetMousePosX();
+    var _my = ImGui.GetMousePosY();
+    _ed.hier_rect = { x0: _mx, y0: _my, x1: _mx, y1: _my, active: false, on_item: __poly_imgui_safe("IsAnyItemHovered", true) };
+    return;
+  }
+
+  var _rect = _ed.hier_rect;
+
+  if (_down) {
+    _rect.x1 = ImGui.GetMousePosX();
+    _rect.y1 = ImGui.GetMousePosY();
+
+    if (!_rect.active && max(abs(_rect.x1 - _rect.x0), abs(_rect.y1 - _rect.y0)) > 6) _rect.active = true;
+
+    if (_rect.active) {
+      var _dl = ImGui.GetWindowDrawList();
+
+      if (_dl != undefined) ImGui.DrawListAddRect(_dl, min(_rect.x0, _rect.x1), min(_rect.y0, _rect.y1), max(_rect.x0, _rect.x1), max(_rect.y0, _rect.y1), make_colour_rgb(120, 170, 255));
+    }
+
+    return;
+  }
+
+  var _was_active = _rect.active == true;
+  var _from_item = _rect.on_item == true;
+  _ed.hier_rect = undefined;
+
+  if (!_was_active) {
+    if (_from_item) return;
+    __poly_sel_assign(_ed, []);
+    _ed.scene_click_idx = -1;
+    _ed.scene_click_time = -10000;
+    return;
+  }
+
+  __poly_hier_rect_commit(_ed, min(_rect.y0, _rect.y1), max(_rect.y0, _rect.y1));
+}
+
+// ---------------------------------------------------------------------------
+// Filter and rows
+// ---------------------------------------------------------------------------
+
+// Checks if a row kind passes the kind filter.
+function __poly_kind_shown(_filter, _kind) {
+  if (_kind == "light") return _filter.l;
+  if (_kind == "camera") return _filter.c;
+  if (_kind == "environment") return _filter.e;
+  return _filter.m;
+}
+
+// Builds filtered row metadata for visible roots.
+function __poly_scene_filter(_ed, _pairs, _selset, _kinds, _flt) {
+  var _rows = [];
+
+  for (var _r = 0, _n = array_length(_pairs); _r < _n; _r++) {
+    var _meta = __poly_scene_row_meta(_ed, _pairs[_r].node, _pairs[_r].en, _selset);
+
+    if (!__poly_kind_shown(_kinds, _meta.kind)) continue;
+    if (_flt != "" && string_pos(_flt, string_lower(_meta.label)) <= 0) continue;
+    array_push(_rows, _meta);
+  }
+
+  return _rows;
+}
+
+// Draws the rename editor for a row, committing on focus loss.
+function __poly_scene_row_rename(_ed, _meta) {
+  var _res = __poly_imgui_text("rename", "##rename", _meta.label);
+
+  if (_res.was_active && !_res.active) {
+    var _next = string_trim(_res.text);
+
+    if (_next != "" && _next != _meta.label) __poly_scene_commit_rename(_ed, _meta.node, _next);
+    __poly_rename_cancel(_ed);
+  }
+}
+
+// Pokes the eye/lock reveal timer for a row.
+function __poly_scene_row_reveal(_ui, _idx) {
+  _ui.scene_eye_idx = _idx;
+  _ui.scene_eye_till = current_time + 500;
+}
+
+// Draws one hierarchy row (eye, lock, icon, selectable).
+function __poly_scene_row(_ed, _ui, _meta, _idx) {
+  var _node = _meta.node;
+  var _eye_on = _meta.hidden || (_ui.scene_eye_idx == _idx && current_time <= _ui.scene_eye_till);
+
+  if (__poly_imgui_eye(_meta.hidden, !_eye_on, "hier|eye|" + string(_idx))) __poly_hidden_set(_ed, _node, !_meta.hidden);
+  if (ImGui.IsItemHovered()) __poly_scene_row_reveal(_ui, _idx);
+  ImGui.SameLine(0, 0);
+  var _lock_on = _meta.locked || (_ui.scene_eye_idx == _idx && current_time <= _ui.scene_eye_till);
+
+  if (__poly_imgui_lock(_meta.locked, !_lock_on, "hier|lock|" + string(_idx))) __poly_locked_set(_ed, _node, !_meta.locked);
+  if (ImGui.IsItemHovered()) __poly_scene_row_reveal(_ui, _idx);
+  ImGui.SameLine();
+  __poly_imgui_kind_icon(_ed, _node, _meta.kind, _meta.hidden, _idx);
+  ImGui.SameLine();
+
+  var _short = __poly_short_name(_meta.label);
+
+  if (ImGui.Selectable(_short, _meta.sel)) __poly_scene_click(_ed, _node, _idx, _ed.hier_rows);
+
+  if (ImGui.IsItemHovered()) {
+    __poly_scene_row_reveal(_ui, _idx);
+    __poly_imgui_tip_delayed("hier|name|" + string(_idx), _meta.label, true);
+  }
+
+  if (ImGui.IsMouseDoubleClicked(0) && ImGui.IsItemHovered()) __poly_focus_node(_ed, _node);
+}
+
+// Draws the right-click context menu for a row.
+function __poly_scene_row_menu(_ed, _meta, _node, _idx, _pending) {
+  if (!ImGui.BeginPopupContextItem("ctx##" + string(_idx))) return;
+  if (!_meta.sel) __poly_scene_select(_ed, _node);
+
+  if (array_length(_ed.sel) <= 1) {
+    if (ImGui.MenuItem("Focus", "F")) {
+      _pending.foc = _node;
+      ImGui.CloseCurrentPopup();
+    }
+
+    if (ImGui.MenuItem("Rename", "F2")) {
+      _pending.ren = _node;
+      ImGui.CloseCurrentPopup();
+    }
+  }
+
+  if (ImGui.MenuItem("Duplicate", "Ctrl+D")) {
+    _pending.dup = _node;
+    ImGui.CloseCurrentPopup();
+  }
+
+  if (ImGui.MenuItem("Delete", "Del")) {
+    _pending.del = _node;
+    ImGui.CloseCurrentPopup();
+  }
+
+  ImGui.EndPopup();
+}
+
+// Draws the hierarchy status bar ("N items"). Measures its own height so
+// the rows child can reserve exactly that much space next frame.
+function __poly_hier_status(_ed, _shown, _total) {
+  var _y0 = ImGui.GetCursorPosY();
+  ImGui.Separator();
+
+  if (_shown == _total) {
+    ImGui.TextDisabled(string(_shown) + (_shown == 1 ? " item" : " items"));
+  } else {
+    ImGui.TextDisabled(string(_shown) + " of " + string(_total) + " items");
+  }
+
+  var _h = ImGui.GetCursorPosY() - _y0;
+
+  if (is_real(_h) && _h > 0 && is_struct(_ed.imgui)) _ed.imgui.hier_status_h = _h;
+}
+
+// Draws filterable scene list with selection actions.
+function __poly_imgui_scene_list(_ed) {
+  var _ui = _ed.imgui;
+
+  if (!variable_struct_exists(_ui, "show_kind")) {
+    _ui.show_kind = { m: true, l: true, c: true, e: true };
+  }
+
+  if (!variable_struct_exists(_ui, "scene_eye_idx")) {
+    _ui.scene_eye_idx = -1;
+    _ui.scene_eye_till = 0;
+  }
+
+  ImGui.SetNextItemWidth(max(80, ImGui.GetContentRegionAvailX() - 32));
+  _ui.scene_filter = __poly_imgui_text_hint("##scenefilter", "Filter nodes...", _ui.scene_filter);
+  ImGui.SameLine();
+
+  if (__poly_imgui_icon_btn("##scenefilters", "Filter asset types", false, "Fl", "sprPolygonEditorIconFilters", 13, 13)) ImGui.OpenPopup("##scenekindfilters");
+
+  if (ImGui.BeginPopup("##scenekindfilters")) {
+    _ui.show_kind.m = ImGui.Checkbox("Models", _ui.show_kind.m);
+    _ui.show_kind.l = ImGui.Checkbox("Lights", _ui.show_kind.l);
+    _ui.show_kind.c = ImGui.Checkbox("Cameras", _ui.show_kind.c);
+    _ui.show_kind.e = ImGui.Checkbox("Environment", _ui.show_kind.e);
+    ImGui.EndPopup();
+  }
+
+  ImGui.Spacing();
+
+  if (_ed.rt == undefined) {
+    ImGui.TextDisabled("No scene");
+    _ed.hier_rect = undefined;
+    __poly_hier_status(_ed, 0, 0);
+    return;
+  }
+
+  var _pending = { ren: undefined, foc: undefined, dup: undefined, del: undefined };
+
+  if (!variable_struct_exists(_ed, "scene_click_idx")) {
+    _ed.scene_click_idx = -1;
+    _ed.scene_click_time = -10000;
+  }
+
+  if (!variable_struct_exists(_ed, "scene_anchor")) _ed.scene_anchor = undefined;
+  var _pairs = __poly_root_pairs(_ed);
+  var _rows = __poly_scene_filter(_ed, _pairs, __poly_sel_set(_ed), _ui.show_kind, string_lower(_ui.scene_filter));
+  var _n = array_length(_rows);
+  var _total = array_length(_pairs);
+  // Reserve bottom space for the status bar: exact measured height once
+  // known, compact estimate on the first frame.
+  var _status_h = ImGui.GetTextLineHeight() + 10;
+
+  if (variable_struct_exists(_ui, "hier_status_h") && is_real(_ui.hier_status_h) && _ui.hier_status_h > 0) _status_h = _ui.hier_status_h;
+
+  if (!ImGui.BeginChild("##hierarchy_node_rows", 0, -_status_h, ImGuiChildFlags.None)) {
+    ImGui.EndChild();
+    __poly_scene_list_commit(_ed, _pending.ren, _pending.foc, _pending.dup, _pending.del);
+    __poly_hier_status(_ed, _n, _total);
+    return;
+  }
+
+  var _row_h = variable_struct_exists(_ui, "scene_row_height") ? _ui.scene_row_height : 0;
+  var _frame_h = ImGui.GetFrameHeight();
+
+  if (_row_h > 0 && variable_struct_exists(_ui, "scene_row_frame_height")
+  && _ui.scene_row_frame_height > 0 && _frame_h > 0 && _ui.scene_row_frame_height != _frame_h) {
+    _row_h = 0;
+    _ui.scene_row_height = 0;
+  }
+
+  if (_row_h <= 0) _row_h = ImGui.GetFrameHeightWithSpacing();
+  var _first = 0;
+  var _last = _n;
+  var _virtualized = false;
+  var _row_spacing = max(0, _row_h - _frame_h);
+
+  if (_row_h > 0 && _n > 0) {
+    var _scroll_y = max(0, ImGui.GetScrollY());
+    var _child_h = max(0, ImGui.GetWindowHeight());
+    _first = min(_n, max(0, floor(_scroll_y / _row_h) - 1));
+    _last = max(_first, min(_n, ceil((_scroll_y + _child_h) / _row_h) + 1));
+
+    if (_first > 0) ImGui.Dummy(1, max(0, _first * _row_h - _row_spacing));
+    _virtualized = (_first > 0 || _last < _n);
+  }
+
+  ImGui.PushStyleColor(ImGuiCol.Button, c_black, 0);
+  ImGui.PushStyleColor(ImGuiCol.ButtonHovered, make_colour_rgb(47, 111, 237), 0.35);
+  ImGui.PushStyleColor(ImGuiCol.ButtonActive, make_colour_rgb(47, 111, 237), 0.5);
+
+  _ed.hier_rows = _rows;
+  _ed.hier_row_y = {};
+
+  for (var _i = _first; _i < _last; _i++) {
+    var _row_y = ImGui.GetCursorPosY();
+    _ed.hier_row_y[$ string(_i)] = ImGui.GetCursorScreenPosY();
+    ImGui.PushID(_i);
+
+    if (_ed.rename_name != undefined && _rows[_i].label == _ed.rename_name && _rows[_i].node != undefined && _rows[_i].node.name == _ed.rename_id) {
+      __poly_scene_row_rename(_ed, _rows[_i]);
+    } else {
+      __poly_scene_row(_ed, _ui, _rows[_i], _i);
+    }
+
+    ImGui.PopID();
+    ImGui.SetNextWindowBgAlpha(1);
+    __poly_scene_row_menu(_ed, _rows[_i], _rows[_i].node, _i, _pending);
+
+    if (_row_h <= 0 && _i == _first) {
+      var _measured = ImGui.GetCursorPosY() - _row_y;
+
+      if (_measured > 0) {
+        _row_h = _measured;
+        _ui.scene_row_height = _row_h;
+        _ui.scene_row_frame_height = _frame_h;
+      }
+    }
+  }
+
+  __poly_imgui_pop(3);
+
+  _ed.hier_row_h = _row_h;
+  __poly_hier_rect_step(_ed);
+
+  if (_virtualized && _row_h > 0 && _last < _n) {
+    var _tail_h = (_n - _last) * _row_h - _row_spacing;
+
+    if (_tail_h > 0) ImGui.Dummy(1, _tail_h);
+  }
+
+  ImGui.EndChild();
+  __poly_hier_status(_ed, _n, _total);
+  __poly_scene_list_commit(_ed, _pending.ren, _pending.foc, _pending.dup, _pending.del);
+}

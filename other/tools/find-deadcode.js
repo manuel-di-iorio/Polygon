@@ -10,8 +10,8 @@
 // bucket ("string/comment-only") instead of as dead. Exit code is 0 unless
 // --fail is given and something is reported.
 //
-// Naming convention: `__polygon_*` (leading double underscore) is internal,
-// everything else (`polygon_*`, `demo_*`, `ImGui*`, ...) is public API or
+// Naming convention: `__poly_*` (leading double underscore) is internal,
+// everything else (`poly_*`, `demo_*`, `ImGui*`, ...) is public API or
 // binding surface. Public names with no internal callers are reported
 // separately — they may be called by the game project, so they are NOT
 // necessarily dead code. Only "dead internal" entries are safe-ish removal

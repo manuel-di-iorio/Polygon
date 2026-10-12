@@ -1,1 +1,1 @@
-if (!polygon_is_active()) polygon_enable();
+if (!poly_is_active()) poly_enable();
