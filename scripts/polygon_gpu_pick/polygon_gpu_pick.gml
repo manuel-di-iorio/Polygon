@@ -248,6 +248,13 @@ function __polygon_gpupick_begin(_ed, _g) {
   if (__polygon_scene_panel_open(_ed) && _ed.scene_w > 0 && _ed.scene_h > 0) {
     _w = _ed.scene_w;
     _h = _ed.scene_h;
+
+    // Pick at the common offscreen pass size: mixed 3D resolutions in
+    // one frame invalidate the whole submit. Coordinates scale via
+    // __polygon_gpupick_to_surf, so picking stays exact at any size.
+    var _ps = __polygon_pass_size(_ed);
+    _w = _ps[0];
+    _h = _ps[1];
   }
 
   if (!__polygon_gpupick_surf(_ed, _g, _w, _h)) {

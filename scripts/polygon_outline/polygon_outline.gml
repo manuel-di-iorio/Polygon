@@ -88,9 +88,8 @@ function __polygon_outline_warmup(_ed, _o) {
   if (!__polygon_outline_mats(_o)) return;
   if (application_surface == undefined || !surface_exists(application_surface)) return;
   __polygon_outline_ensure_fields(_o);
-  var _ws = max(1, round(_ed.scene_w * _o.scale));
-  var _hs = max(1, round(_ed.scene_h * _o.scale));
-  __polygon_outline_mask_surface(_ed, _o, _ws, _hs);
+  var _ws = __polygon_pass_size(_ed);
+  __polygon_outline_mask_surface(_ed, _o, _ws[0], _ws[1]);
 }
 
 // Frees outline surfaces and materials.
@@ -184,14 +183,13 @@ function __polygon_outline_cheap_read(_ed, _o) {
   _s.sel = [];
 
   for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++) array_push(_s.sel, _ed.sel[_i]);
+  _s.trs = __polygon_sel_trs(_ed.sel);
   return _s;
 }
 
 // Compares a fresh snapshot against the stored one (state of the last
-// rendered mask). Selection is compared by node identity: any transform
-// edit flows through code that sets view_dirty or drags the gizmo, both of
-// which bypass this gate; silent drift is caught by the viewport key,
-// which clears the stored snapshot (see __polygon_view_needs_render).
+// rendered mask). Selection is compared by node identity plus exact
+// local transforms, so silent edits (no commit yet) still refresh.
 function __polygon_outline_cheap_same(_a, _b) {
   if (!is_struct(_a) || !is_struct(_b)) return false;
 
@@ -205,14 +203,18 @@ function __polygon_outline_cheap_same(_a, _b) {
 
   if (!is_array(_a.sel) || !is_array(_b.sel) || array_length(_a.sel) != array_length(_b.sel)) return false;
   for (var _i = 0, _n = array_length(_a.sel); _i < _n; _i++) if (!__polygon_node_same(_a.sel[_i], _b.sel[_i])) return false;
+  if (!is_array(_a.trs) || !is_array(_b.trs) || array_length(_a.trs) != array_length(_b.trs)) return false;
+  for (var _j = 0, _m = array_length(_a.trs); _j < _m; _j++) if (_a.trs[_j] != _b.trs[_j]) return false;
   return true;
 }
 
-// Compares two mass-selection keys (selection identity + tracked count).
+// Compares two mass-selection keys (identity + tracked count + transforms).
 function __polygon_outline_mass_same(_a, _b) {
   if (!is_struct(_a) || !is_struct(_b) || _a.n != _b.n || _a.trk != _b.trk) return false;
   if (!is_array(_a.sel) || !is_array(_b.sel) || array_length(_a.sel) != array_length(_b.sel)) return false;
   for (var _i = 0, _n = array_length(_a.sel); _i < _n; _i++) if (!__polygon_node_same(_a.sel[_i], _b.sel[_i])) return false;
+  if (!is_array(_a.trs) || !is_array(_b.trs) || array_length(_a.trs) != array_length(_b.trs)) return false;
+  for (var _j = 0, _m = array_length(_a.trs); _j < _m; _j++) if (_a.trs[_j] != _b.trs[_j]) return false;
   return true;
 }
 
@@ -225,7 +227,7 @@ function __polygon_outline_mass_refresh(_ed, _o) {
   var _n = is_array(_ed.sel) ? array_length(_ed.sel) : 0;
 
   for (var _i = 0; _i < _n; _i++) array_push(_sel, _ed.sel[_i]);
-  var _key = { n: _n, trk: __polygon_reg_count(_ed), sel: _sel };
+  var _key = { n: _n, trk: __polygon_reg_count(_ed), sel: _sel, trs: __polygon_sel_trs(_ed.sel) };
 
   if (!_dragging && _ed.view_dirty != true && _o.mass_valid == true && __polygon_outline_mass_same(_key, _o.mass_key)) return;
   var _mm = { min: undefined, max: undefined };
@@ -306,8 +308,12 @@ function __polygon_outline_capture(_ed) {
 
   if (_o == undefined) return;
   if (_ed.rt == undefined || _ed.rt.scene == undefined || _ed.renderer == undefined) return;
-  __polygon_outline_warmup(_ed, _o);
   __polygon_outline_ensure_fields(_o);
+  // Mask follows the common offscreen pass scale (SSAA): mixed 3D
+  // resolutions in one frame invalidate the whole submit. Thickness
+  // compensation in the composite already handles arbitrary scales.
+  _o.scale = __polygon_pass_scale(_ed);
+  __polygon_outline_warmup(_ed, _o);
 
   // Selection size for the idle fast path below.
   var _sel_n = is_array(_ed.sel) ? array_length(_ed.sel) : 0;
@@ -363,19 +369,29 @@ function __polygon_outline_capture(_ed) {
   var _h = _ed.scene_h;
 
   if (!(_w > 0) || !(_h > 0)) return;
-  // Freeze the outline while the requested size is still changing (active
-  // resize): allocating + rendering a fresh mask every frame gets its depth
-  // texture destroyed inside the pending submit. Render once it settles.
+  // Freeze reallocs while the requested size is still changing (active
+  // resize): allocating a fresh mask every frame gets its depth texture
+  // destroyed inside the pending submit. Reuse the current mask meanwhile
+  // (the composite stretches it); render once it settles.
   var _settled = variable_struct_exists(_o, "req_w") && variable_struct_exists(_o, "req_h") && _o.req_w == _w && _o.req_h == _h;
   _o.req_w = _w;
   _o.req_h = _h;
 
-  if (!_settled) return;
-  // Scaled mask: same silhouette at a fraction of the geometry + fill cost.
-  var _mw = max(1, round(_w * _o.scale));
-  var _mh = max(1, round(_h * _o.scale));
+  if (!_settled) {
+    if (_o.mask == undefined || !surface_exists(_o.mask)) return;
+  } else {
+    // Scaled mask at the common offscreen pass size (same silhouette at
+    // a fraction of the geometry + fill cost when scale < 1).
+    var _ms = __polygon_pass_size(_ed);
+    var _mw = _ms[0];
+    var _mh = _ms[1];
 
-  if (!__polygon_outline_mask_surface(_ed, _o, _mw, _mh)) return;
+    if (!__polygon_outline_mask_surface(_ed, _o, _mw, _mh)) {
+      show_debug_message("[polygon] outline mask surface unavailable");
+      return;
+    }
+  }
+
   var _grid = _ed[$ "grid_node"];
   var _preview = _ed[$ "drag_preview"];
   var _swapped = [];

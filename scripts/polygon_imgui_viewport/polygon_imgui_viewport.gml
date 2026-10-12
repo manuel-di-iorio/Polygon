@@ -7,10 +7,12 @@
 // Shared surface lifetime for ImGui-displayed surfaces (viewport, anim preview):
 // never surface_free() a texture ImGui may have recorded this frame — retire
 // it instead; the graveyard frees it once no submit can reference it.
+// TTL 8 frames: the backend pipelines deep queues (17 command buffers per
+// submit observed), so short TTLs freed textures still in flight.
 function __polygon_surf_retire(_ed, _surf) {
   if (!surface_exists(_surf)) return;
   if (!variable_struct_exists(_ed, "surf_graveyard") || !is_array(_ed.surf_graveyard)) _ed.surf_graveyard = [];
-  array_push(_ed.surf_graveyard, { surf: _surf, ttl: 3 });
+  array_push(_ed.surf_graveyard, { surf: _surf, ttl: 8 });
 }
 
 // Frees one expired surface graveyard entry.
@@ -47,6 +49,7 @@ function __polygon_view_busy(_ed) {
   if (variable_struct_exists(_ed, "rect") && is_struct(_ed.rect) && _ed.rect.on == true) return true;
   if (variable_struct_exists(_ed, "drag_preview") && _ed.drag_preview != undefined) return true;
   if (is_real(_ed.cam_speed_notice) && _ed.cam_speed_notice > 0) return true;
+  if (__polygon_inspector_gesturing(_ed)) return true;
   return false;
 }
 
@@ -314,7 +317,9 @@ function __polygon_imgui_scene_panel(_ed) {
   _ed.svp_hover = ImGui.IsWindowHovered();
 
   if (surface_exists(_ed.scene_surf)) {
-    ImGui.Surface(_ed.scene_surf, c_white, 1, _dw, _dh);
+    // Display at integer size (fractional ImGui sizes would resample):
+    // never larger than the available region.
+    ImGui.Surface(_ed.scene_surf, c_white, 1, min(_dw, _ed.scene_w), min(_dh, _ed.scene_h));
   } else {
     ImGui.TextDisabled("No scene");
   }
@@ -351,6 +356,26 @@ function __polygon_aa_factor(_ed) {
   return _want;
 }
 
+// Common scale for ALL offscreen 3D passes of a frame (pick, outline
+// mask, hi-res scene). Mixed resolutions in one frame invalidate the
+// whole WebGPU submit (the renderer's internal targets get reallocated
+// mid-frame while recorded commands still reference them).
+function __polygon_pass_scale(_ed) {
+  if (__polygon_aa_mode(_ed) != "ssaa") return 1;
+  var _w = max(1, _ed.scene_w);
+  var _h = max(1, _ed.scene_h);
+  var _k = __polygon_aa_factor(_ed);
+  var _kcap = min(4096 / _w, 4096 / _h);
+  if (_k > _kcap) _k = max(_kcap, 1);
+  return _k;
+}
+
+// Common offscreen 3D pass size for this frame.
+function __polygon_pass_size(_ed) {
+  var _k = __polygon_pass_scale(_ed);
+  return [ max(1, floor(_ed.scene_w * _k)), max(1, floor(_ed.scene_h * _k)) ];
+}
+
 // Renders live scene to scene surface (with optional supersampling:
 // 3D renders hi-res into scene_hi, then downsamples; overlays compose
 // at display res on scene_surf so gizmo lines and text stay sharp).
@@ -370,6 +395,8 @@ function __polygon_scene_panel_render(_ed) {
       if (surface_exists(_ed.scene_surf)) __polygon_surf_retire(_ed, _ed.scene_surf);
       _ed.scene_surf = surface_create(_w, _h);
       _ed.view_dirty = true;
+
+      if (!surface_exists(_ed.scene_surf)) show_debug_message("[polygon] scene surface unavailable " + string(_w) + "x" + string(_h));
     }
   }
 
@@ -378,10 +405,7 @@ function __polygon_scene_panel_render(_ed) {
 
   if (!surface_exists(_ed.scene_surf)) return;
   var _mode = __polygon_aa_mode(_ed);
-  var _k = (_mode == "ssaa") ? __polygon_aa_factor(_ed) : 1;
-  // Cap memory: hi-res dims stay within 4096px.
-  var _kcap = min(4096 / max(_w, 1), 4096 / max(_h, 1));
-  if (_k > _kcap) _k = max(_kcap, 1);
+  var _k = (_mode == "ssaa") ? __polygon_pass_scale(_ed) : 1;
   var _ukey = _mode + ":" + string(_k);
 
   if (!__polygon_view_needs_render(_ed) && _ukey == _ed[$ "aa_used"]) return;
@@ -389,8 +413,9 @@ function __polygon_scene_panel_render(_ed) {
   _ed.aa_used = _ukey;
 
   if (_mode == "ssaa" && _k > 1) {
-    var _hw = max(1, floor(_w * _k));
-    var _hh = max(1, floor(_h * _k));
+    var _ps = __polygon_pass_size(_ed);
+    var _hw = _ps[0];
+    var _hh = _ps[1];
 
     if (!__polygon_scene_hi_ensure(_ed, _hw, _hh)) {
       // Hi-res unavailable (memory): fall back to direct 1x render.
@@ -446,11 +471,25 @@ function __polygon_scene_panel_render(_ed) {
 }
 
 // Ensures the scratch surface exists at w,h (retiring the old one).
+// Recreates only when missing or settled (mirrors scene_surf: resizing
+// every frame would retire surfaces still referenced by pending submits).
 // False when unavailable.
 function __polygon_scene_hi_ensure(_ed, _w, _h) {
   if (surface_exists(_ed[$ "scene_hi"]) && surface_get_width(_ed.scene_hi) == _w && surface_get_height(_ed.scene_hi) == _h) return true;
-  if (surface_exists(_ed[$ "scene_hi"])) __polygon_surf_retire(_ed, _ed.scene_hi);
-  _ed.scene_hi = surface_create(max(1, _w), max(1, _h));
+  var _stable = variable_struct_exists(_ed, "hi_stable_w") && variable_struct_exists(_ed, "hi_stable_h") && _ed.hi_stable_w == _w && _ed.hi_stable_h == _h;
+
+  if (!surface_exists(_ed[$ "scene_hi"]) || _stable) {
+    if (surface_exists(_ed[$ "scene_hi"])) __polygon_surf_retire(_ed, _ed.scene_hi);
+    _ed.scene_hi = surface_create(max(1, _w), max(1, _h));
+
+    if (!surface_exists(_ed[$ "scene_hi"])) {
+      show_debug_message("[polygon] hi-res surface unavailable " + string(max(1, _w)) + "x" + string(max(1, _h)));
+      return false;
+    }
+  }
+
+  _ed.hi_stable_w = _w;
+  _ed.hi_stable_h = _h;
   return surface_exists(_ed[$ "scene_hi"]);
 }
 
@@ -463,11 +502,14 @@ function __polygon_fxaa_resolve(_ed, _src, _w, _h) {
   surface_set_target(_ed.scene_surf);
   draw_clear(c_black);
   var _was_blend = gpu_get_blendenable();
+  var _was_filter = gpu_get_texfilter();
   gpu_set_blendenable(false);
+  gpu_set_texfilter(true);
   shader_set(shPolygonEditorFXAA);
   shader_set_uniform_f(_u, 1.0 / max(_w, 1), 1.0 / max(_h, 1));
   draw_surface(_src, 0, 0);
   shader_reset();
+  gpu_set_texfilter(_was_filter);
   gpu_set_blendenable(_was_blend);
   surface_reset_target();
   return true;

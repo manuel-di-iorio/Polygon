@@ -15,9 +15,11 @@ varying vec4 v_vColour;
 
 uniform vec2 u_texel;
 
-#define FXAA_SPAN_MAX 8.0
+#define FXAA_SPAN_MAX 4.0
 #define FXAA_REDUCE_MUL (1.0 / 8.0)
 #define FXAA_REDUCE_MIN (1.0 / 128.0)
+#define FXAA_EDGE_THRESHOLD_MIN 0.0312
+#define FXAA_EDGE_THRESHOLD_MAX 0.125
 
 vec3 FxaaPixelShader(vec2 posM, vec2 rcpFrame) {
     vec3 rgbNW = texture2D(gm_BaseTexture, posM + (vec2(-1.0, -1.0) * rcpFrame)).xyz;
@@ -31,6 +33,14 @@ vec3 FxaaPixelShader(vec2 posM, vec2 rcpFrame) {
     float lumaSW = dot(rgbSW, luma);
     float lumaSE = dot(rgbSE, luma);
     float lumaM = dot(rgbM, luma);
+    float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
+    float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
+    float range = lumaMax - lumaMin;
+    // Below the edge threshold there is no aliasing worth filtering:
+    // early out keeps textures and smooth gradients untouched.
+    if (range < max(FXAA_EDGE_THRESHOLD_MIN, lumaMax * FXAA_EDGE_THRESHOLD_MAX)) {
+        return rgbM;
+    }
     vec2 dir;
     dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));
     dir.y = ((lumaNW + lumaSW) - (lumaNE + lumaSE));
@@ -44,8 +54,6 @@ vec3 FxaaPixelShader(vec2 posM, vec2 rcpFrame) {
         texture2D(gm_BaseTexture, posM.xy + dir * vec2(0.0 - 0.5)).xyz +
         texture2D(gm_BaseTexture, posM.xy + dir * vec2(1.0 - 0.5)).xyz);
     float lumaB = dot(rgbB, luma);
-    float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
-    float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
     if ((lumaB < lumaMin) || (lumaB > lumaMax)) {
         return rgbA;
     }

@@ -25,6 +25,24 @@ function __polygon_sel_assign(_ed, _nodes) {
   __polygon_sel_apply_tool(_ed);
 }
 
+// Reads exact local transforms (pos/quat/scale) for snapshot compare.
+function __polygon_sel_trs(_sel) {
+  var _out = [];
+  if (!is_array(_sel)) return _out;
+
+  for (var _i = 0, _n = array_length(_sel); _i < _n; _i++) {
+    var _nd = _sel[_i];
+    if (_nd == undefined) continue;
+    var _pp = _nd.getLocalPosition();
+    var _rr = _nd.getLocalRotation();
+    var _ss = _nd.getLocalScale();
+    if (_pp == undefined || _rr == undefined || _ss == undefined) continue;
+    array_push(_out, _pp.x, _pp.y, _pp.z, _rr.x, _rr.y, _rr.z, _rr.w, _ss.x, _ss.y, _ss.z);
+  }
+
+  return _out;
+}
+
 // Toggles node in selection set.
 function __polygon_sel_toggle(_ed, _node) {
   if (_node == undefined) return;

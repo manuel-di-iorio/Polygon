@@ -207,6 +207,12 @@ function __polygon_cancel_gizmo(_ed) {
   _ed.giz.drag = -1;
   __polygon_wrap_end(_ed);
   _ed.hist_before = undefined;
+  _ed.cmd_open = undefined;
+  // Restore mutates the scene: flag it like a commit, or the surface and
+  // the outline mask keep showing the dragged (uncommitted) state.
+  _ed.dirty = true;
+  _ed.view_dirty = true;
+  if (variable_struct_exists(_ed, "outline") && is_struct(_ed.outline)) _ed.outline.cheap = undefined;
   __polygon_input_owner_clear(_ed, "gizmo");
 }
 

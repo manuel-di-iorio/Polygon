@@ -57,6 +57,31 @@ function __polygon_imgui_sec_open() {
 // Axis rows
 // ---------------------------------------------------------------------------
 
+// True while an inspector drag gesture (axis/float/color) is live:
+// these mutate the scene with live preview but no undo commit yet.
+function __polygon_inspector_gesturing(_ed) {
+  if (!is_struct(_ed) || !is_struct(_ed.imgui)) return false;
+  var _maps = [ "ax_active", "flt_active" ];
+
+  for (var _m = 0; _m < array_length(_maps); _m++) {
+    var _map = _ed.imgui[$ _maps[_m]];
+    if (!is_struct(_map)) continue;
+    var _ns = variable_struct_get_names(_map);
+    for (var _i = 0, _n = array_length(_ns); _i < _n; _i++) if (_map[$ _ns[_i]] == true) return true;
+  }
+
+  var _cg = _ed.imgui[$ "col_gest"];
+  if (!is_struct(_cg)) return false;
+  var _cn = variable_struct_get_names(_cg);
+
+  for (var _j = 0, _nj = array_length(_cn); _j < _nj; _j++) {
+    var _r = _cg[$ _cn[_j]];
+    if (is_struct(_r) && _r.active == true) return true;
+  }
+
+  return false;
+}
+
 // Commits a finished axis drag (applies final value, single undo entry).
 function __polygon_axis_release(_ed, _fkey, _nv, _shown, _was, _mode, _ax) {
   if (variable_struct_exists(_ed.imgui.ax_draft, _fkey)) variable_struct_remove(_ed.imgui.ax_draft, _fkey);
