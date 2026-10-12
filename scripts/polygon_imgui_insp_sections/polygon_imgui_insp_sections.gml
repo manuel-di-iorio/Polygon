@@ -101,7 +101,7 @@ function __polygon_shadow_owner_note(_ed, _node) {
   var _owner = __polygon_shadow_owner(_ed, _node);
 
   if (_owner == undefined) return false;
-  ImGui.TextDisabled("Shadow maps già abilitate sulla luce:");
+  ImGui.TextDisabled("Shadow maps already enabled on light:");
   ImGui.TextDisabled("\"" + __polygon_label_get(_ed, _owner) + "\"");
   ImGui.SameLine();
 

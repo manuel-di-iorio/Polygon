@@ -193,13 +193,13 @@ function __polygon_view_cheap_same(_a, _b) {
 // per selected node). Any bit set means the surface must re-render.
 enum PolygonViewDirty {
   None     = 0,
-  Camera   = 1, // posa camera (caso hot: navigazione continua)
-  Size     = 2, // dimensioni surface scena
+  Camera   = 1, // camera pose (hot case: continuous navigation)
+  Size     = 2, // scene surface size
   Settings = 4, // grid_step/show_grid/shadows/unlit
   State    = 8, // hover/tool/cube/regcount/preview/rect/notice
 }
 
-// Diffs two cheap snapshots into a PolygonViewDirty mask (0 = identici).
+// Diffs two cheap snapshots into a PolygonViewDirty mask (0 = identical).
 function __polygon_view_cheap_mask(_a, _b) {
   if (!is_struct(_a) || !is_struct(_b)) return PolygonViewDirty.Camera | PolygonViewDirty.Size | PolygonViewDirty.Settings | PolygonViewDirty.State;
   var _m = PolygonViewDirty.None;
@@ -239,18 +239,18 @@ function __polygon_view_needs_render(_ed) {
   _ed.view_cheap = _cheap;
 
   if (_cheap != undefined) {
-    // Uno scalare è cambiato: il re-render serve di certo, la chiave
-    // stringa sarebbe solo costo (caso hot = camera in movimento).
-    // La maschera resta su _ed per debug/profilo.
+    // A scalar changed: a re-render is certainly needed, building the
++   // string key would be pure overhead (hot case = camera moving).
++   // The mask is kept on _ed for debugging/profiling.
     _ed.view_mask = __polygon_view_cheap_mask(_cheap, _prev_cheap);
 
-    // Come il vecchio path a chiave esatta: un cambio picture invalida
-    // lo snapshot cheap dell'outline (copre silent transform drift).
+    // Same as the old exact-key path: a picture change invalidates
+    // the outline's cheap snapshot (covers silent transform drift).
     if (variable_struct_exists(_ed, "outline") && is_struct(_ed.outline)) _ed.outline.cheap = undefined;
     return true;
   }
 
-  // Cheap non costruibile (vp/cam assenti): fallback alla chiave esatta.
+  // Cheap snapshot cannot be built (vp/cam missing): fall back to the exact key.
   var _key = __polygon_view_key(_ed);
 
   if (!variable_struct_exists(_ed, "view_key") || _ed.view_key != _key) {
