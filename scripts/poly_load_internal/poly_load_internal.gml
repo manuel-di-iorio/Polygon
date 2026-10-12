@@ -48,7 +48,7 @@ function __poly_load_actor(_actors, _pl, _rep) {
     return false;
   }
 
-  var _inst = instance_create_layer(0, 0, _layer, _oi, { node: _pl.node, poly_id: _pl.id, poly_asset: _pl.asset, poly_label: _pl.label });
+  var _inst = instance_create_layer(0, 0, _layer, _oi, { node: _pl.node, poly_id: _pl.id, poly_asset_id: _pl.asset, poly_label: _pl.label });
   __poly_actor_map()[$ _pl.id] = _inst;
   return true;
 }

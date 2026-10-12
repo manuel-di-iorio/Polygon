@@ -214,7 +214,7 @@ function demo_spawn_prop(_prop) {
 // Editor create hook: assigns shaders and starts the idle animation.
 // Signature is fixed by the editor (wrapper node, model id, model):
 // walk the subtree, the model root lives inside the wrapper.
-function demo_on_create(_node, _model_id, _src) {
+function demo_on_create(_node, _asset_id, _src) {
   if (_node == undefined || _src == undefined) return;
   demo_assign_instance_shaders(_node);
 

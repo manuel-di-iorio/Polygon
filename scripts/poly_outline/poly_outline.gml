@@ -501,10 +501,7 @@ function __poly_outline_capture(_ed) {
   // construction: full-res when ready, scene size as fallback).
   var _ms = __poly_mask_want(_ed);
 
-  if (!__poly_outline_mask_surface(_ed, _o, _ms[0], _ms[1])) {
-    show_debug_message("[poly] outline mask surface unavailable");
-    return;
-  }
+  if (!__poly_outline_mask_surface(_ed, _o, _ms[0], _ms[1])) return;
 
   var _grid = _ed[$ "grid_node"];
   var _preview = _ed[$ "drag_preview"];

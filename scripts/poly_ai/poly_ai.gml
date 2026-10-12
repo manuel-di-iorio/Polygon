@@ -33,13 +33,11 @@
 
 // Bridge diagnostics: always visible in the Output log (never on the socket).
 function __poly_ai_log(_msg) {
-  show_debug_message("[poly-ai] " + string(_msg));
 }
 
 // Verbose per-chunk log, gated behind _ed.ai_debug (default off).
 function __poly_ai_log_rx(_ed, _msg) {
   if (!is_struct(_ed) || !variable_struct_exists(_ed, "ai_debug") || _ed.ai_debug != true) return;
-  show_debug_message("[poly-ai] " + string(_msg));
 }
 
 // ---------------------------------------------------------------------------

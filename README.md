@@ -102,7 +102,7 @@ Close it from the editor with **File → Close Editor** (Ctrl+W).
 | `scene`    | Live scene. On every enable, Polygon imports it (see below). |
 | `cam`      | Gameplay camera node, used to seed the editor camera. |
 | `assets`   | Struct `{ assetKey: { model, label?, on_create? } }`. The key is the stable asset id used in scene files (usually the load path). `on_create` is an optional per-model hook, called after the global one. |
-| `on_create` | `function(node, asset, model, id, label)`. Called for every spawned node: global hook first, then the per-model `on_create` from the library entry. Use it to assign shaders and start animations. Walk the subtree: the model root lives inside the wrapper. |
+| `on_create` | `function(node, assetId, model, id, label)`. Called for every spawned node: global hook first, then the per-model `on_create` from the library entry. `assetId` is the stable key (same string as in files); `model` is the resolved library model. Walk the subtree: the model root lives inside the wrapper. |
 | `on_close` | Called after the editor closes. |
 
 ---
@@ -180,7 +180,7 @@ var report = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", assets,
 
 `poly_load` spawns instances, lights, cameras and environments, preserving node ids. For every instance it calls, in order:
 
-1. the global `on_create(node, asset, model, id, label)` (4th argument, optional),
+1. the global `on_create(node, assetId, model, id, label)` (4th argument, optional),
 2. the per-model `on_create` from `assets[key]` (optional),
 3. the companion spawn below (when configured).
 
@@ -192,7 +192,9 @@ In the Models panel, selecting a model shows an **Actor** section in the Inspect
 { "assets": { "models/fox.glb": { "type": "model", "actor": { "object": "oEnemy", "layer": "Actors" } } } }
 ```
 
-At load, every instance of a bound model spawns a companion via `instance_create_layer(0, 0, layer, obj, { node, poly_id, poly_asset, poly_label })` — the object reads the node from its creation variables and drives it in its own Step/Draw events. Missing objects or layers never fail the load: they become `report.warnings` entries. Layer defaults to `"Instances"`.
+At load, every instance of a bound model spawns a companion via `instance_create_layer(0, 0, layer, obj, { node, poly_id, poly_asset_id, poly_label })` - the object reads the node from its creation variables and drives it in its own Step/Draw events. Missing objects or layers never fail the load: they become `report.warnings` entries. Layer defaults to `"Instances"`.
+
+Bindings store the **object name**: renaming the object in GameMaker breaks the binding (the node still spawns, without companion). The Actor section flags unknown objects in red; a renamed object is fixed by re-picking it, or with a text search across scene files.
 
 Kill actors only through the helper, never with `node.destroy` / `instance_destroy` directly, or the other half is left orphaned:
 

@@ -384,8 +384,7 @@ function __poly_imgui_actor_sec(_ed, _entry) {
   ImGui.SameLine(80);
   ImGui.SetNextItemWidth(220);
 
-  if (ImGui.BeginCombo("##actor_obj", _cur)) {
-    _entry.actor_ui.filter = __poly_imgui_text_hint("##actor_find", "Search...", _entry.actor_ui.filter);
+  if (ImGui.BeginCombo("##actor_obj", _cur)) {    _entry.actor_ui.filter = __poly_imgui_text_hint("##actor_find", "Search...", _entry.actor_ui.filter);
 
     if (ImGui.Selectable("(none)", _cur == "(none)", 0, 0, 0)) {
       _ac.object = "";
@@ -412,6 +411,16 @@ function __poly_imgui_actor_sec(_ed, _entry) {
     }
 
     ImGui.EndCombo();
+  }
+
+  // Dangling binding (renamed/deleted object): flag it where it is
+  // configured, instead of discovering it at load time.
+  if (is_string(_ac[$ "object"]) && _ac.object != "") {
+    var _oi = asset_get_index(_ac.object);
+
+    if (_oi < 0 || !object_exists(_oi)) {
+      ImGui.TextColored("object not found (renamed?)", make_colour_rgb(235, 90, 90));
+    }
   }
 
   var _base_layer = (is_string(_ac[$ "layer"]) && _ac.layer != "") ? _ac.layer : "Instances";

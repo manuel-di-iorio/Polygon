@@ -434,8 +434,6 @@ function __poly_scene_panel_render(_ed) {
       if (surface_exists(_ed.scene_surf)) __poly_surf_retire(_ed, _ed.scene_surf);
       _ed.scene_surf = surface_create(_w, _h);
       _ed.view_dirty = true;
-
-      if (!surface_exists(_ed.scene_surf)) show_debug_message("[poly] scene surface unavailable " + string(_w) + "x" + string(_h));
     }
   }
 
@@ -520,10 +518,8 @@ function __poly_scene_hi_ensure(_ed, _w, _h) {
     if (surface_exists(_ed[$ "scene_hi"])) __poly_surf_retire(_ed, _ed.scene_hi);
     _ed.scene_hi = surface_create(max(1, _w), max(1, _h));
 
-    if (!surface_exists(_ed[$ "scene_hi"])) {
-      show_debug_message("[poly] hi-res surface unavailable " + string(max(1, _w)) + "x" + string(max(1, _h)));
-      return false;
-    }
+    if (!surface_exists(_ed[$ "scene_hi"])) return false;
+
 
     _ed.hi_stable_w = _w;
     _ed.hi_stable_h = _h;

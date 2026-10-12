@@ -195,7 +195,7 @@ my_game_destroy();</code></pre>
                 owns its scene (empty at boot; the live
                 <code>scene</code> is mirrored as copies on every enable,
                 else camera/sun/env defaults spawn).
-                <code>on_create(node, asset, model, id, label)</code> fires first,
+                <code>on_create(node, assetId, model, id, label)</code> fires first,
                 then the per-model hook — walk the
                 subtree for model content
               </td>
@@ -242,10 +242,10 @@ my_game_destroy();</code></pre>
               </td>
             </tr>
             <tr>
-              <td><code>poly_track(kind, asset, node, label?)</code></td>
+              <td><code>poly_track(kind, assetId, node, label?)</code></td>
               <td>
                 Import one live game node into the editor scene as a copy
-                (<code>asset</code> is the model path;
+                (<code>assetId</code> is the model key;
                 <code>kind</code> is <code>"instance"</code>,
                 <code>"light"</code>, <code>"camera"</code> or
                 <code>"environment"</code>); game world untouched
@@ -319,11 +319,11 @@ my_game_destroy();</code></pre>
           any live <code>GM3D_Scene</code>. Load and freeze each model once,
           then pass them as <code>{ key: { model, label?, on_create? } }</code> — the
           key is the asset id (the relative load path, e.g. <code>"models/tree.glb"</code>).
-          Per instance it calls the global <code>on_create(node, asset, model, id, label)</code>,
+          Per instance it calls the global <code>on_create(node, assetId, model, id, label)</code>,
           then the per-model hook, then the companion spawn for Actor-bound
           models (configured in the model Inspector, saved as top-level
           <code>"assets"</code> in the file); the companion receives
-          <code>{ node, poly_id, poly_asset, poly_label }</code>:
+          <code>{ node, poly_id, poly_asset_id, poly_label }</code>:
         </p>
         <div class="codeblock terminal">
           <div class="term-bar">

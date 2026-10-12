@@ -59,26 +59,8 @@ function __poly_import_live(_ed) {
   var _nodes = undefined;
 
   if (variable_struct_exists(_ed.rt, "live_scene") && _ed.rt.live_scene != undefined) _nodes = _ed.rt.live_scene.getNodes();
-  var _skipped = [];
 
-  if (_nodes != undefined) for (var _i = 0, _n = array_length(_nodes); _i < _n; _i++) {
-    // Only roots arrive with content: non-root nodes travel with their
-    // model subtree, grid/sky/cam nodes are adopted by kind. Anything
-    // else skipped here has no unique library match by root name (the
-    // wrapper id is the only identity) and is reported, never guessed.
-    if (__poly_track_adopt_auto(_ed, _nodes[_i]) == undefined
-      && _nodes[_i] != undefined && _nodes[_i].parent == undefined
-    && is_string(_nodes[_i].name) && _nodes[_i].name != "") {
-      array_push(_skipped, _nodes[_i].name);
-    }
-  }
-
-  if (array_length(_skipped) > 0) {
-    var _names = "";
-
-    for (var _k = 0, _nk = array_length(_skipped); _k < _nk; _k++) _names += (_k > 0 ? ", " : "") + _skipped[_k];
-    show_debug_message("[poly] import skipped " + string(array_length(_skipped)) + " unmatched root(s): " + _names);
-  }
+  if (_nodes != undefined) for (var _i = 0, _n = array_length(_nodes); _i < _n; _i++) __poly_track_adopt_auto(_ed, _nodes[_i]);
 
   _ed.rt.scene.update(0);
 
