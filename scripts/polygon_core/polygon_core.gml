@@ -156,11 +156,14 @@ function polygon_postrender() {
   if (_ed.active) {
     // Single per-frame world-matrix refresh, placed here so every pass
     // below (pick, outline, panel render + overlays) shares one consistent
-    // camera pose. Refreshing in Step instead left matrices one camera
-    // move behind while the cache key (local TRS) already looked fresh,
-    // which lagged all gizmos/icons a frame behind during navigation.
+    // camera pose.
     _ed.rt.scene.update(0);
     _ed.vp = __polygon_viewport_cached(_ed);
+    // Decide the offscreen 3D size for THIS frame up front: every 3D pass
+    // below (pick, mask, main) must share it, or mixed resolutions in one
+    // frame invalidate the whole submit. Ensures (and progressively
+    // creates) the scratch surface as a side effect.
+    _ed.hi_ready = __polygon_hi_ready(_ed);
     __polygon_thumbs_pump(_ed);
     __polygon_mat_queue_pump(_ed);
     __polygon_anim_pv_tick(_ed, delta_time * 0.000001);

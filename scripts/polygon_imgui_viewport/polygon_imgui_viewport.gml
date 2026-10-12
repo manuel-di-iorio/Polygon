@@ -7,12 +7,13 @@
 // Shared surface lifetime for ImGui-displayed surfaces (viewport, anim preview):
 // never surface_free() a texture ImGui may have recorded this frame — retire
 // it instead; the graveyard frees it once no submit can reference it.
-// TTL 8 frames: the backend pipelines deep queues (17 command buffers per
-// submit observed), so short TTLs freed textures still in flight.
+// TTL 16 frames: mode switches retire several large surfaces at once while
+// the backend still drains deep queues, and short TTLs freed textures
+// still in flight (validation errors + dropped submits).
 function __polygon_surf_retire(_ed, _surf) {
   if (!surface_exists(_surf)) return;
   if (!variable_struct_exists(_ed, "surf_graveyard") || !is_array(_ed.surf_graveyard)) _ed.surf_graveyard = [];
-  array_push(_ed.surf_graveyard, { surf: _surf, ttl: 8 });
+  array_push(_ed.surf_graveyard, { surf: _surf, ttl: 16 });
 }
 
 // Frees one expired surface graveyard entry.
@@ -376,6 +377,26 @@ function __polygon_pass_size(_ed) {
   return [ max(1, floor(_ed.scene_w * _k)), max(1, floor(_ed.scene_h * _k)) ];
 }
 
+// True when the scratch surface exists at the size this frame needs
+// (ensuring it as a side effect). All 3D passes of a frame must agree
+// on one size; when false the frame falls back to matching 1x passes.
+function __polygon_hi_ready(_ed) {
+  var _mode = __polygon_aa_mode(_ed);
+  var _need = undefined;
+
+  if (_mode == "ssaa" && __polygon_pass_scale(_ed) > 1) {
+    _need = __polygon_pass_size(_ed);
+  } else if (_mode == "fxaa") {
+    _need = [ max(1, round(_ed.scene_w)), max(1, round(_ed.scene_h)) ];
+  }
+
+  if (_need == undefined) return true;
+  __polygon_scene_hi_ensure(_ed, _need[0], _need[1]);
+  return surface_exists(_ed[$ "scene_hi"])
+    && surface_get_width(_ed.scene_hi) == _need[0]
+    && surface_get_height(_ed.scene_hi) == _need[1];
+}
+
 // Renders live scene to scene surface (with optional supersampling:
 // 3D renders hi-res into scene_hi, then downsamples; overlays compose
 // at display res on scene_surf so gizmo lines and text stay sharp).
@@ -412,21 +433,7 @@ function __polygon_scene_panel_render(_ed) {
   _ed.view_dirty = false;
   _ed.aa_used = _ukey;
 
-  if (_mode == "ssaa" && _k > 1) {
-    var _ps = __polygon_pass_size(_ed);
-    var _hw = _ps[0];
-    var _hh = _ps[1];
-
-    if (!__polygon_scene_hi_ensure(_ed, _hw, _hh)) {
-      // Hi-res unavailable (memory): fall back to direct 1x render.
-      surface_set_target(_ed.scene_surf);
-      draw_clear(c_black);
-      _ed.renderer.render(_ed.rt.scene);
-      __polygon_compose_viewport(_ed);
-      surface_reset_target();
-      return;
-    }
-
+  if (_mode == "ssaa" && _k > 1 && _ed.hi_ready) {
     surface_set_target(_ed.scene_hi);
     draw_clear(c_black);
     _ed.renderer.render(_ed.rt.scene);
@@ -445,7 +452,13 @@ function __polygon_scene_panel_render(_ed) {
     return;
   }
 
-  if (_mode == "fxaa" && __polygon_scene_hi_ensure(_ed, _w, _h) && shader_is_compiled(shPolygonEditorFXAA)) {
+  if ((_mode == "ssaa" && _k > 1) || (_mode == "fxaa" && shader_is_compiled(shPolygonEditorFXAA))) {
+    // Scratch not ready at the right size (mode switch/resize/memory):
+    // direct 1x render now, and retry ("pending" forces next frame).
+    _ed.aa_used = "pending";
+  }
+
+  if (_mode == "fxaa" && shader_is_compiled(shPolygonEditorFXAA) && _ed.hi_ready) {
     // Raw 1x 3D into the scratch surface, FXAA-resolve onto scene_surf,
     // then compose overlays on the resolved image (they stay sharp).
     surface_set_target(_ed.scene_hi);
@@ -460,7 +473,8 @@ function __polygon_scene_panel_render(_ed) {
       return;
     }
 
-    // Resolve failed: fall through to direct 1x render.
+    // Resolve failed: direct 1x render now, retry next frame.
+    _ed.aa_used = "pending";
   }
 
   surface_set_target(_ed.scene_surf);
@@ -471,11 +485,17 @@ function __polygon_scene_panel_render(_ed) {
 }
 
 // Ensures the scratch surface exists at w,h (retiring the old one).
-// Recreates only when missing or settled (mirrors scene_surf: resizing
-// every frame would retire surfaces still referenced by pending submits).
-// False when unavailable.
+// Recreates on missing size; during active resizes keeps the old surface
+// one frame (reallocating a 3D target every frame hazards pending
+// submits) and reports not-ready so the caller falls back to direct.
+// True only when the surface exists AT the requested size.
 function __polygon_scene_hi_ensure(_ed, _w, _h) {
-  if (surface_exists(_ed[$ "scene_hi"]) && surface_get_width(_ed.scene_hi) == _w && surface_get_height(_ed.scene_hi) == _h) return true;
+  if (surface_exists(_ed[$ "scene_hi"]) && surface_get_width(_ed.scene_hi) == _w && surface_get_height(_ed.scene_hi) == _h) {
+    _ed.hi_stable_w = _w;
+    _ed.hi_stable_h = _h;
+    return true;
+  }
+
   var _stable = variable_struct_exists(_ed, "hi_stable_w") && variable_struct_exists(_ed, "hi_stable_h") && _ed.hi_stable_w == _w && _ed.hi_stable_h == _h;
 
   if (!surface_exists(_ed[$ "scene_hi"]) || _stable) {
@@ -486,11 +506,15 @@ function __polygon_scene_hi_ensure(_ed, _w, _h) {
       show_debug_message("[polygon] hi-res surface unavailable " + string(max(1, _w)) + "x" + string(max(1, _h)));
       return false;
     }
+
+    _ed.hi_stable_w = _w;
+    _ed.hi_stable_h = _h;
+    return surface_get_width(_ed.scene_hi) == _w && surface_get_height(_ed.scene_hi) == _h;
   }
 
   _ed.hi_stable_w = _w;
   _ed.hi_stable_h = _h;
-  return surface_exists(_ed[$ "scene_hi"]);
+  return false;
 }
 
 // FXAA-resolves _src (raw 3D) onto scene_surf. False when unavailable.
