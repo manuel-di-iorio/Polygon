@@ -151,6 +151,26 @@ function __polygon_view_sel_changed(_ed) {
   return _changed;
 }
 
+// Normalizes viewcube hover to a stable scalar for the cheap snapshot:
+// -1 when the cube panel is closed or no cone is hit (moving the mouse
+// elsewhere never changes the picture); otherwise a per-cone code, so
+// highlight transitions still re-render. The raw value is a fresh array
+// per hover query, which would never compare equal across frames.
+function __polygon_cube_hover_key(_ed) {
+  if (!variable_struct_exists(_ed, "imgui") || !is_struct(_ed.imgui)
+  || !variable_struct_exists(_ed.imgui, "win_cube") || !is_struct(_ed.imgui.win_cube)
+  || _ed.imgui.win_cube.open != true) {
+    return -1;
+  }
+  var _hov = _ed[$ "cube_hover"];
+
+  if (is_array(_hov) && array_length(_hov) >= 2 && is_real(_hov[0]) && is_real(_hov[1])) {
+    return _hov[0] * 10 + (_hov[1] > 0 ? 1 : 2);
+  }
+
+  return -1;
+}
+
 // Reads the cheap viewport snapshot (plain numbers, no strings).
 // Covers every scalar input of __polygon_view_key; selection transforms
 // stay in the string key (exact fallback below). Returns undefined when
@@ -166,8 +186,8 @@ function __polygon_view_cheap_read(_ed) {
   _pose.sg = _ed.show_grid == true ? 1 : 0;
   _pose.sh_ = _ed.show_shadows != false ? 1 : 0;
   _pose.un = _ed.show_unlit == true ? 1 : 0;
-  _pose.hov = _ed.giz.hover;
-  _pose.cube = _ed.cube_hover;
+  _pose.hov = (is_array(_ed.sel) && array_length(_ed.sel) > 0) ? _ed.giz.hover : -1;
+  _pose.cube = __polygon_cube_hover_key(_ed);
   _pose.tool = _ed.giz.tool;
   _pose.trk = __polygon_reg_count(_ed);
   _pose.pv = (variable_struct_exists(_ed, "drag_preview") && _ed.drag_preview != undefined) ? 1 : 0;

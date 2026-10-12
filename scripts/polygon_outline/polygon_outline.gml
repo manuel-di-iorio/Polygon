@@ -36,6 +36,12 @@ function __polygon_outline_cfg(_ed) {
       mass_key: undefined,
       mass_min: undefined,
       mass_max: undefined,
+      // Walk cache: component sets for the mask state, reused on
+      // camera/drag frames without getChildren/getMaterial lookups.
+      // Rebuilt whenever view_dirty or the membership key changes.
+      walk_key: undefined,
+      walk_swapped: undefined,
+      walk_muted: undefined,
     };
   }
 
@@ -52,6 +58,9 @@ function __polygon_outline_ensure_fields(_o) {
   if (!variable_struct_exists(_o, "mass_key")) _o.mass_key = undefined;
   if (!variable_struct_exists(_o, "mass_min")) _o.mass_min = undefined;
   if (!variable_struct_exists(_o, "mass_max")) _o.mass_max = undefined;
+  if (!variable_struct_exists(_o, "walk_key")) _o.walk_key = undefined;
+  if (!variable_struct_exists(_o, "walk_swapped")) _o.walk_swapped = undefined;
+  if (!variable_struct_exists(_o, "walk_muted")) _o.walk_muted = undefined;
 }
 
 // Returns a cached uniform handle, looking it up once.
@@ -138,7 +147,7 @@ function __polygon_outline_swap_comp(_comp, _skinned, _o, _swapped) {
   var _orig = _comp.getMaterial();
 
   if (_orig == undefined || _orig == _o.white || _orig == _o.whiteSkin) return;
-  array_push(_swapped, { comp: _comp, orig: _orig });
+  array_push(_swapped, { comp: _comp, orig: _orig, skinned: _skinned });
   _comp.setMaterial(_skinned ? _o.whiteSkin : _o.white);
 }
 
@@ -156,6 +165,102 @@ function __polygon_outline_process_node(_node, _entry, _excluded, _sel_epoch, _o
 // Applies the mask state to one subtree node (walk visitor).
 function __polygon_outline_visit(_cur, _ctx) {
   __polygon_outline_process_node(_cur, _ctx.entry, _ctx.excluded, _ctx.epoch, _ctx.o, _ctx.swapped, _ctx.muted);
+}
+
+// Disables shadow casting on swapped (selected) comps for the mask
+// render. Muted non-selected comps are already disabled, so this covers
+// every caster in the mask pass. Saves exact flags for restore: no
+// light realloc, no global state touched.
+function __polygon_outline_shadow_off(_swapped) {
+  var _saved = [];
+  var _cb = GM3D_EMeshComponentFlags.CastShadows;
+
+  for (var _i = 0, _n = array_length(_swapped); _i < _n; _i++) {
+    var _comp = _swapped[_i].comp;
+    var _get = _comp[$ "getFlags"];
+    var _set = _comp[$ "setFlags"];
+
+    if (_get == undefined || _set == undefined) continue;
+    var _fl = method(_comp, _get)();
+
+    if (!is_real(_fl) || (_fl & _cb) == 0) continue;
+    array_push(_saved, { comp: _comp, flags: _fl });
+    method(_comp, _set)(_fl & ~_cb);
+  }
+
+  return _saved;
+}
+
+// Restores exact shadow flags saved by __polygon_outline_shadow_off.
+function __polygon_outline_shadow_restore(_saved) {
+  for (var _i = 0, _n = array_length(_saved); _i < _n; _i++) {
+    var _set = _saved[_i].comp[$ "setFlags"];
+
+    if (_set == undefined) continue;
+    method(_saved[_i].comp, _set)(_saved[_i].flags);
+  }
+}
+
+// Builds the walk-cache key: selection membership + registry size +
+// grid/preview identity. Transforms are excluded on purpose: gizmo drags
+// change transforms every frame but the component set is identical, so
+// drag frames reuse the cache. Any structural or material mutation sets
+// view_dirty, which forces a rebuild below.
+function __polygon_outline_walk_key(_ed) {
+  var _sel = [];
+  var _n = is_array(_ed.sel) ? array_length(_ed.sel) : 0;
+
+  for (var _i = 0; _i < _n; _i++) array_push(_sel, _ed.sel[_i]);
+  return {
+    n: _n,
+    trk: __polygon_reg_count(_ed),
+    sel: _sel,
+    grid: _ed[$ "grid_node"],
+    preview: _ed[$ "drag_preview"],
+  };
+}
+
+// Compares two walk-cache keys (node identity, never references).
+function __polygon_outline_walk_same(_a, _b) {
+  if (!is_struct(_a) || !is_struct(_b) || _a.n != _b.n || _a.trk != _b.trk) return false;
+  if (!is_array(_a.sel) || !is_array(_b.sel) || array_length(_a.sel) != array_length(_b.sel)) return false;
+  for (var _i = 0, _n = array_length(_a.sel); _i < _n; _i++) if (!__polygon_node_same(_a.sel[_i], _b.sel[_i])) return false;
+  var _ga = _a.grid;
+  var _gb = _b.grid;
+
+  if (_ga == undefined || _gb == undefined) {
+    if (_ga != _gb) return false;
+  } else if (!__polygon_node_same(_ga, _gb)) return false;
+  var _pa = _a.preview;
+  var _pb = _b.preview;
+
+  if (_pa == undefined || _pb == undefined) {
+    if (_pa != _pb) return false;
+  } else if (!__polygon_node_same(_pa, _pb)) return false;
+  return true;
+}
+
+// Reapplies a cached mask state without any scene walk: no getChildren,
+// no getMeshComponent, no getMaterial lookups. Returns false when there
+// is nothing cached.
+function __polygon_outline_walk_apply(_ed, _o) {
+  if (!is_array(_o.walk_swapped) || !is_array(_o.walk_muted)) return false;
+  var _sw = _o.walk_swapped;
+  var _mu = _o.walk_muted;
+
+  for (var _i = 0, _n = array_length(_sw); _i < _n; _i++) {
+    var _s = _sw[_i];
+
+    if (_s.comp == undefined || _s.orig == undefined) continue;
+    _s.comp.setMaterial(_s.skinned == true ? _o.whiteSkin : _o.white);
+  }
+
+  for (var _j = 0, _m = array_length(_mu); _j < _m; _j++) {
+    if (_mu[_j].comp == undefined) continue;
+    _mu[_j].comp.setEnabled(false);
+  }
+
+  return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -220,13 +325,13 @@ function __polygon_outline_cheap_same(_a, _b) {
 }
 
 // Compares two mass-selection keys (identity + tracked count + transforms).
+// World-space box: no view/size fields, camera motion never invalidates it.
 function __polygon_outline_mass_same(_a, _b) {
   if (!is_struct(_a) || !is_struct(_b) || _a.n != _b.n || _a.trk != _b.trk) return false;
   if (!is_array(_a.sel) || !is_array(_b.sel) || array_length(_a.sel) != array_length(_b.sel)) return false;
   for (var _i = 0, _n = array_length(_a.sel); _i < _n; _i++) if (!__polygon_node_same(_a.sel[_i], _b.sel[_i])) return false;
   if (!is_array(_a.trs) || !is_array(_b.trs) || array_length(_a.trs) != array_length(_b.trs)) return false;
   for (var _j = 0, _m = array_length(_a.trs); _j < _m; _j++) if (_a.trs[_j] != _b.trs[_j]) return false;
-  if (_a.mw != _b.mw || _a.mh != _b.mh) return false;
   return true;
 }
 
@@ -332,8 +437,8 @@ function __polygon_outline_capture(_ed) {
 
   // Mass selection: one combined AABB instead of a per-pixel mask (no
   // second geometry render, no per-node material walks, orbit-safe).
-  // Past 50 selected roots: single combined AABB instead of a per-pixel mask.
-  if (_sel_n > 50) {
+  // Past 150 selected roots: single combined AABB instead of a per-pixel mask.
+  if (_sel_n > 150) {
     _o.mass_active = true;
     _o.has = false;
     __polygon_outline_mass_refresh(_ed, _o);
@@ -401,26 +506,51 @@ function __polygon_outline_capture(_ed) {
 
   var _grid = _ed[$ "grid_node"];
   var _preview = _ed[$ "drag_preview"];
+  var _t_walk0 = get_timer();
+  // Walk cache: camera/drag frames reuse the component sets without any
+  // getChildren/getMaterial lookups. view_dirty (any structural or
+  // material mutation) or a membership change forces a full re-walk.
+  var _wkey = __polygon_outline_walk_key(_ed);
   var _swapped = [];
   var _muted = [];
-  var _nodes = _ed.rt.scene.getNodes();
+  var _cached = (_ed.view_dirty != true) && __polygon_outline_walk_same(_wkey, _o.walk_key)
+    && is_array(_o.walk_swapped) && is_array(_o.walk_muted);
 
-  for (var _r = 0, _nn = array_length(_nodes); _r < _nn; _r++) {
-    var _root = _nodes[_r];
+  if (_cached) {
+    _swapped = _o.walk_swapped;
+    _muted = _o.walk_muted;
+    __polygon_outline_walk_apply(_ed, _o);
+  } else {
+    var _nodes = _ed.rt.scene.getNodes();
 
-    if (_root == undefined || _root.parent != undefined) continue;
-    var _entry = __polygon_registry_find(_ed, _root);
-    var _excluded = (_grid != undefined && __polygon_node_same(_root, _grid)) || (_preview != undefined && __polygon_node_same(_root, _preview));
-    __polygon_walk_tree(_root, __polygon_outline_visit, { entry: _entry, excluded: _excluded, epoch: _epoch, o: _o, swapped: _swapped, muted: _muted });
+    for (var _r = 0, _nn = array_length(_nodes); _r < _nn; _r++) {
+      var _root = _nodes[_r];
+
+      if (_root == undefined || _root.parent != undefined) continue;
+      var _entry = __polygon_registry_find(_ed, _root);
+      var _excluded = (_grid != undefined && __polygon_node_same(_root, _grid)) || (_preview != undefined && __polygon_node_same(_root, _preview));
+      __polygon_walk_tree(_root, __polygon_outline_visit, { entry: _entry, excluded: _excluded, epoch: _epoch, o: _o, swapped: _swapped, muted: _muted });
+    }
+
+    _o.walk_key = _wkey;
+    _o.walk_swapped = _swapped;
+    _o.walk_muted = _muted;
   }
+
+  var _t_walk1 = get_timer();
+  // No shadow casting in the mask pass (unlit white): saves the shadow
+  // pass draw calls on the selected subset. Flags only, no light
+  // realloc.
+  var _flag_saved = __polygon_outline_shadow_off(_swapped);
 
   surface_set_target(_o.mask);
   draw_clear(c_black);
-  // Refresh world matrices: the camera moved in step after the last
-  // scene.update, so without this the mask lags one move behind the
-  // main render (visible as jitter while orbiting).
-  _ed.rt.scene.update(0);
+  // No scene.update(0) here: polygon_postrender already refreshed world
+  // matrices this frame after all Step mutations (camera, gizmo, preview).
+  // Material/enabled swaps above do not affect transforms.
+  var _t_render0 = get_timer();
   _ed.renderer.render(_ed.rt.scene);
+  var _t_render1 = get_timer();
   surface_reset_target();
   _o.has = true;
   // Snapshot the rendered state AFTER rendering (resize-settle and surface
@@ -432,7 +562,14 @@ function __polygon_outline_capture(_ed) {
   // would sit unseen until the next camera move.
   _ed.view_dirty = true;
 
+  var _t_restore0 = get_timer();
+  __polygon_outline_shadow_restore(_flag_saved);
   __polygon_walk_restore(_swapped, _muted);
+  var _t_restore1 = get_timer();
+  _ed.dbg_outline_walk_us = _t_walk1 - _t_walk0;
+  _ed.dbg_outline_render_us = _t_render1 - _t_render0;
+  _ed.dbg_outline_restore_us = _t_restore1 - _t_restore0;
+  _ed.dbg_outline_cached = _cached;
 }
 
 // Draws outline glow from mask.
