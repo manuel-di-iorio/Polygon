@@ -1,131 +1,260 @@
-# Polygon - 3D Editor for Game Maker
+# Polygon
+
+**A 3D in-game scene editor for GameMaker, built on GM3D and Dear ImGui.**
 
 <img src="docs/logo_gm.png" width="800px" />
 
-3D editor for GameMaker on the GMRT runtime, using the built-in GM3D/ImGUI classes. Drop it into a project, edit your scenes, save them to a file and you will be able it to load it later anywhere.
-
-## Requirements
-
-- GameMaker with GMRT 0.22.4 (from the Package Manager)
-
-## Quick start
+Polygon opens inside your running game (press **F1** in the demo), mirrors the live scene, and lets you place, transform and inspect objects. Scenes are saved to JSON and can be loaded back at runtime with a single call.
 
 <img src="docs/screenshot.png" width="800px" />
 
-**1. Import the editor package** - drag `editor.yymps` onto the GameMaker IDE to import the scripts. You also need GMRT 0.22.4 (Package Manager), which provides `GM3D_*` and `ImGui`.
 
-**2. Add the `oEditor` package object to your game.** It is editor-only: your game hands over a runtime adapter, then creates it (full working example in `oGame`):
+## Features
+
+**Editing**
+- Drag models from the **Models** panel into the viewport (live drop preview)
+- Move / Rotate / Scale gizmos with axis, planar and trackball handles, World or Local space
+- Position, rotation and grid snapping (hold **Ctrl** for temporary snap)
+- Multi-selection: click, Shift+click, rubber-band rectangle, and depth cycling on repeated clicks
+- Duplicate, delete, rename, focus, and **undo/redo**
+- Hide / lock objects per node
+
+**Scene content**
+- Models (prefabs) with per-asset spawn defaults (rotation, scale, shadows)
+- Lights (directional, point), cameras (perspective, ortho) and an environment volume (ambient, fog)
+- Prefab overrides with per-field **Revert / Apply**
+- Read-only inspection of materials, textures (with sampler state) and animation clips, including a playable animation preview
+
+**Viewport**
+- Dockable windows: Hierarchy, Inspector, Models, Scene, Toolbar
+- Orientation **ViewCube**, infinite grid, procedural sky
+- Selection outline (GPU mask), GPU ID-buffer picking
+- Shaded / Unlit draw modes, antialiasing: Off, SSAA, FXAA
+
+**Workflow**
+- JSON scene files (versioned format) with save / load / delete dialog
+- Unsaved-changes confirmation
+- Optional **AI bridge** (MCP relay) to drive the editor from an AI client
+
+---
+
+## Requirements
+
+- GameMaker with **GMRT** package v0.22.4
+
+---
+
+## Installation
+
+1. Import the resources into your project by dragging the `editor.yymps` file into your project.
+2. Create `oEditor` in your game using the setup below.
+
+---
+
+## Quick start
+
+Polygon only needs a small **config** struct. It never touches your game instances: it works on its own copy of the scene.
 
 ```gml
-// Game Create
-var assets = [
-  { model: my_load_model("tree.glb"), path: "tree.glb" },
-  { model: my_load_model("rock.glb"), path: "rock.glb", label: "Rock" }, // optional display label
-];
+// oGame / Create
+var config = {
+  scene: my_scene,          // your live GM3D_Scene (mirrored on enable)
+  cam: my_camera_node,      // your gameplay camera node (seeds the editor view)
+  on_spawn: my_on_spawn,    // optional: called for every spawned node
+  on_close: my_on_close,    // optional: called when the editor closes
+  assets: [
+    { model: my_model_a, label: "Tree", path: "models/tree.glb" },
+    { model: my_model_b, label: "Rock", path: "models/rocks.glb" },
+  ],
+};
 
-polygon_init({
-  scene: global.my_scene,
-  assets,
-  cam: global.my_camera,
-  on_spawn: my_on_spawn, // assign shaders to freshly spawned nodes
-});
-
-// Game Step
-if (!polygon_is_active()) my_game_step(); // live world only while closed
-
-// Game Draw
-if (!polygon_is_active()) my_game_render(); // editor shows its own viewport
-
-// Game Clean Up
-my_game_destroy();
+instance_create_layer(0, 0, layer, oEditor, { config });
 ```
 
-While the editor is open it works on its own scene copy: what you edit never touches the game world. Save to JSON and reload deterministically with `polygon_load` when the game wants it. The editor boots disabled; the game opens it with `polygon_enable()` and closes it with `polygon_disable()`.
+Wire the `oEditor` events:
 
-## Public API
+| Event               | Code                |
+|---------------------|---------------------|
+| Create              | `polygon_init(config); polygon_enable();` |
+| Step                | `polygon_step();`   |
+| Draw                | `polygon_draw();`   |
+| Draw GUI            | `polygon_draw_ui();`|
+| Async Networking    | `polygon_ai_net();` |
+| Clean Up            | `polygon_cleanup();`|
 
-| Function                                                           | Purpose                                                                                                                   |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| `polygon_init(adapter)`                                        | Boot static editor state from `{ scene?, assets?, cam?, on_spawn?, on_close? }`: owns its scene (empty at boot; the live `scene` is mirrored as copies on every enable, else camera/sun/env defaults spawn) |
-| `polygon_step()` / `polygon_draw()`                        | Per-frame update (Step) + 3D overlay in Draw GUI (gizmo, selection)                                                       |
-| `polygon_render()`                                                 | Draw-event hook (used by the `oEditor` Draw event): shader warmup, outline mask + GPU pick                              |
-| `polygon_cleanup()`                                            | Autosave-if-dirty, destroy, cleanup                                                                                       |
-| `polygon_enable/disable/is_active()`                                 | Open/close the editor (gateway steps the live world while closed)                                                         |
-| `polygon_asset_add(model, kind?, label?, path?)` / `polygon_asset_clear()` | Library entry, identified by relative load `path` (models with duplicate root names can coexist; `label` is display-only) / clear library |
-| `polygon_track(kind, asset, node, label?)`                     | Import one live game node into the editor scene as a copy (`asset` is the model path) |
-| `polygon_load(scene, fname, models)`                                  | Load a saved scene into a live game scene (no editor); `models` is `{ asset: loadedModel }`, returns `{ placed, failed }` |
+Toggle the editor from your game:
+
+```gml
+// oGame / Key Press F1
+if (!polygon_is_active()) polygon_enable();
+
+// pause your own world while the editor is open
+if (!polygon_is_active()) my_game_step();
+```
+
+Close it from the editor with **File → Close Editor** (Ctrl+W).
+
+### Adapter fields
+
+| Field      | Description |
+|------------|-------------|
+| `scene`    | Live scene. On every enable, Polygon imports it (see below). |
+| `cam`      | Gameplay camera node, used to seed the editor camera. |
+| `assets`   | Array of `{ model, label?, path? }`. `path` is the stable asset id used in scene files. |
+| `on_spawn` | `function(wrapperNode, assetKey, model)`. Use it to assign shaders and start animations. Walk the subtree: the model root lives inside the wrapper. |
+| `on_close` | Called after the editor closes. |
+
+### How the live scene is imported
+
+Each time the editor opens, the live scene is **copied**, never modified. Root nodes are matched to library assets by model root name, or by exact material set. Lights, cameras and the environment are recreated from their live settings. If the scene has no sun or environment, defaults are created.
+
+---
+
+## Using the editor
+
+### Camera
+
+| Action | Input |
+|--------|-------|
+| Fly | Hold **Right mouse** + `W A S D`, `Q` / `E` for down / up |
+| Fly faster | Hold **Shift** |
+| Change fly speed | Mouse wheel while flying |
+| Orbit | **Alt + Left mouse** |
+| Zoom | Mouse wheel, or **Alt + Right mouse** drag |
+| Pan | **Middle mouse** (or drag with the View tool) |
+| Focus selection | `F` or double-click in the Hierarchy |
+| Reset camera | Home button in the toolbar |
+| Snap to axis | Click a cone on the **ViewCube** |
+
+The cursor wraps at window edges during camera and gizmo drags.
+
+### Tools and shortcuts
+
+| Key | Action |
+|-----|--------|
+| `1` `2` `3` `4` | View, Move, Rotate, Scale |
+| `Del` | Delete selection (confirms for multiple objects) |
+| `F2` | Rename |
+| Arrow keys | Nudge selection on X/Z |
+| `Esc` | Cancel the current gesture, otherwise clear selection |
+| `Ctrl+S` / `Ctrl+L` / `Ctrl+N` | Save / Load / New |
+| `Ctrl+D` | Duplicate |
+| `Ctrl+Z` / `Ctrl+Y` (or `Ctrl+Shift+Z`) | Undo / Redo |
+| `Ctrl+W` | Close editor |
+| `F9` | FPS overlay |
+
+### Selecting and transforming
+
+- **Click** an object to select it. Click again at the same spot to cycle through overlapping objects.
+- **Shift+click** toggles an object; drag on empty space for a **rectangle selection** (hold Shift to add).
+- With **Move**, hold **Shift** for a screen-space move handle; the squares between axes move on a plane.
+- With **Rotate**, the outer ring rotates around the view axis and the inner disc acts as a trackball.
+- Hold **Ctrl** while dragging to snap. Configure grid size and axes from the grid combo in the toolbar.
+- Scale needs a uniform handle (center) or an axis handle; environment nodes cannot be transformed.
+
+### Panels
+
+- **Models**: filterable list or cards of your library. Drag into the viewport to place. Select one to edit its spawn defaults.
+- **Hierarchy**: eye = hide, hand = lock (locked objects cannot be selected). Ctrl+click selects a range, right-click opens the context menu, rubber-band selects rows. The filter button limits types (models, lights, cameras, environment).
+- **Inspector**: Transform, Light / Camera / Environment, Shadows, Materials, Animations. Prefab instances show an **Overrides** menu to revert or apply rotation, scale and shadow changes.
+
+### Creating lights, cameras and environment
+
+Use the **Create** menu: Directional Light, Point Light (up to 8 lights), Perspective Camera, Ortho Camera, Environment (one per scene). The camera labeled `MainCamera` is the gameplay camera; otherwise the first enabled one is used.
+
+---
+
+## Saving and loading scenes
+
+Scenes are saved from **File → Save / Save As** into `working_directory/__PolygonEditor__/scenes/<name>.json`. **File → Load** lists saved scenes with search and delete.
+
+Load a scene in your game, without the editor, with:
+
+```gml
+// models: struct mapping asset key (the `path` you registered) to its model
+var models = {};
+models[$ "models/tree.glb"] = my_model_a;
+models[$ "models/rocks.glb"] = my_model_b;
+
+var report = polygon_load(my_scene, "__PolygonEditor__/scenes/level1.json", models);
+// report = { placed, failed }
+```
+
+`polygon_load` spawns instances, lights, cameras and environments, preserving node ids.
+
+---
 
 ## Scene file format
 
-`{ "version": 2, "seq": 14, "nodes": [...] }`, one descriptor per node. Every descriptor has a `kind` (`"instance"`, `"light"`, `"camera"` or `"environment"`), an `id`, a `label` (display name) and a generic `asset` field:
-
 ```json
 {
-  "kind": "instance",
-  "id": "__PolygonEditor__7",
-  "label": "Tree 2",
-  "asset": "models/tree.glb",
-  "position": [1.0, 0.0, 2.0],
-  "rotation": [0.0, 0.0, 0.0, 1.0],
-  "scale": [1.0, 1.0, 1.0],
-  "flags": { "castShadows": true, "receiveShadows": true }
+  "version": 2,
+  "seq": 12,
+  "nodes": [
+    {
+      "kind": "instance",
+      "id": "__PolygonEditor__3",
+      "label": "Tree",
+      "asset": "models/tree.glb",
+      "position": [0, 0, 0],
+      "rotation": [0, 0, 0, 1],
+      "scale": [1, 1, 1],
+      "flags": { "castShadows": true, "receiveShadows": true }
+    }
+  ]
 }
 ```
 
-Lights, cameras and the environment carry a `light` / `camera` / `environment` sub-struct (angles in degrees, colors as `[r, g, b]` 0-255). Directional lights can also carry `shadow: { enabled, resolution, distance, normalOffset }`.
+`kind` is one of `instance`, `light`, `camera`, `environment` (the last three carry a `light` / `camera` / `environment` sub-object). Rotation is a quaternion `[x, y, z, w]`. Node ids are stable and are what the AI bridge uses.
 
-## Shadows
+---
 
-Directional lights support shadow mapping, editable in the Inspector under Shadows; selecting a shadowed light draws its coverage box, and the toolbar Shadows button toggles preview without touching saved values.
+## AI bridge (optional)
 
-Every material needs both a Forward and a Shadow shader, assigned **per live instance** - `spawnInto` clones do not inherit source assignments, so assign them in your spawn hook (the demo does it in `demo_on_spawn`). Use the `sStatic` / `sAnimated` (+`Shadow`) shaders from this project.
+Polygon can connect to a local **MCP relay** (`other/mcp-relay`, Node) so an AI client can inspect and edit the scene.
 
-## Loading scenes in-game (no editor)
+1. Install [Node.js](https://nodejs.org/en/download/archive/v24.21.0) v24.21
+2. On your AI tool (OpenCode, Codex, Claude Code), configure the MCP server 
+pointing a the address `127.0.0.1:5192`.
 
-`polygon_load(scene, fname, models)` spawns a saved scene into any live `GM3D_Scene` without the editor. Load and freeze each model once, then pass them as `{ asset: model }` - the `asset` field of each descriptor is the key into this struct (the relative load path, e.g. `"models/tree.glb"`), while `label` is just the display name. Assets spawn inside a wrapper node named after the descriptor `id`, so a later editor enable preserves identity; walk the subtree in your spawn hook (the `on_spawn` contract is: first arg is the wrapper):
+    Note: If your editor does not start the server automatically, then you need to open a terminal (eg. Powershell on Windows), move inside the _mcp-relay_ folder and start it with the command: `$ node index.js`.
+3. In the editor, click the **AI** button in the menu bar. The status shows *Connecting*, *Connected* or *Reconnecting*.
 
-```gml
-var _models = {};
-_models[$ "models/tree.glb"] = my_load_model("models/tree.glb");
-_models[$ "models/rock.glb"] = my_load_model("models/rock.glb");
-polygon_load(my_scene, "__PolygonEditor__/scenes/level1.json", _models);
-// After loading, assign Forward+Shadow shaders per spawned node (see Shadows above).
+No socket is ever opened unless the editor is active and the bridge is on. Only whitelisted operations are accepted (no arbitrary GML):
+
+`status`, `hierarchy`, `selection`, `details`, `assets`, `raycast_down`, `select`, `focus`, `create`, `transform`, `rename`, `delete`, `save`, `batch`, `drop_to_ground`, `place_on`
+
+---
+
+## Project layout
+
+```
+objects/oEditor            editor object (event wiring)
+scripts/polygon_core       init, frame entry points, state
+scripts/polygon_input      hotkeys, gizmo/library/rect/hover steps
+scripts/polygon_gizmo*     transform handles and drawing
+scripts/polygon_gpu_pick   ID-buffer picking
+scripts/polygon_outline    selection outline
+scripts/polygon_imgui_*    Hierarchy, Inspector, Models, Scene, toolbar, dock
+scripts/polygon_registry   tracked node registry and spawn pipeline
+scripts/polygon_serialize  descriptors, validation, save/load
+scripts/polygon_ai         AI bridge (TCP client)
+scripts/scr_demo           demo world
 ```
 
-## AI bridge (MCP)
+## Troubleshooting
 
-`other/mcp-relay` is a Node.js MCP server (Claude Code, Codex, …) that drives
-the live editor over local TCP: 16 tools for status, hierarchy, selection,
-details, assets, support query, select, focus, create, transform, rename, delete, save,
-batched edits, drop-to-ground and place-on. Enable it with the AI button at the right end of the menu bar while the
-editor is open (default port 5192, loopback only, off by default). Every edit
-goes through the editor's own functions and stays undoable. Full setup,
-protocol and troubleshooting in `other/mcp-relay/README.md`.
+- **No grid or sky:** check that `grid.glb` and `skybox.glb` are in `__PolygonEditor__/models/` in Included Files.
+- **Pink / magenta meshes:** a model has no material; Polygon paints it magenta as a fallback. Assign materials in your `on_spawn` hook or fix the model.
+- **Library thumbnails missing:** they are rendered once at startup; make sure the models loaded successfully.
+- **AI shows "AI Server not available":** start the relay first; the editor gives up after 3 attempts.
 
-## Controls
-| Input                                                             | Action                                                    |
-| Ctrl + W                                                          | Close editor                                              |
-| 1 / 2 / 3 / 4                                                     | View / Move / Rotate / Scale tool                         |
-| Left-drag model (Models panel)                                    | Spawn into the scene                                      |
-| Left-click / drag                                                 | Select (additive rectangle with drag)                     |
-| Alt + left-drag                                                   | Orbit around the current view point                       |
-| Right-drag + W/S forward/back, A/D left/right, Q/E down/up, Shift | Fly camera; wheel adjusts fly speed                       |
-| Alt + right-drag / wheel                                          | Zoom view                                                 |
-| Middle-drag                                                       | Pan view in screen space (around the selection if any)    |
-| F (or double-click in Scene)                                      | Focus selection                                           |
-| F2                                                                | Rename (labels are display-only)                          |
-| Arrows                                                            | Nudge selection on the ground plane (snap step, undoable) |
-| Ctrl (held while dragging)                                        | Temporary snap                                            |
-| Del                                                               | Delete selection                                          |
-| Ctrl+D                                                            | Duplicate                                                 |
-| Ctrl+S / Ctrl+L / Ctrl+N                                          | Save / Load / New scene                                   |
-| Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z)                                 | Undo / Redo                                               |
-| Esc                                                               | Cancel gesture / rename / close dialog                    |
+---
 
-## Credits
+## Contributing
 
-Demo models by [Kenney](https://kenney.nl) (`kenney_platformer-kit`, `kenney_mini-characters`, `kenney_cube-pets_1.0`), used under [CC0](https://creativecommons.org/publicdomain/zero/1.0/).
+Bug reports and feature requests: [GitHub Issues](https://github.com/manuel-di-iorio/Polygon/issues) (also reachable from **Help → Report a Bug/Feature Request**).
 
 ## License
 
-MIT - see [LICENSE](LICENSE.md).
+Released under the MIT License, 2026. Developed by Emmanuel Di Iorio (Xeryan). Third-party assets (e.g. the Kenney models used in the demo) belong to their owners.
