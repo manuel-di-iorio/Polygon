@@ -6,7 +6,7 @@
   "name":"poly_core",
   "parent":{
     "name":"Core",
-    "path":"folders/Polygon Editor/Core.yy",
+    "path":"folders/Polygon Editor/Internal/Core.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

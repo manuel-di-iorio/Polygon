@@ -6,7 +6,7 @@
   "name":"poly_gpu_pick",
   "parent":{
     "name":"Viewport",
-    "path":"folders/Polygon Editor/Viewport.yy",
+    "path":"folders/Polygon Editor/Internal/Viewport.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

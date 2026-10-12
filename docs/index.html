@@ -98,6 +98,10 @@
             Save, load, new.
           </li>
           <li>
+            <strong>Actor companions</strong><br />Bind a model to a GameMaker
+            object; instances spawn companions that drive their scene node.
+          </li>
+          <li>
             <strong>Directional shadows</strong><br />Per-light setup, preview
             and global toggle.
           </li>
@@ -199,23 +203,21 @@ my_game_destroy();</code></pre>
             <tr>
               <td>
                 <code>poly_step()</code> /
-                <code>poly_draw()</code>
+                <code>poly_draw()</code> /
+                <code>poly_draw_ui()</code>
               </td>
               <td>
-                Per-frame update (Step) + 3D overlay in Draw GUI (gizmo,
-                selection)
-              </td>
-            </tr>
-            <tr>
-              <td><code>poly_render()</code></td>
-              <td>
-                Draw-event hook (used by the <code>oEditor</code> Draw
-                event): shader warmup, outline mask + GPU pick
+                Per-frame update (Step) + scene render (Draw) + window
+                overlay (Draw GUI)
               </td>
             </tr>
             <tr>
               <td><code>poly_cleanup()</code></td>
               <td>Autosave-if-dirty, destroy, cleanup</td>
+            </tr>
+            <tr>
+              <td><code>poly_ai_net()</code></td>
+              <td>AI bridge pump (Async Networking event, optional)</td>
             </tr>
             <tr>
               <td>
@@ -475,7 +477,7 @@ var _rep = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", _assets, 
           "|\\b(" +
           GML_KEYWORDS +
           ")\\b" + // 5: keyword
-          "|(Polygon_\\w+|ImGui)(?!\\w)" + // 6: builtin / runtime class
+          "|(Poly_\\w+|ImGui)(?!\\w)" + // 6: builtin / runtime class
           "|([A-Za-z_]\\w*(?=\\s*\\())", // 7: function call
         "g"
       );

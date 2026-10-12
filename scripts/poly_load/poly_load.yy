@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"poly_load",
   "parent":{
-    "name":"Scene",
-    "path":"folders/Polygon Editor/Scene.yy",
+    "name":"API",
+    "path":"folders/Polygon Editor/API.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

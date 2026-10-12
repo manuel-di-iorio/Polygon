@@ -105,10 +105,6 @@ Close it from the editor with **File → Close Editor** (Ctrl+W).
 | `on_create` | `function(node, asset, model, id, label)`. Called for every spawned node: global hook first, then the per-model `on_create` from the library entry. Use it to assign shaders and start animations. Walk the subtree: the model root lives inside the wrapper. |
 | `on_close` | Called after the editor closes. |
 
-### How the live scene is imported
-
-Each time the editor opens, the live scene is **copied**, never modified. Root nodes are matched to library assets by model root name, or by exact material set. Lights, cameras and the environment are recreated from their live settings. If the scene has no sun or environment, defaults are created.
-
 ---
 
 ## Using the editor
@@ -259,6 +255,7 @@ No socket is ever opened unless the editor is active and the bridge is on. Only 
 
 ```
 objects/oEditor            editor object (event wiring)
+scripts/poly_*            public API, one script per function
 scripts/poly_core       init, frame entry points, state
 scripts/poly_input      hotkeys, gizmo/library/rect/hover steps
 scripts/poly_gizmo*     transform handles and drawing

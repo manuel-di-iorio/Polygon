@@ -572,6 +572,7 @@ function __poly_write_file_assets(_ed) {
       var _dst = _out[$ _keys[_j]];
 
       if (is_string(_mv[$ "type"]) && _mv.type != "") _dst.type = _mv.type;
+
       if (variable_struct_exists(_mv, "actor") && is_struct(_mv.actor)
       && is_string(_mv.actor[$ "object"]) && _mv.actor.object != "") {
         _dst.actor = _mv.actor;

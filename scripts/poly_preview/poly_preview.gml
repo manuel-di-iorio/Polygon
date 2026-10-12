@@ -240,39 +240,6 @@ function __poly_thumb_recap_one(_ed, _entry) {
   _entry.thumb_owned = true;
 }
 
-// Captures library thumbnails once at startup.
-function poly_capture_thumbnails() {
-  var _ed = global.poly_inst;
-
-  if (_ed.thumbs_done == true || _ed.thumb_initializing == true) return;
-  if (!is_array(_ed.assets) || array_length(_ed.assets) == 0) return;
-  _ed.thumb_stage = __poly_thumb_make_stage();
-
-  if (_ed.thumb_stage == undefined) {
-    _ed.thumbs_done = true;
-    return;
-  }
-
-  _ed.thumb_queue = [];
-
-  for (var _i = array_length(_ed.assets) - 1; _i >= 0; --_i) {
-    var _entry = _ed.assets[_i];
-
-    if (!is_struct(_entry) || _entry.model == undefined) continue;
-    var _spawn = __poly_spawn_t(_entry);
-
-    if (_spawn != undefined) _entry.thumb_rot = [ _spawn.rot[0], _spawn.rot[1], _spawn.rot[2] ];
-    array_push(_ed.thumb_queue, _entry);
-  }
-
-  _ed.thumb_initializing = array_length(_ed.thumb_queue) > 0;
-
-  if (!_ed.thumb_initializing) {
-    __poly_thumb_free_stage(_ed.thumb_stage);
-    _ed.thumb_stage = undefined;
-    _ed.thumbs_done = true;
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Material and texture previews
@@ -737,3 +704,37 @@ function __poly_anim_pv_free(_ed) {
 }
 
 // Frees every preview cache (thumbnails, materials, animations).
+
+// Captures library thumbnails once at startup.
+function __poly_capture_thumbnails() {
+  var _ed = global.poly_inst;
+
+  if (_ed.thumbs_done == true || _ed.thumb_initializing == true) return;
+  if (!is_array(_ed.assets) || array_length(_ed.assets) == 0) return;
+  _ed.thumb_stage = __poly_thumb_make_stage();
+
+  if (_ed.thumb_stage == undefined) {
+    _ed.thumbs_done = true;
+    return;
+  }
+
+  _ed.thumb_queue = [];
+
+  for (var _i = array_length(_ed.assets) - 1; _i >= 0; --_i) {
+    var _entry = _ed.assets[_i];
+
+    if (!is_struct(_entry) || _entry.model == undefined) continue;
+    var _spawn = __poly_spawn_t(_entry);
+
+    if (_spawn != undefined) _entry.thumb_rot = [ _spawn.rot[0], _spawn.rot[1], _spawn.rot[2] ];
+    array_push(_ed.thumb_queue, _entry);
+  }
+
+  _ed.thumb_initializing = array_length(_ed.thumb_queue) > 0;
+
+  if (!_ed.thumb_initializing) {
+    __poly_thumb_free_stage(_ed.thumb_stage);
+    _ed.thumb_stage = undefined;
+    _ed.thumbs_done = true;
+  }
+}

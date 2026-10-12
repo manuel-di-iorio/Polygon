@@ -59,7 +59,27 @@ function __poly_import_live(_ed) {
   var _nodes = undefined;
 
   if (variable_struct_exists(_ed.rt, "live_scene") && _ed.rt.live_scene != undefined) _nodes = _ed.rt.live_scene.getNodes();
-  if (_nodes != undefined) for (var _i = 0, _n = array_length(_nodes); _i < _n; _i++) __poly_track_adopt_auto(_ed, _nodes[_i]);
+  var _skipped = [];
+
+  if (_nodes != undefined) for (var _i = 0, _n = array_length(_nodes); _i < _n; _i++) {
+    // Only roots arrive with content: non-root nodes travel with their
+    // model subtree, grid/sky/cam nodes are adopted by kind. Anything
+    // else skipped here has no unique library match by root name (the
+    // wrapper id is the only identity) and is reported, never guessed.
+    if (__poly_track_adopt_auto(_ed, _nodes[_i]) == undefined
+      && _nodes[_i] != undefined && _nodes[_i].parent == undefined
+    && is_string(_nodes[_i].name) && _nodes[_i].name != "") {
+      array_push(_skipped, _nodes[_i].name);
+    }
+  }
+
+  if (array_length(_skipped) > 0) {
+    var _names = "";
+
+    for (var _k = 0, _nk = array_length(_skipped); _k < _nk; _k++) _names += (_k > 0 ? ", " : "") + _skipped[_k];
+    show_debug_message("[poly] import skipped " + string(array_length(_skipped)) + " unmatched root(s): " + _names);
+  }
+
   _ed.rt.scene.update(0);
 
   if (__poly_gamecam_resolve(_ed) == undefined) __poly_gamecam_ensure(_ed);
@@ -69,111 +89,14 @@ function __poly_import_live(_ed) {
   __poly_seq_reseed(_ed);
 }
 
-// Initializes editor state and restores view.
-// Takes only the runtime adapter ({ scene?, assets?, cam?, on_create?,
-// on_close? }): the editor owns its scene and never touches game
-// instances. Init is static only (library + empty scene); the live scene
-// is mirrored on every enable, when wrappers are detected by prefix and
-// bare roots get fresh ids. Contract: on_create receives the wrapper
-// node (walk the subtree for model content).
-function poly_create(_rt) {
-  var _src = is_struct(_rt) ? _rt : {};
-  var _rtc = __poly_create_rt(_src);
-  var _ed = __poly_create_state(_rtc);
-  global.poly_inst = _ed;
-
-  __poly_create_assets(_src);
-
-  __poly_viewcam_seed_from(_ed, _rtc.cam);
-  __poly_cam_remember(_ed);
-  __poly_ui_load(_ed);
-  __poly_view_save(_ed);
-  __poly_view_sync(_ed);
-  __poly_grid_ensure(_ed);
-  __poly_cameras_mute(_ed);
-  global.poly_active = _ed.active;
-  global.poly_inst = _ed;
-  return _ed;
-}
 
 // ---------------------------------------------------------------------------
 // Frame entry points
 // ---------------------------------------------------------------------------
 
-// Updates editor logic and draws UI.
-function poly_step() {
-  var _ed = __poly_inst();
 
-  if (_ed == undefined) return;
-  __poly_step(_ed, delta_time * 0.000001);
-  __poly_ai_step(_ed);
-  __poly_imgui_draw(_ed);
-}
 
-// Warms up editor shaders before rendering.
-function poly_prerender() {
-  var _ed = __poly_inst();
 
-  if (_ed == undefined) return;
-  if (variable_struct_exists(_ed, "shaders_warmed") && _ed.shaders_warmed == true) return;
-  _ed.shaders_warmed = true;
-  var _surf = surface_create(8, 8);
-
-  if (_surf == undefined || !surface_exists(_surf)) return;
-  surface_set_target(_surf);
-  draw_clear(c_black);
-  var _shaders = __poly_editor_shaders();
-
-  for (var _i = 0, _n = array_length(_shaders); _i < _n; _i++) {
-    shader_set(_shaders[_i]);
-    draw_rectangle(0, 0, 2, 2, false);
-    shader_reset();
-  }
-
-  surface_reset_target();
-
-  if (surface_exists(_surf)) surface_free(_surf);
-}
-
-// Frame render hooks: shader warmup, then outline mask + GPU pick.
-// Single call for the Draw event (wraps prerender + postrender).
-function poly_draw() {
-  poly_prerender();
-  poly_postrender();
-}
-
-// Captures outline and executes GPU picking.
-function poly_postrender() {
-  var _ed = __poly_inst();
-
-  if (_ed == undefined) return;
-
-  if (_ed.active) {
-    // Single per-frame world-matrix refresh, placed here so every pass
-    // below (pick, outline, panel render + overlays) shares one consistent
-    // camera pose.
-    _ed.rt.scene.update(0);
-    _ed.vp = __poly_viewport_cached(_ed);
-    // Decide the offscreen 3D size for THIS frame up front: every 3D pass
-    // below (pick, mask, main) must share it, or mixed resolutions in one
-    // frame invalidate the whole submit. Ensures (and progressively
-    // creates) the scratch surface as a side effect.
-    _ed.hi_ready = __poly_hi_ready(_ed);
-    __poly_thumbs_pump(_ed);
-    __poly_mat_queue_pump(_ed);
-    __poly_anim_pv_tick(_ed, delta_time * 0.000001);
-  }
-
-  __poly_graveyard_step(_ed[$ "thumb_graveyard"], __poly_thumb_graveyard_free);
-  // Pick first: it applies pending clicks/rects to the selection, and the
-  // outline capture must see the post-pick state — otherwise a deselect
-  // re-renders the main surface with the stale mask and nothing ever
-  // invalidates it again.
-  __poly_gpupick_execute(_ed);
-  __poly_outline_capture(_ed);
-  __poly_graveyard_step(_ed[$ "surf_graveyard"], __poly_surf_graveyard_free);
-  __poly_scene_panel_render(_ed);
-}
 
 // ---------------------------------------------------------------------------
 // Render queues
@@ -181,7 +104,7 @@ function poly_postrender() {
 
 // Shoots one startup thumbnail and finishes the queue when drained.
 function __poly_thumbs_pump(_ed) {
-  if (_ed.thumbs_done != true) poly_capture_thumbnails();
+  if (_ed.thumbs_done != true) __poly_capture_thumbnails();
 
   if (_ed.thumb_initializing == true && is_array(_ed.thumb_queue) && array_length(_ed.thumb_queue) > 0) {
     var _entry = array_pop(_ed.thumb_queue);
@@ -353,30 +276,6 @@ function __poly_draw_drag_ghost(_ed) {
   draw_set_valign(fa_top);
 }
 
-// Draws window-level editor hints and tooltips.
-function poly_draw_ui() {
-  var _ed = __poly_inst();
-
-  if (_ed == undefined) return;
-  var _modal = _ed.confirm != undefined || _ed.about != undefined || _ed.scene_dlg != undefined;
-
-  if (_modal) {
-    draw_set_alpha(0.55);
-    draw_set_color(c_black);
-    draw_rectangle(0, 0, display_get_gui_width(), display_get_gui_height(), false);
-    draw_set_color(c_white);
-    draw_set_alpha(1);
-    draw_set_halign(fa_left);
-    draw_set_valign(fa_top);
-    return;
-  }
-
-  if (_ed.active) __poly_draw_drag_ghost(_ed);
-  draw_set_color(c_white);
-  draw_set_alpha(1);
-  draw_set_halign(fa_left);
-  draw_set_valign(fa_top);
-}
 
 // Frees the surface graveyard.
 function __poly_graveyard_free(_ed) {
@@ -385,59 +284,6 @@ function __poly_graveyard_free(_ed) {
   _ed.surf_graveyard = [];
 }
 
-// Releases editor resources and restores scene.
-function poly_cleanup(_ed = undefined) {
-  _ed ??= __poly_inst();
-
-  if (_ed == undefined) return;
-  __poly_outline_cleanup(_ed);
-  __poly_gpupick_cleanup(_ed);
-  __poly_ai_disconnect(_ed);
-  __poly_thumbs_free(_ed);
-  __poly_mat_pv_free(_ed);
-  __poly_anim_pv_free(_ed);
-  __poly_graveyard_free(_ed);
-
-  if (surface_exists(_ed.scene_surf)) surface_free(_ed.scene_surf);
-  _ed.scene_surf = undefined;
-  if (surface_exists(_ed[$ "scene_hi"])) surface_free(_ed.scene_hi);
-  _ed.scene_hi = undefined;
-  _ed.renderer = undefined;
-  __poly_ui_save(_ed);
-  __poly_drop_preview_clear(_ed);
-  __poly_view_restore(_ed);
-  __poly_bg_restore(_ed);
-  __poly_cameras_restore(_ed);
-  _ed.show_unlit = false;
-  __poly_unlit_apply(_ed);
-
-  if (_ed.viewcam != undefined) {
-    var _vcc = _ed.viewcam.getCameraComponent();
-
-    if (_vcc != undefined) _vcc.setEnabled(false);
-  }
-
-  __poly_grid_remove(_ed);
-  __poly_sky_remove(_ed);
-
-  if (variable_struct_exists(_ed, "sky_src") && _ed.sky_src != undefined) {
-    _ed.sky_src.destroy();
-    _ed.sky_src = undefined;
-  }
-
-  _ed.sky_mat = undefined;
-  _ed.show_shadows = true;
-  __poly_shadowpreview_apply(_ed);
-  _ed.grid_mat = undefined;
-
-  if (variable_struct_exists(_ed, "grid_src") && _ed.grid_src != undefined) {
-    _ed.grid_src.destroy();
-    _ed.grid_src = undefined;
-  }
-
-  if (variable_global_exists("poly_inst") && global.poly_inst == _ed) global.poly_inst = undefined;
-  if (variable_global_exists("poly_active")) global.poly_active = false;
-}
 
 // ---------------------------------------------------------------------------
 // Background and view sizes
@@ -568,23 +414,8 @@ function __poly_set_active(_ed, _on) {
   }
 }
 
-// Enables the 3D editor.
-function poly_enable() {
-  __poly_set_active(global.poly_inst, true);
-}
 
-// Disables the 3D editor.
-function poly_disable() {
-  __poly_set_active(global.poly_inst, false);
-}
 
-// Checks if editor is active.
-function poly_is_active() {
-  var _ed = __poly_inst();
-
-  if (_ed == undefined) return false;
-  return _ed.active == true;
-}
 
 // ---------------------------------------------------------------------------
 // Editor state

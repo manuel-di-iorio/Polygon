@@ -6,7 +6,7 @@
   "name":"imgui_enums",
   "parent":{
     "name":"ImGUI",
-    "path":"folders/Polygon Editor/ImGUI.yy",
+    "path":"folders/Polygon Editor/Internal/ImGUI.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

@@ -6,7 +6,7 @@
   "name":"poly_gizmo",
   "parent":{
     "name":"Gizmo",
-    "path":"folders/Polygon Editor/Gizmo.yy",
+    "path":"folders/Polygon Editor/Internal/Gizmo.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

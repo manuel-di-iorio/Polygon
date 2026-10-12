@@ -4,7 +4,7 @@
   "name":"shPolygonEditorIdSkin",
   "parent":{
     "name":"Shaders",
-    "path":"folders/Polygon Editor/Shaders.yy",
+    "path":"folders/Polygon Editor/Internal/Shaders.yy",
   },
   "resourceType":"GMShader",
   "resourceVersion":"2.0",

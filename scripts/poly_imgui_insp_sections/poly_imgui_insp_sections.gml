@@ -401,6 +401,7 @@ function __poly_imgui_actor_sec(_ed, _entry) {
 
       if (!is_string(_nm) || _nm == "") continue;
       if (_flt != "" && string_pos(_flt, string_lower(_nm)) <= 0) continue;
+
       if (ImGui.Selectable(_nm, _cur == _nm, 0, 0, 0)) {
         _ac.object = _nm;
         _ed.dirty = true;

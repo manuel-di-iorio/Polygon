@@ -26,7 +26,7 @@
   "origin":4,
   "parent":{
     "name":"Icons",
-    "path":"folders/Polygon Editor/Icons.yy",
+    "path":"folders/Polygon Editor/Internal/Icons.yy",
   },
   "preMultiplyAlpha":false,
   "resourceType":"GMSprite",

@@ -6,7 +6,7 @@
   "name":"poly_dlg_scene",
   "parent":{
     "name":"Dialogs",
-    "path":"folders/Polygon Editor/ImGUI/Dialogs.yy",
+    "path":"folders/Polygon Editor/Internal/ImGUI/Dialogs.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

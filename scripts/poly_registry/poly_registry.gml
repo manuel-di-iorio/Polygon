@@ -540,13 +540,9 @@ function __poly_spawn(_ed, _opt) {
       // (node, asset, model, id, label): model stays 3rd so existing
       // 3-arg hooks keep working unchanged.
       var _hook_label = (is_string(_label) && _label != "") ? _label : _wrap.name;
-      if (variable_struct_exists(_ed.rt, "on_create") && is_method(_ed.rt.on_create)) {
-        _ed.rt.on_create(_wrap, _asset, _model, _wrap.name, _hook_label);
-      }
+      if (variable_struct_exists(_ed.rt, "on_create") && is_method(_ed.rt.on_create)) _ed.rt.on_create(_wrap, _asset, _model, _wrap.name, _hook_label);
       var _hook_entry = __poly_asset_get(_ed, _asset);
-      if (_hook_entry != undefined && is_method(_hook_entry[$ "on_create"])) {
-        _hook_entry.on_create(_wrap, _asset, _model, _wrap.name, _hook_label);
-      }
+      if (_hook_entry != undefined && is_method(_hook_entry[$ "on_create"])) _hook_entry.on_create(_wrap, _asset, _model, _wrap.name, _hook_label);
     }
 
     if (_is_ed && !_skip_reg) {
@@ -634,28 +630,6 @@ function __poly_track_place_asset(_ed, _key, _model, _node, _label) {
   });
 }
 
-// Imports a live game node into the editor scene (copy) for editing.
-// The game world is never touched: assets respawn from the library by
-// id (keeping save provenance), lights/cameras/env are recreated from
-// live settings. A live wrapper id is preserved; bare nodes get a fresh
-// one. Returns the editor wrapper node, or undefined.
-function poly_track(_kind, _asset, _node, _label = undefined) {
-  var _ed = __poly_inst();
-
-  if (_ed == undefined) return undefined;
-  if (_node == undefined) return undefined;
-  if (_kind == "light") return __poly_track_adopt_light(_ed, _node, _label);
-  if (_kind == "camera") return __poly_track_adopt_camera(_ed, _node, _label);
-  if (_kind == "environment") return __poly_track_adopt_env(_ed, _node, _label);
-  var _model = __poly_asset_find(_ed, _asset);
-
-  if (_model == undefined) return undefined;
-  var _new = __poly_track_place_asset(_ed, _asset, _model, _node, _label);
-
-  if (_new == undefined) return undefined;
-  __poly_track_adopt_flags(_node, _new);
-  return _new;
-}
 
 // ---------------------------------------------------------------------------
 // Auto-import matching
@@ -679,75 +653,6 @@ function __poly_asset_cands(_ed, _name) {
   return _out;
 }
 
-// Collects unique material names across a node subtree.
-function __poly_node_mat_names(_node) {
-  var _names = [];
-  var _comps = [];
-  __poly_walk_collect_tree(_node, _comps);
-
-  for (var _i = 0, _n = array_length(_comps); _i < _n; _i++) {
-    var _mat = _comps[_i].comp.getMaterial();
-
-    if (_mat == undefined) continue;
-    var _get = _mat[$ "getName"];
-
-    if (_get == undefined) continue;
-    var _name = "";
-    _name = method(_mat, _get)();
-    if (is_string(_name) && _name != "" && !array_contains(_names, _name)) array_push(_names, _name);
-  }
-
-  return _names;
-}
-
-// Reads a model library's material names (undefined when unavailable).
-function __poly_model_mat_names(_model) {
-  if (_model == undefined) return undefined;
-  var _get = _model[$ "getMaterialNames"];
-
-  if (_get == undefined) return undefined;
-  var _list = [];
-  _list = method(_model, _get)();
-  return is_array(_list) ? _list : undefined;
-}
-
-// Checks two material name lists for set equality.
-function __poly_same_mat_set(_names, _lib) {
-  if (array_length(_lib) != array_length(_names)) return false;
-  for (var _m = 0, _n = array_length(_names); _m < _n; _m++) if (!array_contains(_lib, _names[_m])) return false;
-  return true;
-}
-
-// Matches a live node to a library asset by material names.
-// Spawned clones share their source materials, so this works even when
-// node names carry no hint of the model they came from. Requires an exact
-// material-set match: subset matching false-positives on the first library
-// entry when kits share palette materials, so ambiguous (0 or 2+) exact
-// matches return undefined instead of a wrong model.
-function __poly_asset_match_materials(_ed, _node) {
-  if (_node == undefined || !is_array(_ed.assets)) return undefined;
-  var _names = __poly_node_mat_names(_node);
-
-  if (array_length(_names) == 0) return undefined;
-  var _best = undefined;
-
-  for (var _a = 0, _na = array_length(_ed.assets); _a < _na; _a++) {
-    var _entry = _ed.assets[_a];
-
-    if (!is_struct(_entry) || _entry.model == undefined) continue;
-    var _lib = __poly_model_mat_names(_entry.model);
-
-    if (_lib == undefined) continue;
-
-    if (__poly_same_mat_set(_names, _lib) && is_string(_entry.key) && _entry.key != "") {
-      if (_best != undefined) return undefined;
-      _best = _entry.key;
-    }
-  }
-
-  return _best;
-}
-
 // Returns the matchable content of a live node: the first child when the
 // node itself is a wrapper, else the node.
 function __poly_adopt_content(_node) {
@@ -760,13 +665,14 @@ function __poly_adopt_content(_node) {
   return _node;
 }
 
-// Resolves a live node to a library id (root name, else materials).
+// Resolves a live node to a library id by model root name only: the
+// wrapper id (which IS the node name) is the single identity. A unique
+// name candidate wins, anything else (none or ambiguous) is skipped.
 function __poly_track_match(_ed, _node) {
   var _content = __poly_adopt_content(_node);
   var _cands = __poly_asset_cands(_ed, _content.name);
 
   if (array_length(_cands) == 1) return _cands[0].key;
-  if (array_length(_cands) == 0) return __poly_asset_match_materials(_ed, _content);
   return undefined;
 }
 

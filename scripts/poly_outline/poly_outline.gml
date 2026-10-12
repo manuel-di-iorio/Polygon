@@ -231,12 +231,14 @@ function __poly_outline_walk_same(_a, _b) {
   if (_ga == undefined || _gb == undefined) {
     if (_ga != _gb) return false;
   } else if (!__poly_node_same(_ga, _gb)) return false;
+
   var _pa = _a.preview;
   var _pb = _b.preview;
 
   if (_pa == undefined || _pb == undefined) {
     if (_pa != _pb) return false;
   } else if (!__poly_node_same(_pa, _pb)) return false;
+
   return true;
 }
 
@@ -545,7 +547,7 @@ function __poly_outline_capture(_ed) {
 
   surface_set_target(_o.mask);
   draw_clear(c_black);
-  // No scene.update(0) here: poly_postrender already refreshed world
+  // No scene.update(0) here: poly_draw already refreshed world
   // matrices this frame after all Step mutations (camera, gizmo, preview).
   // Material/enabled swaps above do not affect transforms.
   var _t_render0 = get_timer();

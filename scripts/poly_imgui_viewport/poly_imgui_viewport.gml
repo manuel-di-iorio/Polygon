@@ -158,16 +158,14 @@ function __poly_view_sel_changed(_ed) {
 // per hover query, which would never compare equal across frames.
 function __poly_cube_hover_key(_ed) {
   if (!variable_struct_exists(_ed, "imgui") || !is_struct(_ed.imgui)
-  || !variable_struct_exists(_ed.imgui, "win_cube") || !is_struct(_ed.imgui.win_cube)
+    || !variable_struct_exists(_ed.imgui, "win_cube") || !is_struct(_ed.imgui.win_cube)
   || _ed.imgui.win_cube.open != true) {
     return -1;
   }
+
   var _hov = _ed[$ "cube_hover"];
 
-  if (is_array(_hov) && array_length(_hov) >= 2 && is_real(_hov[0]) && is_real(_hov[1])) {
-    return _hov[0] * 10 + (_hov[1] > 0 ? 1 : 2);
-  }
-
+  if (is_array(_hov) && array_length(_hov) >= 2 && is_real(_hov[0]) && is_real(_hov[1])) return _hov[0] * 10 + (_hov[1] > 0 ? 1 : 2);
   return -1;
 }
 
