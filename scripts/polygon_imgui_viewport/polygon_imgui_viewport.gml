@@ -240,8 +240,8 @@ function __polygon_view_needs_render(_ed) {
 
   if (_cheap != undefined) {
     // A scalar changed: a re-render is certainly needed, building the
-+   // string key would be pure overhead (hot case = camera moving).
-+   // The mask is kept on _ed for debugging/profiling.
+    // string key would be pure overhead (hot case = camera moving).
+    // The mask is kept on _ed for debugging/profiling.
     _ed.view_mask = __polygon_view_cheap_mask(_cheap, _prev_cheap);
 
     // Same as the old exact-key path: a picture change invalidates
