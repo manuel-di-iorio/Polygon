@@ -63,6 +63,12 @@ function __poly_scene_dlg_delete(_dlg) {
 
 // Draws the name field, scene list and action buttons.
 function __poly_scene_dlg_form(_ed, _dlg, _is_save) {
+  // Chunked load in progress: bar only (no buttons until finish closes us).
+  if (!_is_save && variable_struct_exists(_ed, "load_job") && is_struct(_ed.load_job)) {
+    __poly_scene_dlg_loading(_ed, _dlg);
+    return;
+  }
+
   ImGui.Text("Scene name:");
 
   if (!variable_struct_exists(_dlg, "buf") || !is_string(_dlg.buf)) _dlg.buf = __poly_imgui_pad(_dlg.name);
@@ -124,6 +130,26 @@ function __poly_scene_dlg_list(_ed, _dlg) {
 
   ImGui.EndChild();
   _dlg._matched = _matched;
+}
+
+// Draws the chunked-load progress bar (DrawList rects: no ProgressBar widget
+// in the binding).
+function __poly_scene_dlg_loading(_ed, _dlg) {
+  var _job = _ed.load_job;
+  var _n = array_length(_job.nodes);
+  var _frac = _n > 0 ? clamp(_job.idx / _n, 0, 1) : 1;
+  ImGui.Text("Loading \"" + _dlg.name + "\".. " + string(_job.idx) + "/" + string(_n));
+  var _w = max(40, ImGui.GetContentRegionAvailX());
+  var _h = ImGui.GetFrameHeight();
+  var _x = ImGui.GetCursorScreenPosX();
+  var _y = ImGui.GetCursorScreenPosY();
+  var _dl = ImGui.GetWindowDrawList();
+  ImGui.Dummy(_w, _h);
+
+  if (_dl == undefined) return;
+  ImGui.DrawListAddRectFilled(_dl, _x, _y, _x + _w, _y + _h, make_colour_rgb(29, 34, 44));
+  ImGui.DrawListAddRectFilled(_dl, _x, _y, _x + _w * _frac, _y + _h, make_colour_rgb(47, 111, 237));
+  ImGui.DrawListAddRect(_dl, _x, _y, _x + _w, _y + _h, make_colour_rgb(78, 91, 113));
 }
 
 // Draws the one-line status under the form.

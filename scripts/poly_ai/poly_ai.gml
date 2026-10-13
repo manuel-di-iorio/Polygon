@@ -463,6 +463,45 @@ function __poly_ai_v_oneof(_p) {
   return undefined;
 }
 
+// Validates camera params (position + exactly one of target/rotation).
+function __poly_ai_v_camera(_p) {
+  var _r = __poly_ai_v_vec3(_p, "position", true, "position ([x, y, z] numbers) required", undefined);
+
+  if (_r != undefined) return _r;
+  _r = __poly_ai_v_vec3(_p, "target", false, undefined, "target must be [x, y, z] numbers");
+
+  if (_r != undefined) return _r;
+  _r = __poly_ai_v_vec3(_p, "rotation", false, undefined, "rotation must be [rx, ry, rz] euler degrees");
+
+  if (_r != undefined) return _r;
+  var _has_t = variable_struct_exists(_p, "target");
+  var _has_r = variable_struct_exists(_p, "rotation");
+
+  if (!_has_t && !_has_r) return "one of target/rotation required";
+  if (_has_t && _has_r) return "use only one of target/rotation";
+  return undefined;
+}
+
+// Validates show/hide params (view state, no undo entry).
+function __poly_ai_v_visible(_ed, _p) {
+  var _r = __poly_ai_v_node(_ed, _p);
+
+  if (_r != undefined) return _r;
+
+  if (!variable_struct_exists(_p, "visible") || !is_bool(_p.visible)) return "visible (bool) required";
+  return undefined;
+}
+
+// Validates AI-triggered scene load params.
+function __poly_ai_v_load(_ed, _p) {
+  if (!variable_struct_exists(_p, "name") || !is_string(_p.name) || __poly_sanitize_scene_name(_p.name) == "") return "name (scene name) required";
+
+  if (variable_struct_exists(_ed, "load_job") && is_struct(_ed.load_job)) return "a load is already running";
+
+  if (_ed.dirty == true) return "unsaved changes: save first";
+  return undefined;
+}
+
 // Validates rename params.
 function __poly_ai_v_rename(_ed, _p) {
   var _r = __poly_ai_v_id(_p);
@@ -625,7 +664,8 @@ function __poly_ai_exec(_ed, _msg) {
   switch (_op) {
     case "select": case "focus": case "create": case "transform":
     case "rename": case "delete": case "save": case "batch":
-    case "drop_to_ground": case "place_on":
+    case "drop_to_ground": case "place_on": case "camera":
+    case "visible": case "load":
 
     if (_ed.confirm != undefined || _ed.about != undefined || _ed.scene_dlg != undefined
     || _ed.delete_confirm != undefined || _ed.giz.drag != -1) {
@@ -656,6 +696,9 @@ function __poly_ai_exec(_ed, _msg) {
     case "raycast_down": _r = __poly_ai_op_raycast(_ed, _p); break;
     case "drop_to_ground": _r = __poly_ai_op_drop(_ed, _p, true); break;
     case "place_on": _r = __poly_ai_op_stack(_ed, _p, true); break;
+    case "camera": _r = __poly_ai_op_camera(_ed, _p); break;
+    case "visible": _r = __poly_ai_op_visible(_ed, _p); break;
+    case "load": _r = __poly_ai_op_load(_ed, _p); break;
     default: return __poly_ai_fail(_id, "unknown_op", "unsupported op: " + _op);
   }
 
@@ -803,6 +846,77 @@ function __poly_ai_op_focus(_ed, _p) {
   if (_node == undefined) return __poly_ai_err("not_found", "unknown or system node: " + _p.id);
   if (__poly_view_focus_node(_ed, _node) != true) return __poly_ai_err("failed", "cannot focus: " + _p.id);
   return { focused: _p.id };
+}
+
+// Moves the viewport camera to an exact pose: position + look-at target
+// or absolute orientation. Cancels any in-flight camera animation so the
+// following screenshot is deterministic. Touches no scene content.
+function __poly_ai_op_camera(_ed, _p) {
+  var _vr = __poly_ai_v_camera(_p);
+
+  if (_vr != undefined) return __poly_ai_v_err(_vr);
+  if (_ed == undefined || _ed.rt == undefined || _ed.rt.cam == undefined) return __poly_ai_err("failed", "no viewport camera (editor closed?)");
+  var _pos = new GM3D_Vec3(_p.position[0], _p.position[1], _p.position[2]);
+  var _q = undefined;
+
+  if (variable_struct_exists(_p, "target")) {
+    var _dx = _p.target[0] - _p.position[0];
+    var _dy = _p.target[1] - _p.position[1];
+    var _dz = _p.target[2] - _p.position[2];
+    var _len = sqrt(_dx * _dx + _dy * _dy + _dz * _dz);
+
+    if (_len < 0.000001) return __poly_ai_err("bad_params", "target too close to position");
+    // GM3D cameras render along local -Z while fromLookRotation aims +Z:
+    // feed it the negated view direction so -Z lands on the target.
+    var _dir = new GM3D_Vec3(-_dx / _len, -_dy / _len, -_dz / _len);
+    var _up = GM3D_Vec3.up();
+
+    if (abs(_dir.y) >= 0.999) _up = GM3D_Vec3.forward();
+    _q = GM3D_Quaternion.fromLookRotation(_dir, _up).normalizeSafe(0.000001);
+  } else {
+    _q = __poly_euler_to_quat(degtorad(_p.rotation[0]), degtorad(_p.rotation[1]), degtorad(_p.rotation[2]));
+  }
+
+  _ed.cam_anim = undefined;
+  _ed.rt.cam.setLocalPosition(_pos);
+  _ed.rt.cam.setLocalRotation(_q);
+  // Report the true view direction (render axis, local -Z).
+  var _fw = __poly_quat_forward(_q);
+  return { position: [ _pos.x, _pos.y, _pos.z ], rotation_quat: [ _q.x, _q.y, _q.z, _q.w ], forward: [ -_fw.x, -_fw.y, -_fw.z ] };
+}
+
+// Shows or hides one node in the viewport (view state, undoable via the
+// eye icons; not part of Ctrl+Z history).
+function __poly_ai_op_visible(_ed, _p) {
+  var _vr = __poly_ai_v_visible(_ed, _p);
+
+  if (_vr != undefined) return __poly_ai_v_err(_vr);
+  var _node = __poly_ai_node(_ed, _p.id);
+
+  if (__poly_locked_get(_ed, _node)) return __poly_ai_err("locked", "node is locked: " + _p.id);
+  __poly_hidden_set(_ed, _node, _p.visible != true);
+  return { id: _p.id, visible: _p.visible == true };
+}
+
+// Starts a chunked scene load by name (progress shows in the Load dialog
+// when open, otherwise headless). Refuses when dirty: save first.
+function __poly_ai_op_load(_ed, _p) {
+  var _vr = __poly_ai_v_load(_ed, _p);
+
+  if (_vr != undefined) return __poly_ai_v_err(_vr);
+  var _clean = __poly_sanitize_scene_name(_p.name);
+  var _old = _ed.scene_file;
+  _ed.scene_file = __poly_scene_file_for(_clean);
+  var _err = __poly_load_scene_begin(_ed);
+
+  if (_err != "") {
+    _ed.scene_file = _old;
+    return __poly_ai_err("failed", "scene not found or invalid: " + _clean);
+  }
+
+  var _n = array_length(_ed.load_job.nodes);
+  return { loading: _clean, nodes: _n };
+}
 }
 
 function __poly_ai_op_create(_ed, _p, _commit) {

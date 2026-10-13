@@ -452,7 +452,6 @@ function __poly_imgui_scene_list(_ed) {
   var _first = 0;
   var _last = _n;
   var _virtualized = false;
-  var _row_spacing = max(0, _row_h - _frame_h);
 
   if (_row_h > 0 && _n > 0) {
     var _scroll_y = max(0, ImGui.GetScrollY());
@@ -460,7 +459,8 @@ function __poly_imgui_scene_list(_ed) {
     _first = min(_n, max(0, floor(_scroll_y / _row_h) - 1));
     _last = max(_first, min(_n, ceil((_scroll_y + _child_h) / _row_h) + 1));
 
-    if (_first > 0) ImGui.Dummy(1, max(0, _first * _row_h - _row_spacing));
+    // Stand-in for the skipped head rows (exact: each row advances _row_h).
+    if (_first > 0) ImGui.Dummy(1, _first * _row_h);
     _virtualized = (_first > 0 || _last < _n);
   }
 
@@ -486,12 +486,16 @@ function __poly_imgui_scene_list(_ed) {
     ImGui.SetNextWindowBgAlpha(1);
     __poly_scene_row_menu(_ed, _rows[_i], _rows[_i].node, _i, _pending);
 
-    if (_row_h <= 0 && _i == _first) {
+    // Self-calibrate: measure the real row pitch (row + trailing spacing,
+    // present here because a following row exists). The initial estimate
+    // drifts with row count (376 rows x 1px = 15 missing rows at the end),
+    // which used to swallow the last items.
+    if (_i == _first && _first + 1 < _last) {
       var _measured = ImGui.GetCursorPosY() - _row_y;
 
       if (_measured > 0) {
         _row_h = _measured;
-        _ui.scene_row_height = _row_h;
+        _ui.scene_row_height = _measured;
         _ui.scene_row_frame_height = _frame_h;
       }
     }
@@ -503,7 +507,7 @@ function __poly_imgui_scene_list(_ed) {
   __poly_hier_rect_step(_ed);
 
   if (_virtualized && _row_h > 0 && _last < _n) {
-    var _tail_h = (_n - _last) * _row_h - _row_spacing;
+    var _tail_h = (_n - _last) * _row_h;
 
     if (_tail_h > 0) ImGui.Dummy(1, _tail_h);
   }

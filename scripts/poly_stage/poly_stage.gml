@@ -249,6 +249,14 @@ function __poly_sky_sync(_ed) {
   if (_sky == undefined) return;
   var _cam_pos = _ed.rt.cam.getLocalPosition();
   _sky.setLocalPosition(new GM3D_Vec3(_cam_pos.x, _cam_pos.y, _cam_pos.z));
+  // Keep the +/-4000 dome inside the view frustum: with a short far plane
+  // (e.g. 500) the full-size dome would be culled and the sky would vanish.
+  var _far = 10000.0;
+  var _cc = _ed.rt.cam.getCameraComponent();
+
+  if (_cc != undefined && is_real(_cc.getFar()) && _cc.getFar() > 0) _far = _cc.getFar();
+  var _fit = clamp(_far * 0.5 / 4000.0, 0.001, 1.0);
+  _sky.setLocalScale(new GM3D_Vec3(_fit, _fit, _fit));
   var _mat = undefined;
   var _mesh = _sky.getMeshComponent();
 

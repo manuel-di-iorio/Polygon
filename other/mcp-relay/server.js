@@ -126,6 +126,18 @@ async function main() {
     "Move the viewport camera to frame one node.",
     { id: z.string().describe("Stable node id") }, "focus");
 
+  bridgeTool(server, bridge, "poly_set_camera",
+    "Move the viewport camera to an exact world position and aim it: either look at a target point or set an absolute orientation (Euler degrees XYZ). One command for framing screenshots from anywhere (e.g. exterior wide shots). Touches no scene content and is not part of undo.",
+    {
+      position: VEC3.describe("Camera world position [x, y, z]"),
+      target: VEC3.optional().describe("Look-at world point [x, y, z] (mutually exclusive with rotation)"),
+      rotation: VEC3.optional().describe("Absolute orientation Euler degrees [rx, ry, rz], XYZ order (mutually exclusive with target)"),
+    }, "camera", (a) => {
+      if (a.target === undefined && a.rotation === undefined) throw new Error("bad_params: one of target/rotation is required");
+      if (a.target !== undefined && a.rotation !== undefined) throw new Error("bad_params: use only one of target/rotation");
+      return a;
+    });
+
   bridgeTool(server, bridge, "poly_create_object",
     "Spawn a library asset as a new instance. Position is [x,y,z] world units (X/Z always used; Y is the spawn guess unless resting params are given). Rotation is optional Euler degrees [rx,ry,rz] (XYZ order). Scale defaults to [1,1,1]. Optional resting (measured from the real AABB, any pivot): base_y = desired world bottom Y, or on_top_of = support node id + optional gap. Returns the new stable id + final bounds. List valid keys first with poly_get_assets; unknown keys are rejected.",
     {
@@ -188,6 +200,17 @@ async function main() {
       on: z.string().describe("Support node id"),
       gap: z.number().optional().describe("Extra lift above the support top, default 0"),
     }, "place_on");
+
+  bridgeTool(server, bridge, "poly_set_visible",
+    "Show or hide one node in the viewport (slabs, roof, walls: hide occluders for dollhouse views, show them back after). View state only: not saved to JSON, not part of undo. Returns the new visibility.",
+    {
+      id: z.string().describe("Stable node id"),
+      visible: z.boolean().describe("true = show, false = hide"),
+    }, "visible");
+
+  bridgeTool(server, bridge, "poly_load_scene",
+    "Load a saved scene by name through a chunked loader (progress bar, no freeze). Refuses when the current scene has unsaved changes (save first with poly_save_scene) or another load is running. Returns the node count being loaded; poll poly_get_status until dirty=false.",
+    { name: z.string().describe("Saved scene name, e.g. casa") }, "load");
 
   bridgeTool(server, bridge, "poly_take_screenshot",
     "Capture the current editor viewport to a PNG in the OS temp folder (auto-cleaned; last 10 kept) and return its absolute path. Read the file to SEE the scene, then iterate placement with follow-up ops.",

@@ -434,20 +434,7 @@ function __poly_rebuild(_ed, _nodes) {
   _ed.unlit_quiet = true;
 
   for (var _i = 0, _n = array_length(_nodes); _i < _n; _i++) {
-    var _p = _nodes[_i];
-
-    if (!is_struct(_p)) continue;
-    var _kind = _p.kind;
-
-    if (_kind == "light" || _kind == "camera" || _kind == "environment") {
-      if (__poly_rebuild_prop(_ed, _p, _kind) == undefined) throw "place failed for '" + string(_p.id) + "'";
-      _report.placed++;
-      continue;
-    }
-
-    if (_kind != "instance") throw "unknown kind '" + string(_kind) + "'";
-    __poly_rebuild_place_asset(_ed, _p, _p.assetId);
-    _report.placed++;
+    __poly_rebuild_place_one(_ed, _nodes[_i], _report);
   }
 
   _ed.unlit_quiet = false;
@@ -459,6 +446,100 @@ function __poly_rebuild(_ed, _nodes) {
   __poly_rebuild_restore_states(_ed, _states);
 
   return _report;
+}
+
+// Places one descriptor during (re)build (shared by sync + chunked load).
+function __poly_rebuild_place_one(_ed, _p, _report) {
+  if (!is_struct(_p)) return;
+  var _kind = _p.kind;
+
+  if (_kind == "light" || _kind == "camera" || _kind == "environment") {
+    if (__poly_rebuild_prop(_ed, _p, _kind) == undefined) throw "place failed for '" + string(_p.id) + "'";
+    _report.placed++;
+    return;
+  }
+
+  if (_kind != "instance") throw "unknown kind '" + string(_kind) + "'";
+  __poly_rebuild_place_asset(_ed, _p, _p.assetId);
+  _report.placed++;
+}
+
+// Starts a chunked scene load: parses now, places nodes across steps so
+// the Load dialog can show progress instead of freezing. Returns "" on
+// start, else an error message (same cases as the sync load).
+function __poly_load_scene_begin(_ed) {
+  var _path = __poly_scene_path(_ed);
+
+  if (_path == "" || !file_exists(_path)) return "missing";
+  var _json = __poly_read_text_file(_path);
+
+  if (_json == "") return "missing";
+  var _data = json_parse(_json);
+  var _ok = is_struct(_data) && _data.version == 2 && variable_struct_exists(_data, "nodes") && is_array(_data.nodes);
+
+  if (!_ok) return "invalid";
+
+  if (!__poly_validate_descs(_data.nodes)) return "invalid";
+
+  if (variable_struct_exists(_data, "seq") && is_real(_data.seq)) {
+    __poly_reg_ensure(_ed);
+    _ed.id_seq = max(_ed.id_seq, floor(_data.seq));
+  }
+
+  __poly_drop_preview_clear(_ed);
+  _ed.unlit_quiet = false;
+  var _states = __poly_rebuild_clear(_ed);
+  _ed.unlit_quiet = true;
+  _ed.asset_meta = __poly_file_assets(_data);
+  __poly_history_clear(_ed);
+  _ed.load_job = { nodes: _data.nodes, idx: 0, report: { placed: 0, failed: 0, err: "" }, states: _states };
+  return "";
+}
+
+// Places up to _budget pending nodes. Returns true when the load is done.
+function __poly_load_scene_pump(_ed, _budget = 48) {
+  if (!variable_struct_exists(_ed, "load_job") || !is_struct(_ed.load_job)) return true;
+  var _job = _ed.load_job;
+  var _n = array_length(_job.nodes);
+  var _stop = min(_n, _job.idx + max(1, _budget));
+
+  while (_job.idx < _stop) {
+    try {
+      __poly_rebuild_place_one(_ed, _job.nodes[_job.idx], _job.report);
+    } catch (_ex) {
+      _job.report.failed++;
+    }
+
+    _job.idx++;
+  }
+
+  if (_job.idx < _n) return false;
+  __poly_load_scene_finish(_ed);
+  return true;
+}
+
+// Completes a chunked load (same tail as the sync rebuild).
+function __poly_load_scene_finish(_ed) {
+  var _job = _ed.load_job;
+  _ed.load_job = undefined;
+  _ed.unlit_quiet = false;
+  _ed.rt.scene.update(0);
+  __poly_seq_reseed(_ed);
+  __poly_gamecam_ensure(_ed);
+  __poly_cameras_mute(_ed);
+  __poly_unlit_apply(_ed);
+  __poly_rebuild_restore_states(_ed, _job.states);
+  // Files rarely carry sun/env (casa.json has neither): without them the
+  // exterior renders pitch black. Same ensure as import/new scene.
+  if (__poly_light_count(_ed) == 0) __poly_default_sun(_ed);
+  if (__poly_env_node(_ed) == undefined) __poly_create_env(_ed);
+  __poly_viewcam_seed(_ed);
+  _ed.sel = [];
+  _ed.giz.drag = -1;
+  _ed.giz.hover = -1;
+  __poly_history_clear(_ed);
+  _ed.dirty = false;
+  _ed.scene_dlg = undefined;
 }
 
 // Reads internal data for a kind from a file sub-descriptor
@@ -620,6 +701,8 @@ function __poly_load_scene(_ed) {
 
   __poly_rebuild(_ed, _data.nodes);
   _ed.asset_meta = __poly_file_assets(_data);
+  if (__poly_light_count(_ed) == 0) __poly_default_sun(_ed);
+  if (__poly_env_node(_ed) == undefined) __poly_create_env(_ed);
   __poly_viewcam_seed(_ed);
   _ed.sel = [];
   _ed.giz.drag = -1;

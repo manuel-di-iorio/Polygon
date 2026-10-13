@@ -68,7 +68,7 @@ function __poly_prop_schema() {
       { key: "ow", type: "float", min: 0.01, max: undefined, def: 10.0 },
       { key: "oh", type: "float", min: 0.01, max: undefined, def: 10.0 },
       { key: "near", type: "float", min: 0.01, max: undefined, def: 0.1 },
-      { key: "far", type: "float", min: undefined, max: undefined, def: 500.0 },
+      { key: "far", type: "float", min: undefined, max: undefined, def: 10000.0 },
       { key: "enabled", type: "bool", min: undefined, max: undefined, def: true },
     ],
     env: [

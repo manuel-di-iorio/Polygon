@@ -162,13 +162,14 @@ function __poly_scene_dlg_do_load(_ed) {
 
   _dlg.name = _clean;
 
-  if (!__poly_load_named(_ed, _clean)) {
-    _dlg.error = "Scene not found or invalid.";
+  // Chunked load: the dialog stays open showing progress, finish closes it.
+  var _err = __poly_load_named_begin(_ed, _clean);
+
+  if (_err != "") {
+    _dlg.error = _err;
     _dlg.err_name = _dlg.name;
     return;
   }
-
-  _ed.scene_dlg = undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -220,6 +221,21 @@ function __poly_load_named(_ed, _name) {
   if (__poly_load_scene(_ed)) return true;
   _ed.scene_file = _old;
   return false;
+}
+
+// Starts a chunked load by name (progress dialog, no freeze).
+// Returns "" on start, else an error message for the dialog.
+function __poly_load_named_begin(_ed, _name) {
+  var _clean = __poly_sanitize_scene_name(_name);
+
+  if (_clean == "") return "Type a valid scene name.";
+  var _old = _ed.scene_file;
+  _ed.scene_file = __poly_scene_file_for(_clean);
+  var _err = __poly_load_scene_begin(_ed);
+
+  if (_err == "") return "";
+  _ed.scene_file = _old;
+  return "Scene not found or invalid.";
 }
 
 // Deletes a saved scene file by name. Returns true on success.

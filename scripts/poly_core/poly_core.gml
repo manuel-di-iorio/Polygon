@@ -669,6 +669,8 @@ function __poly_step(_ed, _dt) {
   __poly_view_sync(_ed);
 
   if (_ed.open_snapshot == undefined && _ed.dirty != true) _ed.open_snapshot = __poly_serialize_scene(_ed);
+  // Chunked scene loads progress here (even with the Load dialog open).
+  if (variable_struct_exists(_ed, "load_job") && is_struct(_ed.load_job)) __poly_load_scene_pump(_ed);
   var _input = __poly_input_context(_ed, _keys);
   var _vp = _input.vp;
   _ed.vp = _vp;
@@ -676,7 +678,11 @@ function __poly_step(_ed, _dt) {
   var _modal = _ed.confirm != undefined || _ed.about != undefined || _ed.scene_dlg != undefined;
 
   if (_modal) {
-    if (!_input.typing && keyboard_check_pressed(_keys.cancel)) {
+    // A running chunked load owns its dialog: ESC must not kill it
+    // mid-load (the scene would be left half-built).
+    var _loading = variable_struct_exists(_ed, "load_job") && is_struct(_ed.load_job);
+
+    if (!_loading && !_input.typing && keyboard_check_pressed(_keys.cancel)) {
       _ed.confirm = undefined;
       _ed.about = undefined;
       _ed.scene_dlg = undefined;
