@@ -1,11 +1,22 @@
 // poly_scene_walk — subtree walks (roots, mesh components, flags).
 
-// Collects mesh components from node.
+// Collects mesh components from node (all of them: the importer expands
+// one multi-material mesh into one component per primitive, and the
+// singular getter only returns the first — leaving the other parts
+// unpickable, unoutlined and shadow-flagged wrong).
 function __poly_walk_collect_comps(_node, _out) {
-  var _mesh = _node.getMeshComponent();
+  var _all = _node.getMeshComponents();
 
-  if (_mesh != undefined) {
-    array_push(_out, { comp: _mesh, skinned: false });
+  if (is_array(_all) && array_length(_all) > 0) {
+    for (var _i = 0, _n = array_length(_all); _i < _n; _i++) {
+      if (_all[_i] != undefined) array_push(_out, { comp: _all[_i], skinned: false });
+    }
+  } else {
+    var _mesh = _node.getMeshComponent();
+
+    if (_mesh != undefined) {
+      array_push(_out, { comp: _mesh, skinned: false });
+    }
   }
 
   var _skin = _node.getSkinnedMeshComponent();
