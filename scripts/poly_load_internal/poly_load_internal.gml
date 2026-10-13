@@ -48,7 +48,7 @@ function __poly_load_actor(_actors, _pl, _rep) {
     return false;
   }
 
-  var _inst = instance_create_layer(0, 0, _layer, _oi, { node: _pl.node, poly_id: _pl.id, poly_asset_id: _pl.asset, poly_label: _pl.label });
+  var _inst = instance_create_layer(0, 0, _layer, _oi, { node: _pl.node, poly_id: _pl.id, poly_asset_id: _pl.asset });
   __poly_actor_map()[$ _pl.id] = _inst;
   return true;
 }
@@ -65,7 +65,7 @@ function __poly_actor_map() {
 
 
 
-// Spawns single node from descriptor (v2: id/label/asset).
+// Spawns single node from descriptor (v2: id/asset).
 // Assets spawn inside a wrapper named after the id so editor imports
 // preserve identity; props are single nodes carrying the id.
 // Returns a placement struct { node, kind, asset, id, label, model } for
@@ -80,18 +80,14 @@ function __poly_load_node(_scene, _assets, _p) {
 
   if (variable_struct_exists(_p, "id") && is_string(_p.id) && _p.id != "") {
     _id = _p.id;
-  } else if (variable_struct_exists(_p, "label") && is_string(_p.label) && _p.label != "") {
-    _id = _p.label;
   } else if (variable_struct_exists(_p, "name") && is_string(_p.name) && _p.name != "") {
     _id = _p.name;
   }
 
-  var _label = (variable_struct_exists(_p, "label") && is_string(_p.label) && _p.label != "") ? _p.label : _id;
-
   if (_kind == "light" || _kind == "camera" || _kind == "environment") {
     var _prop = __poly_load_prop(_scene, _p, _kind, _id);
     if (_prop == undefined) return undefined;
-    return { node: _prop, kind: _kind, asset: "", id: _id, label: _label, model: undefined };
+    return { node: _prop, kind: _kind, asset: "", id: _id, label: _p[$ "label"], model: undefined };
   }
 
   if (_kind != "instance") return undefined;
@@ -124,7 +120,7 @@ function __poly_load_node(_scene, _assets, _p) {
   });
 
   if (_node == undefined) return undefined;
-  return { node: _node, kind: "instance", asset: _akey, id: _id, label: _label, model: _model };
+  return { node: _node, kind: "instance", asset: _akey, id: _id, label: _p[$ "label"], model: _model };
 }
 
 // Creates light camera environment from descriptor.

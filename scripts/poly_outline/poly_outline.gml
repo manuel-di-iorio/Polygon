@@ -426,6 +426,7 @@ function __poly_outline_mark_sel(_ed, _epoch) {
 // Renders selection mask for outline.
 function __poly_outline_capture(_ed) {
   if (_ed == undefined || _ed.active != true) return;
+  if (_ed.vis_outline == false) return;
   if (!__poly_scene_panel_open(_ed)) return;
   var _o = __poly_outline_cfg(_ed);
 
@@ -578,6 +579,7 @@ function __poly_outline_capture(_ed) {
 // Draws outline glow from mask.
 function __poly_outline_composite(_ed) {
   if (_ed == undefined || _ed.active != true) return;
+  if (_ed.vis_outline == false) return;
   if (!variable_struct_exists(_ed, "outline") || !is_struct(_ed.outline)) return;
   var _o = _ed.outline;
   __poly_outline_ensure_fields(_o);

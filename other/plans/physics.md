@@ -29,7 +29,6 @@ Campo opzionale `physics` su descrittore `kind: "instance"`, parallelo a `shadow
 {
   "kind": "instance",
   "id": "__PolygonEditor__3",
-  "label": "Crate",
   "assetId": "models/crate.glb",
   "transform": {
     "position": [0, 0, 0],

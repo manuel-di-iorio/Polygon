@@ -198,6 +198,8 @@ function __poly_duplicate_asset(_ed, _src, _off) {
   if (_model == undefined) return undefined;
   var _pos = _src.getLocalPosition();
   var _sca = _src.getLocalScale();
+  var _src_en = __poly_registry_find(_ed, _src);
+  var _copy_label = (_src_en != undefined && is_string(_src_en.label)) ? _src_en.label : undefined;
   var _copy = __poly_place(
     _ed,
     _key,
@@ -205,11 +207,10 @@ function __poly_duplicate_asset(_ed, _src, _off) {
     [ _pos.x + _off, _pos.y, _pos.z + _off ],
     _src.getLocalRotation().clone(),
     [ _sca.x, _sca.y, _sca.z ],
-    __poly_fresh_label(_ed, __poly_label_get(_ed, _src))
+    _copy_label
   );
 
   if (_copy == undefined) return undefined;
-  var _src_en = __poly_registry_find(_ed, _src);
 
   if (_src_en != undefined && is_struct(_src_en.data)) {
     var _cast = _src_en.data.castShadows == true;
@@ -266,7 +267,7 @@ function __poly_duplicate_prop(_ed, _src, _kind, _off) {
   var _en = __poly_registry_find(_ed, _src);
 
   if (_en == undefined || !is_struct(_en.data)) return undefined;
-  var _label = __poly_fresh_label(_ed, __poly_label_get(_ed, _src));
+  var _slabel = (is_string(_en.label)) ? _en.label : undefined;
   var _node = _ed.rt.scene.createNode(__poly_wrap_new(_ed));
 
   if (_node == undefined) return undefined;
@@ -294,7 +295,7 @@ function __poly_duplicate_prop(_ed, _src, _kind, _off) {
     _node,
     _kind,
     "",
-    _label,
+    _slabel,
     _data
   );
 
@@ -573,7 +574,7 @@ function __poly_scene_click(_ed, _nd, _row, _visible = undefined) {
   }
 }
 
-// Commits renamed node label with undo.
+// Commits a custom instance name with undo.
 function __poly_scene_commit_rename(_ed, _node, _new_label) {
   var _before = __poly_history_snap(_ed);
   var _en = __poly_registry_find(_ed, _node);
@@ -605,6 +606,25 @@ function __poly_scene_list_commit(_ed, _ren, _foc, _dup, _del) {
 // ---------------------------------------------------------------------------
 // Inspector axis edit
 // ---------------------------------------------------------------------------
+
+// Snaps every selected node position to the grid step (undoable).
+function __poly_push_sel_to_grid(_ed) {
+  if (array_length(_ed.sel) == 0) return;
+  var _step = __poly_snap_step(_ed);
+  var _before = __poly_history_snap(_ed);
+
+  for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++) {
+    if (!__poly_tool_allowed(_ed, _ed.sel[_i], PolygonEditorTool.Translate) || __poly_hidden_get(_ed, _ed.sel[_i])) continue;
+    var _pos = _ed.sel[_i].getLocalPosition().clone();
+
+    if (!variable_struct_exists(_ed, "snap_x") || _ed.snap_x) _pos.x = __poly_snap(_pos.x, _step);
+    if (!variable_struct_exists(_ed, "snap_y") || _ed.snap_y) _pos.y = __poly_snap(_pos.y, _step);
+    if (!variable_struct_exists(_ed, "snap_z") || _ed.snap_z) _pos.z = __poly_snap(_pos.z, _step);
+    _ed.sel[_i].setLocalPosition(_pos);
+  }
+
+  __poly_history_commit(_ed, _before);
+}
 
 // Applies position rotation scale axis edit (mode 0/1/2, axis 0/1/2).
 function __poly_apply_axis(_ed, _mode, _idx, _v) {

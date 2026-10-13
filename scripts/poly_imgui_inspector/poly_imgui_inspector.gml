@@ -51,7 +51,7 @@ function __poly_imgui_mat_view(_ed) {
 
 // Builds the inspector title and type label for a selection.
 function __poly_inspector_titles(_ed, _n, _skind, _stype) {
-  var _title = _n == 1 ? __poly_label_get(_ed, _ed.sel[0]) : string(_n) + " objects";
+  var _title = _n == 1 ? __poly_node_display(_ed, _ed.sel[0]) : string(_n) + " objects";
   var _type = _n == 1 ? "Object" : "Objects";
 
   if (_skind == "instance") {

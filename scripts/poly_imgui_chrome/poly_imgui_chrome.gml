@@ -7,10 +7,10 @@
 // Gizmo tool buttons table: [id, tip, tool, fallback, sprite, w, h].
 function __poly_toolbar_tools() {
   static _tools = [
-    [ "##tb_view", "View (1)", PolygonEditorTool.View, "V", "sprPolygonEditorIconHand", 12, 16 ],
-    [ "##tb_move", "Move (2)", PolygonEditorTool.Translate, "M", "sprPolygonEditorIconMove", 15, 15 ],
-    [ "##tb_rotate", "Rotate (3)", PolygonEditorTool.Rotate, "R", "sprPolygonEditorIconRotate", 15, 15 ],
-    [ "##tb_scale", "Scale (4)", PolygonEditorTool.Scale, "S", "sprPolygonEditorIconScale", 15, 15 ],
+    [ "##tb_view", "View (Q)", PolygonEditorTool.View, "V", "sprPolygonEditorIconHand", 12, 16 ],
+    [ "##tb_move", "Move (W)", PolygonEditorTool.Translate, "M", "sprPolygonEditorIconMove", 15, 15 ],
+    [ "##tb_rotate", "Rotate (E)", PolygonEditorTool.Rotate, "R", "sprPolygonEditorIconRotate", 15, 15 ],
+    [ "##tb_scale", "Scale (R)", PolygonEditorTool.Scale, "S", "sprPolygonEditorIconScale", 15, 15 ],
   ];
   return _tools;
 }
@@ -54,17 +54,17 @@ function __poly_imgui_toolbar(_ed) {
   }
 
   __poly_toolbar_sep();
+  var _pmode = _ed.giz.pivot_mode == 1 ? "Center" : "Pivot";
+
+  if (__poly_imgui_tool_btn("Gizmo pivot at bounds center (" + _pmode + ", click to switch) [Z]", _pmode, false, 22)) __poly_toggle_pivot(_ed);
+  ImGui.SameLine();
   var _orient = _ed.giz.orient == 1 ? "Local" : "World";
 
-  if (__poly_imgui_tool_btn("Gizmo axes space (" + _orient + ", click to switch)", _orient, false, 22)) {
-    _ed.giz.orient = _ed.giz.orient == 1 ? 0 : 1;
-    // Axis frames change the gizmo picture without touching the key.
-    _ed.view_dirty = true;
-  }
+  if (__poly_imgui_tool_btn("Gizmo axes space (" + _orient + ", click to switch) [X]", _orient, false, 22)) __poly_toggle_orient(_ed);
 
   __poly_toolbar_sep();
 
-  if (__poly_imgui_icon_btn("##tb_snap", "Snap to increments (on/off)", _ed.snap_on, "Sn", "sprPolygonEditorIconSnap", 15, 15)) _ed.snap_on = !_ed.snap_on;
+  if (__poly_imgui_icon_btn("##tb_snap", "Snap to increments (on/off) [\\]", _ed.snap_on, "Sn", "sprPolygonEditorIconSnap", 15, 15)) _ed.snap_on = !_ed.snap_on;
   ImGui.SameLine();
 
   if (__poly_imgui_icon_btn("##tb_grid", "Show grid (on/off)", _ed.show_grid, "Gr", "sprPolygonEditorIconGrid", 15, 15)) {
@@ -97,6 +97,42 @@ function __poly_imgui_toolbar(_ed) {
     if (ImGui.Selectable("SSAA", _aa == "ssaa", 0, 0, 0)) __poly_aa_set(_ed, "ssaa");
     if (ImGui.Selectable("FXAA", _aa == "fxaa", 0, 0, 0)) __poly_aa_set(_ed, "fxaa");
     ImGui.EndCombo();
+  }
+
+  ImGui.SameLine();
+  __poly_vis_defaults(_ed);
+
+  if (__poly_imgui_icon_btn("##tb_vis", "Visibility: hidden objects, skybox, outline", false, "Ey", "sprPolygonEditorIconEye", 15, 15)) ImGui.OpenPopup("##visoptions");
+
+  if (ImGui.BeginPopup("##visoptions")) {
+    var _vh = ImGui.Checkbox("Hidden objects", _ed.vis_hidden);
+
+    if (ImGui.IsItemHovered()) ImGui.SetTooltip("Click to toggle hidden objects visibility");
+
+    if (_vh != _ed.vis_hidden) {
+      _ed.vis_hidden = _vh;
+      __poly_hidden_apply_all(_ed);
+    }
+
+    var _vs = ImGui.Checkbox("Skybox", _ed.vis_sky);
+
+    if (ImGui.IsItemHovered()) ImGui.SetTooltip("Click to toggle skybox visibility");
+
+    if (_vs != _ed.vis_sky) {
+      _ed.vis_sky = _vs;
+      __poly_sky_set_visible(_ed, _vs);
+    }
+
+    var _vo = ImGui.Checkbox("Selection outline", _ed.vis_outline);
+
+    if (ImGui.IsItemHovered()) ImGui.SetTooltip("Click to toggle selection outline");
+
+    if (_vo != _ed.vis_outline) {
+      _ed.vis_outline = _vo;
+      _ed.view_dirty = true;
+    }
+
+    ImGui.EndPopup();
   }
 
   ImGui.End();

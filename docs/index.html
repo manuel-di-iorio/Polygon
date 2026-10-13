@@ -90,6 +90,10 @@
             focus (F), per-axis transform rows.
           </li>
           <li>
+            <strong>Visibility menu</strong><br />Hidden objects, skybox
+            and selection outline toggles.
+          </li>
+          <li>
             <strong>Undo / redo</strong><br />Snapshot history with selection
             restore.
           </li>
@@ -150,7 +154,7 @@
           <pre id="qs2"><code class="lang-gml">// Game Create
 var assets = {};
 assets[$ "tree.glb"] = { model: my_load_model("tree.glb") };
-assets[$ "rock.glb"] = { model: my_load_model("rock.glb"), label: "Rock" };  // optional display label
+assets[$ "rock.glb"] = { model: my_load_model("rock.glb") };
 
 poly_create({
     scene: global.my_scene,
@@ -191,11 +195,11 @@ my_game_destroy();</code></pre>
               <td>
                 Boot editor state from
                 <code>{ scene?, assets?, cam?, on_create?, on_close? }</code>:
-                <code>assets</code> is <code>{ key: { model, label?, on_create? } }</code>;
+                <code>assets</code> is <code>{ key: { model, on_create? } }</code>;
                 owns its scene (empty at boot; the live
                 <code>scene</code> is mirrored as copies on every enable,
                 else camera/sun/env defaults spawn).
-                <code>on_create(node, assetId, model, id, label)</code> fires first,
+                <code>on_create(node, assetId, model, id)</code> fires first,
                 then the per-model hook — walk the
                 subtree for model content
               </td>
@@ -227,11 +231,11 @@ my_game_destroy();</code></pre>
             </tr>
             <tr>
               <td>
-                <code>poly_asset_add(model, kind?, label?, path?, on_create?)</code> /
+                <code>poly_asset_add(model, kind?, path?, on_create?)</code> /
                 <code>poly_asset_clear()</code>
               </td>
               <td>Library entry, identified by relative load
-              <code>path</code> (<code>label</code> is display-only)</td>
+              <code>path</code></td>
             </tr>
             <tr>
               <td><code>poly_actor_destroy(ref)</code> / <code>poly_actor_of(node)</code></td>
@@ -242,7 +246,7 @@ my_game_destroy();</code></pre>
               </td>
             </tr>
             <tr>
-              <td><code>poly_track(kind, assetId, node, label?)</code></td>
+              <td><code>poly_track(kind, assetId, node)</code></td>
               <td>
                 Import one live game node into the editor scene as a copy
                 (<code>assetId</code> is the model key;
@@ -255,7 +259,7 @@ my_game_destroy();</code></pre>
               <td><code>poly_load(scene, fname, assets, on_create?)</code></td>
               <td>
                 Load a saved scene into a live game scene (no editor);
-                <code>assets</code> is <code>{ key: { model, label?, on_create? } }</code>
+                <code>assets</code> is <code>{ key: { model, on_create? } }</code>
                 (same shape as init config);
                 per instance calls global <code>on_create</code>, then the per-model
                 hook, then the companion spawn for Actor-bound models;
@@ -272,9 +276,10 @@ my_game_destroy();</code></pre>
           <code>{ "version": 2, "seq": 14, "assets": {...}, "nodes": [...] }</code>, one
           descriptor per node. <code>assets</code> holds per-model file metadata
           (e.g. Actor bindings). Every descriptor has a
-          <code>id</code>, a
-          <code>label</code> (display name) and, for instances, an
-          <code>assetId</code> field linking the model:
+          <code>id</code> and, for instances, an
+          <code>assetId</code> field linking the model. A descriptor may
+          carry an optional custom <code>label</code> (instance name,
+          set with F2):
         </p>
         <div class="codeblock terminal">
           <div class="term-bar">
@@ -317,13 +322,13 @@ my_game_destroy();</code></pre>
         <p class="sub">
           <code>poly_load(scene, fname, assets, on_create?)</code> spawns a saved scene into
           any live <code>GM3D_Scene</code>. Load and freeze each model once,
-          then pass them as <code>{ key: { model, label?, on_create? } }</code> — the
+          then pass them as <code>{ key: { model, on_create? } }</code> — the
           key is the asset id (the relative load path, e.g. <code>"models/tree.glb"</code>).
-          Per instance it calls the global <code>on_create(node, assetId, model, id, label)</code>,
+          Per instance it calls the global <code>on_create(node, assetId, model, id)</code>,
           then the per-model hook, then the companion spawn for Actor-bound
           models (configured in the model Inspector, saved as top-level
           <code>"assets"</code> in the file); the companion receives
-          <code>{ node, poly_id, poly_asset_id, poly_label }</code>:
+          <code>{ node, poly_id, poly_asset_id }</code>:
         </p>
         <div class="codeblock terminal">
           <div class="term-bar">
@@ -354,8 +359,8 @@ var _rep = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", _assets, 
               <td>Close editor</td>
             </tr>
             <tr>
-              <td>1 / 2 / 3 / 4</td>
-              <td>View / Move / Rotate / Scale tool</td>
+              <td>Q / W / E / R</td>
+              <td>View / Move / Rotate / Scale tool (letters fly while right-dragging)</td>
             </tr>
             <tr>
               <td>Left-drag model (Models panel)</td>
@@ -389,8 +394,16 @@ var _rep = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", _assets, 
               <td>Focus selection</td>
             </tr>
             <tr>
+              <td>X</td>
+              <td>Toggle World / Local axes</td>
+            </tr>
+            <tr>
+              <td>Z</td>
+              <td>Toggle Pivot / Center handles</td>
+            </tr>
+            <tr>
               <td>F2</td>
-              <td>Rename (labels are display-only)</td>
+              <td>Rename instance (custom name, saved to JSON)</td>
             </tr>
             <tr>
               <td>Arrows</td>
@@ -399,6 +412,14 @@ var _rep = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", _assets, 
             <tr>
               <td>Ctrl (held while dragging)</td>
               <td>Temporary snap</td>
+            </tr>
+            <tr>
+              <td>\</td>
+              <td>Toggle snap on/off</td>
+            </tr>
+            <tr>
+              <td>Ctrl+\</td>
+              <td>Push selection to grid (undoable)</td>
             </tr>
             <tr>
               <td>Del</td>

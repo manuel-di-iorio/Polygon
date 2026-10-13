@@ -181,7 +181,7 @@ function __poly_asset_index(_ed, _entry) {
   return -1;
 }
 
-// Draws Unity-style Prefab row: source asset link, overrides, select.
+// Draws Prefab row: source asset link, overrides, select.
 // Returns true when the caller must stop drawing the inspector.
 function __poly_imgui_prefab_row(_ed, _node) {
   var _en = __poly_registry_find(_ed, _node);
@@ -196,6 +196,6 @@ function __poly_imgui_prefab_row(_ed, _node) {
   ImGui.AlignTextToFramePadding();
   ImGui.Text("Prefab");
   ImGui.SameLine(80);
-  ImGui.Text(__poly_asset_label(_entry));
+  ImGui.Text(__poly_display_from_key(_entry.key));
   return __poly_over_combo(_ed, _node, _en, _entry, _diffs);
 }

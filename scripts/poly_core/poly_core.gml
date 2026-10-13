@@ -31,7 +31,7 @@ function __poly_create_rt(_src) {
 }
 
 // Registers prefab entries from the adapter assets struct:
-// { assetKey: { model, label?, on_create? } }.
+// { assetKey: { model, on_create? } }.
 function __poly_create_assets(_src) {
   if (!variable_struct_exists(_src, "assets") || !is_struct(_src.assets)) return;
   var _keys = variable_struct_get_names(_src.assets);
@@ -41,8 +41,7 @@ function __poly_create_assets(_src) {
     var _a = _src.assets[$ _k];
 
     if (!is_struct(_a) || _a.model == undefined) continue;
-    var _label = (is_string(_a[$ "label"]) && _a.label != "") ? _a.label : undefined;
-    poly_asset_add(_a.model, "prefab", _label, _k, _a[$ "on_create"]);
+    poly_asset_add(_a.model, "prefab", _k, _a[$ "on_create"]);
   }
 }
 
@@ -215,7 +214,7 @@ function __poly_compose_viewport(_ed) {
   gpu_set_blendmode_ext_sepalpha(bm_src_alpha, bm_inv_src_alpha, bm_inv_dest_alpha, bm_one);
   __poly_outline_composite(_ed);
 
-  if (variable_struct_exists(_ed, "outline") && is_struct(_ed.outline) && _ed.outline.mass_active == true) __poly_outline_mass_draw(_vp, _ed.outline);
+  if (variable_struct_exists(_ed, "outline") && is_struct(_ed.outline) && _ed.outline.mass_active == true && _ed.vis_outline != false) __poly_outline_mass_draw(_vp, _ed.outline);
   __poly_gizmo_draw(_ed, _vp);
   __poly_overlay_draw(_ed, _vp);
   __poly_viewcube_draw(_ed);
@@ -242,7 +241,7 @@ function __poly_compose_viewport(_ed) {
 // Window UI and cleanup
 // ---------------------------------------------------------------------------
 
-// Draws the drag ghost label outside the viewport.
+// Draws the drag ghost file name outside the viewport.
 function __poly_draw_drag_ghost(_ed) {
   static _ghost = make_colour_rgb(90, 140, 250);
   if (!(_ed.drag_lib != undefined && _ed.drag_moved)) return;
@@ -254,7 +253,7 @@ function __poly_draw_drag_ghost(_ed) {
   draw_rectangle(_mx + 14, _my + 10, _mx + 150, _my + 32, false);
   draw_set_color(c_white);
   draw_set_valign(fa_middle);
-  draw_text(_mx + 22, _my + 21, __poly_asset_label(_ed.drag_lib.asset));
+  draw_text(_mx + 22, _my + 21, __poly_display_from_key(_ed.drag_lib.asset.key));
   draw_set_valign(fa_top);
 }
 
@@ -433,6 +432,7 @@ function __poly_state_giz() {
     len: 1,
     len_key: undefined,
     orient: 1,
+    pivot_mode: 0,
     sector_t0: 0,
   };
 }
@@ -509,10 +509,10 @@ function __poly_create_state(_rt) {
     cfg: {
       ndc_yup: true,
       keys: {
-        tool_view: ord("1"),
-        tool_move: ord("2"),
-        tool_rotate: ord("3"),
-        tool_scale: ord("4"),
+        tool_view: ord("Q"),
+        tool_move: ord("W"),
+        tool_rotate: ord("E"),
+        tool_scale: ord("R"),
         del: vk_delete,
         save: ord("S"),
         dupe: ord("D"),
@@ -524,6 +524,9 @@ function __poly_create_state(_rt) {
         redo: ord("Y"),
         rename: vk_f2,
         load: ord("L"),
+        pivot: ord("Z"),
+        orient: ord("X"),
+        snap: 92,
       },
       snap: { on: false, pos: 0.5, rot: 15 },
       gizmo_px: 90,
@@ -629,6 +632,9 @@ function __poly_create_state(_rt) {
     show_grid: true,
     show_shadows: true,
     show_unlit: false,
+    vis_hidden: true,
+    vis_sky: true,
+    vis_outline: true,
     unlit_quiet: false,
     unlit_orig: [],
     magenta_mat: undefined,

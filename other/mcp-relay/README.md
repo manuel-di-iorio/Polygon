@@ -79,7 +79,7 @@ Edit: `poly_select_objects`, `poly_focus_object`,
 `poly_drop_to_ground`, `poly_place_on`.
 
 Conventions (also in each tool description): nodes are addressed by stable
-id (`__PolygonEditor__N`), never by label; transforms are **local**;
+id (`__PolygonEditor__N`); transforms are **local**;
 rotation is Euler **degrees [rx, ry, rz], XYZ order**; mutations are
 rejected while an editor dialog/drag owns the scene (`busy` error).
 

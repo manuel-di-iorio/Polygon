@@ -393,7 +393,7 @@ function __poly_camera_apply(_node, _d) {
   _cc.setEnabled(_d.enabled == true);
 }
 
-// Resolves gameplay camera: MainCamera label first, else first enabled, else first.
+// Resolves gameplay camera: first enabled, else first.
 function __poly_gamecam_resolve(_ed) {
   if (_ed == undefined) return undefined;
   var _pairs = __poly_root_pairs(_ed);
@@ -407,7 +407,6 @@ function __poly_gamecam_resolve(_ed) {
     _first ??= _node;
 
     if (!is_struct(_en.data)) continue;
-    if (is_string(_en.label) && _en.label == "MainCamera") return _node;
     if (_enabled == undefined && _en.data.enabled == true) _enabled = _node;
   }
 
@@ -421,7 +420,6 @@ function __poly_gamecam_ensure(_ed) {
 
   if (_found != undefined) return _found;
   if (_ed == undefined || _ed.rt == undefined || _ed.rt.scene == undefined) return undefined;
-  var _label = __poly_fresh_label(_ed, "MainCamera");
   var _node = _ed.rt.scene.createNode(__poly_wrap_new(_ed));
 
   if (_node == undefined) return undefined;
@@ -438,7 +436,7 @@ function __poly_gamecam_ensure(_ed) {
   __poly_camera_apply(_node, _data);
   _ed.rt.scene.update(0);
   var _pp = _node.getLocalPosition();
-  __poly_kind_register(_ed, _node, "camera", "", _label, _data);
+  __poly_kind_register(_ed, _node, "camera", "", undefined, _data);
   return _node;
 }
 
@@ -562,8 +560,6 @@ function __poly_create_light(_ed, _type) {
   if (_b == undefined) return undefined;
   var _before = _b.before;
   var _node = _b.node;
-  var _base = _type == "point" ? "Point" : _type == "spot" ? "Spot" : "Directional";
-  var _label = __poly_fresh_label(_ed, _base);
   _node.addComponent(new GM3D_LightComponent());
 
   if (_type == "directional") {
@@ -576,7 +572,7 @@ function __poly_create_light(_ed, _type) {
   var _data = __poly_light_defaults();
   _data.type = _type;
   __poly_light_apply(_node, _data);
-  __poly_create_finish(_ed, _node, "light", _label, _data);
+  __poly_create_finish(_ed, _node, "light", undefined, _data);
   __poly_sel_assign(_ed, [ _node ]);
   __poly_history_commit(_ed, _before);
   return _node;
@@ -590,13 +586,12 @@ function __poly_create_camera(_ed, _proj) {
   if (_b == undefined) return undefined;
   var _before = _b.before;
   var _node = _b.node;
-  var _label = __poly_fresh_label(_ed, _proj == "ortho" ? "OrthoCam" : "Camera");
   _node.addComponent(new GM3D_CameraComponent());
   _node.setLocalPosition(new GM3D_Vec3(0, 2, 5));
   var _data = __poly_camera_defaults();
   _data.projection = _proj;
   __poly_camera_apply(_node, _data);
-  __poly_create_finish(_ed, _node, "camera", _label, _data);
+  __poly_create_finish(_ed, _node, "camera", undefined, _data);
   _ed.sel = [ _node ];
   _ed.giz.drag = -1;
   __poly_history_commit(_ed, _before);
@@ -613,11 +608,10 @@ function __poly_create_env(_ed) {
   if (_b == undefined) return undefined;
   var _before = _b.before;
   var _node = _b.node;
-  var _label = __poly_fresh_label(_ed, "Environment");
   _node.addComponent(new GM3D_EnvironmentVolumeComponent());
   var _data = __poly_env_defaults();
   __poly_env_apply(_node, _data);
-  __poly_create_finish(_ed, _node, "environment", _label, _data);
+  __poly_create_finish(_ed, _node, "environment", undefined, _data);
   __poly_hidden_set(_ed, _node, true);
   _ed.sel = [ _node ];
   _ed.giz.drag = -1;

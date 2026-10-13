@@ -187,6 +187,20 @@ function __poly_sky_remove(_ed) {
   __poly_grid_bg_sync(_ed);
 }
 
+// Shows or hides the editor skybox dome (chrome only, no flags).
+function __poly_sky_set_visible(_ed, _on) {
+  if (_ed == undefined) return;
+  var _sky = __poly_sky_find(_ed);
+
+  if (_sky == undefined) return;
+  var _comps = [];
+  __poly_walk_collect_tree(_sky, _comps);
+
+  for (var _i = 0, _n = array_length(_comps); _i < _n; _i++) _comps[_i].comp.setEnabled(_on == true);
+  _ed.view_dirty = true;
+  if (_ed.rt != undefined && _ed.rt.scene != undefined) _ed.rt.scene.update(0);
+}
+
 // Finds first tracked directional light world-forward direction.
 function __poly_sky_sun_dir(_ed) {
   var _ens = __poly_reg_each(_ed);

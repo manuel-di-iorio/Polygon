@@ -111,8 +111,8 @@ function __poly_pv_clone_lit(_ed, _comp, _skinned) {
 }
 
 // Spawns a model into a preview stage at origin with editor lit shaders.
-// _rot_euler is [x, y, z] degrees or undefined; _label is passed to on_create.
-function __poly_pv_spawn_lit(_ed, _st, _model, _rot_euler = undefined, _label = "") {
+// _rot_euler is [x, y, z] degrees or undefined; _asset is passed to on_create.
+function __poly_pv_spawn_lit(_ed, _st, _model, _rot_euler = undefined, _asset = "") {
   var _node = _model.spawnInto(_st.ts, undefined);
 
   if (_node == undefined) return undefined;
@@ -122,7 +122,7 @@ function __poly_pv_spawn_lit(_ed, _st, _model, _rot_euler = undefined, _label = 
   if (is_array(_rot_euler) && array_length(_rot_euler) >= 3) _node.setLocalRotation(__poly_euler_to_quat(degtorad(_rot_euler[0]), degtorad(_rot_euler[1]), degtorad(_rot_euler[2])));
   __poly_magenta_fix(_ed, _node);
 
-  if (variable_struct_exists(_ed.rt, "on_create")) _ed.rt.on_create(_node, _label, _model);
+  if (variable_struct_exists(_ed.rt, "on_create")) _ed.rt.on_create(_node, _asset, _model, _node.name);
   // Previews always use the editor lit shaders (never custom ones).
   var _comps = [];
   __poly_walk_collect_tree(_node, _comps);

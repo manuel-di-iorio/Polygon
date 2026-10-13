@@ -102,7 +102,7 @@ async function main() {
     {}, "selection");
 
   bridgeTool(server, bridge, "poly_get_assets",
-    "Library assets available for poly_create_object: key (use as asset) + display label + model-space bounds (min/max/size) and pivot info (bottom offset, origin base|center|custom). Resting Y = supportTopY - bounds.bottom * scaleY; or just use base_y / on_top_of in create.",
+    "Library assets available for poly_create_object: key (use as asset) + model-space bounds (min/max/size) and pivot info (bottom offset, origin base|center|custom). Resting Y = supportTopY - bounds.bottom * scaleY; or just use base_y / on_top_of in create.",
     {}, "assets");
 
   bridgeTool(server, bridge, "poly_raycast_down",
@@ -133,7 +133,7 @@ async function main() {
       position: VEC3.describe("Spawn position [x, y, z]"),
       rotation: VEC3.optional().describe("Euler degrees [rx, ry, rz], XYZ order"),
       scale: VEC3.optional().describe("Scale [sx, sy, sz], clamped to >= 0.01"),
-      label: z.string().optional().describe("Display label (id stays stable regardless)"),
+      label: z.string().optional().describe("Custom instance name (shown in hierarchy, saved to JSON)"),
       base_y: z.number().optional().describe("Desired world bottom Y (mutually exclusive with on_top_of)"),
       on_top_of: z.string().optional().describe("Support node id to rest on (bottom = support top + gap)"),
       gap: z.number().optional().describe("Extra lift above the support top, default 0"),
@@ -154,7 +154,7 @@ async function main() {
     });
 
   bridgeTool(server, bridge, "poly_rename_object",
-    "Change a node's display label (1-64 chars). The stable id never changes. Undoable.",
+    "Set a node's custom instance name (1-64 chars, shown in hierarchy, saved to JSON). The stable id never changes. Undoable.",
     { id: z.string(), label: z.string() }, "rename");
 
   bridgeTool(server, bridge, "poly_delete_objects",

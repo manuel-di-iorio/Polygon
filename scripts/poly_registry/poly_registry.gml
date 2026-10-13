@@ -185,7 +185,8 @@ function __poly_spawn_register(_ed, _node, _asset, _label = undefined) {
 }
 
 // Registers a wrapper node with kind and metadata.
-// The node name IS the id; label defaults to it.
+// The node name IS the id; _label is the optional custom instance name
+// (display falls back to the asset file name + id number).
 function __poly_kind_register(_ed, _node, _kind, _asset, _label = undefined, _data = undefined) {
   if (_ed == undefined || _node == undefined) return;
   if (_kind == undefined || !is_string(_kind) || _kind == "") _kind = "instance";
@@ -195,7 +196,6 @@ function __poly_kind_register(_ed, _node, _kind, _asset, _label = undefined, _da
 
   if (_id == undefined) return;
   if (variable_struct_exists(_ed.reg, _id) && _ed.reg[$ _id].node != _node) return;
-  if (_label == undefined || !is_string(_label) || _label == "") _label = _id;
   _ed.reg[$ _id] = {
     id: _id,
     kind: _kind,
@@ -237,17 +237,6 @@ function __poly_asset_name(_ed, _node) {
   return _en.asset;
 }
 
-// Returns display label for node.
-function __poly_label_get(_ed, _node) {
-  var _en = __poly_registry_find(_ed, _node);
-
-  if (_en != undefined && is_string(_en.label) && _en.label != "") return _en.label;
-  var _id = __poly_wrap_id_of(_node);
-
-  if (_id != undefined) return _id;
-  return _node.name;
-}
-
 // ---------------------------------------------------------------------------
 // Descriptors and root lists
 // ---------------------------------------------------------------------------
@@ -257,9 +246,6 @@ function __poly_asset_desc(_ed, _node) {
   var _en = __poly_registry_find(_ed, _node);
 
   if (_en == undefined) return undefined;
-  var _label = _en.label;
-
-  if (_label == undefined || !is_string(_label) || _label == "") _label = _en.id;
   var _pos = _node.getLocalPosition();
   var _rot = _node.getLocalRotation();
   var _sca = _node.getLocalScale();
@@ -274,7 +260,7 @@ function __poly_asset_desc(_ed, _node) {
   return {
     id: _en.id,
     asset: _en.asset,
-    label: _label,
+    label: _en.label,
     transform: {
       position: [ _pos.x, _pos.y, _pos.z ],
       rotation: [ _rot.x, _rot.y, _rot.z, _rot.w ],
@@ -362,33 +348,6 @@ function __poly_kind_of(_ed, _node) {
   if (_child != undefined) return _child;
   if (_en != undefined) return "instance";
   return undefined;
-}
-
-// Generates a unique nonconflicting node label.
-function __poly_fresh_label(_ed, _base) {
-  if (_base == undefined || !is_string(_base) || _base == "") _base = "node";
-  var _label = _base;
-  var _n = 2;
-  var _taken = true;
-
-  while (_taken) {
-    _taken = false;
-    var _ens = __poly_reg_each(_ed);
-
-    for (var _i = 0, _nt = array_length(_ens); _i < _nt; _i++) {
-      if (_ens[_i].label == _label) {
-        _taken = true;
-        break;
-      }
-    }
-
-    if (_taken) {
-      _label = _base + " " + string(_n);
-      _n++;
-    }
-  }
-
-  return _label;
 }
 
 // ---------------------------------------------------------------------------
@@ -537,12 +496,11 @@ function __poly_spawn(_ed, _opt) {
     if (_is_ed && !_skip_hook) {
       // Unified spawn contract (editor and runtime): global hook first,
       // then the per-model hook from the library entry.
-      // (node, asset, model, id, label): model stays 3rd so existing
+      // (node, asset, model, id): model stays 3rd so existing
       // 3-arg hooks keep working unchanged.
-      var _hook_label = (is_string(_label) && _label != "") ? _label : _wrap.name;
-      if (variable_struct_exists(_ed.rt, "on_create") && is_method(_ed.rt.on_create)) _ed.rt.on_create(_wrap, _asset, _model, _wrap.name, _hook_label);
+      if (variable_struct_exists(_ed.rt, "on_create") && is_method(_ed.rt.on_create)) _ed.rt.on_create(_wrap, _asset, _model, _wrap.name);
       var _hook_entry = __poly_asset_get(_ed, _asset);
-      if (_hook_entry != undefined && is_method(_hook_entry[$ "on_create"])) _hook_entry.on_create(_wrap, _asset, _model, _wrap.name, _hook_label);
+      if (_hook_entry != undefined && is_method(_hook_entry[$ "on_create"])) _hook_entry.on_create(_wrap, _asset, _model, _wrap.name);
     }
 
     if (_is_ed && !_skip_reg) {
@@ -608,7 +566,7 @@ function __poly_place(_ed, _asset, _model, _pos3, _rot, _scale3, _label = undefi
 
 // Respawns a library model at a live node's transform, inside a wrapper
 // that preserves the live id when present.
-function __poly_track_place_asset(_ed, _key, _model, _node, _label) {
+function __poly_track_place_asset(_ed, _key, _model, _node, _label = undefined) {
   if (_ed == undefined || _model == undefined || _node == undefined) return undefined;
   var _pos = _node.getLocalPosition();
   var _sca = _node.getLocalScale();
@@ -686,9 +644,9 @@ function __poly_track_adopt_auto(_ed, _node) {
     var _pkind = __poly_comp_kind(_node);
 
     if (_pkind == undefined) _pkind = __poly_comp_kind(_content);
-    if (_pkind == "light") return __poly_track_adopt_light(_ed, _node, undefined);
-    if (_pkind == "camera") return __poly_track_adopt_camera(_ed, _node, undefined);
-    return __poly_track_adopt_env(_ed, _node, undefined);
+    if (_pkind == "light") return __poly_track_adopt_light(_ed, _node);
+    if (_pkind == "camera") return __poly_track_adopt_camera(_ed, _node);
+    return __poly_track_adopt_env(_ed, _node);
   }
 
   var _matched = __poly_track_match(_ed, _node);
@@ -697,10 +655,7 @@ function __poly_track_adopt_auto(_ed, _node) {
   var _model = __poly_asset_find(_ed, _matched);
 
   if (_model == undefined) return undefined;
-  var _base = __poly_asset_label(__poly_asset_get(_ed, _matched));
-
-  if (_base == "") _base = _content.name;
-  var _new = __poly_track_place_asset(_ed, _matched, _model, _node, _base);
+  var _new = __poly_track_place_asset(_ed, _matched, _model, _node);
 
   if (_new == undefined) return undefined;
   __poly_track_adopt_flags(_node, _new);
@@ -755,8 +710,7 @@ function __poly_track_make_node(_ed, _node) {
 }
 
 // Finishes adopting a prop node: component, data, register, hide, mute.
-function __poly_track_adopt_finish(_ed, _new, _node, _kind, _data, _label) {
-  if (_label == undefined || !is_string(_label) || _label == "") _label = __poly_fresh_label(_ed, _node.name);
+function __poly_track_adopt_finish(_ed, _new, _node, _kind, _data, _label = undefined) {
   if (_kind == "light") _new.addComponent(new GM3D_LightComponent());
   else if (_kind == "camera")  _new.addComponent(new GM3D_CameraComponent());
   else  _new.addComponent(new GM3D_EnvironmentVolumeComponent());

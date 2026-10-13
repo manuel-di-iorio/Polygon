@@ -23,6 +23,69 @@ function __poly_gizmo_pivot(_sel) {
   return new GM3D_Vec3(_cx / _n, _cy / _n, _cz / _n);
 }
 
+// Calculates the center of the combined world bounds of selected nodes
+// handles sit on the selection bounds, while
+// "Pivot" uses the node positions). Falls back to the average position
+// when no node has valid bounds.
+function __poly_gizmo_center(_sel) {
+  var _mn = undefined;
+  var _mx = undefined;
+
+  for (var _i = 0, _n = array_length(_sel); _i < _n; _i++) {
+    var _box = __poly_node_aabb(_sel[_i]);
+
+    if (_box == undefined || !_box.valid) continue;
+
+    if (_mn == undefined) {
+      _mn = _box.min.clone();
+      _mx = _box.max.clone();
+    } else {
+      _mn.x = min(_mn.x, _box.min.x);
+      _mn.y = min(_mn.y, _box.min.y);
+      _mn.z = min(_mn.z, _box.min.z);
+      _mx.x = max(_mx.x, _box.max.x);
+      _mx.y = max(_mx.y, _box.max.y);
+      _mx.z = max(_mx.z, _box.max.z);
+    }
+  }
+
+  if (_mn == undefined) return __poly_gizmo_pivot(_sel);
+  return new GM3D_Vec3((_mn.x + _mx.x) * 0.5, (_mn.y + _mx.y) * 0.5, (_mn.z + _mx.z) * 0.5);
+}
+
+// Resolves the active gizmo pivot: bounds center in Center mode,
+// average node position in Pivot mode.
+function __poly_gizmo_pivot_ex(_ed, _sel) {
+  if (_ed != undefined && variable_struct_exists(_ed, "giz") && is_struct(_ed.giz) && _ed.giz.pivot_mode == 1) {
+    return __poly_gizmo_center(_sel);
+  }
+
+  return __poly_gizmo_pivot(_sel);
+}
+
+// Display pivot: frozen at drag-start while dragging in Center mode
+// (in Pivot mode it keeps following the node positions).
+function __poly_gizmo_pivot_draw(_ed) {
+  if (_ed.giz.pivot_mode == 1 && _ed.giz.drag != -1 && _ed.giz.pivot != undefined) return _ed.giz.pivot;
+  return __poly_gizmo_pivot_ex(_ed, _ed.sel);
+}
+
+// Toggles the gizmo pivot mode (Pivot = node positions, Center = bounds).
+function __poly_toggle_pivot(_ed) {
+  if (_ed == undefined || !variable_struct_exists(_ed, "giz") || !is_struct(_ed.giz)) return;
+  _ed.giz.pivot_mode = _ed.giz.pivot_mode == 1 ? 0 : 1;
+  // Handles move without touching the key.
+  _ed.view_dirty = true;
+}
+
+// Toggles the gizmo axes space (World = scene axes, Local = first node).
+function __poly_toggle_orient(_ed) {
+  if (_ed == undefined || !variable_struct_exists(_ed, "giz") || !is_struct(_ed.giz)) return;
+  _ed.giz.orient = _ed.giz.orient == 1 ? 0 : 1;
+  // Axis frames change the gizmo picture without touching the key.
+  _ed.view_dirty = true;
+}
+
 // Returns active gizmo axes in world or local orientation.
 // In local mode the reference is always the first selected node's local rotation.
 function __poly_gizmo_dirs(_ed) {
@@ -144,6 +207,13 @@ function __poly_gizmo_ring_world_fast(_pivot, _u, _v, _ws) {
 function __poly_gizmo_ring_world(_pivot, _axis, _ws) {
   var _basis = __poly_gizmo_ring_basis(_axis);
   return __poly_gizmo_ring_world_fast(_pivot, _basis[0], _basis[1], _ws);
+}
+
+// View-ring radius, the outer white ring always encloses the
+// axis rings (same-size rings interleave under perspective, since nearer
+// arc parts project larger than the nominal size).
+function __poly_gizmo_viewring_ws(_ws) {
+  return _ws * 1.15;
 }
 
 // Projects rotation ring to screen pixel coordinates.
@@ -325,26 +395,33 @@ function __poly_gizmo_hover_edge(_vp, _pivot, _dirs, _ws, _view, _mx, _my) {
 
 // Tests rotate view-ring and disc handles.
 function __poly_gizmo_hover_rotate(_vp, _pivot, _look, _ws, _mx, _my, _ps, _best, _best_d) {
-  var _ring = __poly_gizmo_ring_pts(_vp, _pivot, _look, _ws);
+  var _ring = __poly_gizmo_ring_pts(_vp, _pivot, _look, __poly_gizmo_viewring_ws(_ws));
   var _rd = __poly_point_polyline_dist2(_mx, _my, _ring);
 
   if (_rd < _best_d) return 6;
-  if (_best != -1) return _best;
-  var _rr = 0;
+  var _mdx = _mx - _ps[0];
+  var _mdy = _my - _ps[1];
+  var _md2 = _mdx * _mdx + _mdy * _mdy;
 
-  for (var _i = 0, _n = array_length(_ring); _i < _n; _i++) {
-    var _dx = _ring[_i][0] - _ps[0];
-    var _dy = _ring[_i][1] - _ps[1];
+  // An axis arc wins only when it is closer to the mouse than the pivot:
+  // hovering the middle of the disc selects the trackball even if a
+  // flattened (edge-on) arc passes within the 20px threshold.
+  if (_best != -1 && _best_d <= _md2) return _best;
+  var _rr = 0;
+  // Trackball region matches the disc (axis-rings extent, not the enlarged
+  // white ring): the band between the two belongs to the white ring.
+  var _inr = __poly_gizmo_ring_pts(_vp, _pivot, _look, _ws);
+
+  for (var _i = 0, _n = array_length(_inr); _i < _n; _i++) {
+    var _dx = _inr[_i][0] - _ps[0];
+    var _dy = _inr[_i][1] - _ps[1];
     var _d2 = _dx * _dx + _dy * _dy;
 
     if (_d2 > _rr) _rr = _d2;
   }
 
   if (_rr > 1) {
-    var _mcx = _mx - _ps[0];
-    var _mcy = _my - _ps[1];
-
-    if (_mcx * _mcx + _mcy * _mcy <= _rr) return 7;
+    if (_md2 <= _rr) return 7;
   }
 
   return -1;
@@ -354,7 +431,7 @@ function __poly_gizmo_hover_rotate(_vp, _pivot, _look, _ws, _mx, _my, _ps, _best
 function __poly_gizmo_hover(_ed, _vp, _mx, _my) {
   if (array_length(_ed.sel) == 0) return -1;
   if (!__poly_gizmo_allowed(_ed)) return -1;
-  var _pivot = __poly_gizmo_pivot(_ed.sel);
+  var _pivot = __poly_gizmo_pivot_draw(_ed);
   var _ps = __poly_world_to_screen(_vp, _pivot);
 
   if (_ps == undefined) return -1;
@@ -493,7 +570,7 @@ function __poly_gizmo_begin(_ed, _vp, _mx, _my) {
     });
   }
 
-  var _pivot = __poly_gizmo_pivot(_ed.sel);
+  var _pivot = __poly_gizmo_pivot_ex(_ed, _ed.sel);
   _g.pivot = _pivot.clone();
   _g.center = _g.drag < 0;
   _g.planar = _g.drag >= 3 && _g.drag <= 5;

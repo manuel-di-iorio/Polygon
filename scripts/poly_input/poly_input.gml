@@ -162,10 +162,18 @@ function __poly_step_hotkeys(_ed, _input) {
 
   if (!_ctrl && !_gesture) {
     var _tools = __poly_tool_hotkeys();
+    // QWER double as fly keys: while the right button flies the camera,
+    // letters fly instead of switching tools.
+    // NB: _input.in_viewport is false while ImGui owns the mouse, so gate
+    // on the raw button + camera owner instead.
+    var _flying = mouse_check_button(mb_right) && (_input.owner == undefined || __poly_input_owner_is_camera(_input.owner));
 
-    for (var _t = 0, _nt = array_length(_tools); _t < _nt; _t++) if (__poly_key_pressed(_keys, _tools[_t][0])) _ed.giz.tool = _tools[_t][1];
+    for (var _t = 0, _nt = array_length(_tools); _t < _nt; _t++) if (!_flying && __poly_key_pressed(_keys, _tools[_t][0])) _ed.giz.tool = _tools[_t][1];
     if (keyboard_check_pressed(_keys.del)) __poly_delete_ask(_ed);
     if (__poly_key_pressed(_keys, "focus")) __poly_focus_selection(_ed);
+    if (__poly_key_pressed(_keys, "snap") || keyboard_check_pressed(220)) _ed.snap_on = !_ed.snap_on;
+    if (__poly_key_pressed(_keys, "pivot")) __poly_toggle_pivot(_ed);
+    if (__poly_key_pressed(_keys, "orient")) __poly_toggle_orient(_ed);
     if (__poly_key_pressed(_keys, "rename") && array_length(_ed.sel) > 0) __poly_rename_begin(_ed, _ed.sel[0]);
     __poly_step_nudge(_ed);
   }
@@ -176,6 +184,7 @@ function __poly_step_hotkeys(_ed, _input) {
   if (keyboard_check_pressed(_keys.new_scene)) __poly_confirm_ask(_ed, "new");
   if (keyboard_check_pressed(_keys.close)) __poly_confirm_ask(_ed, "close");
   if (__poly_key_pressed(_keys, "load")) __poly_confirm_ask(_ed, "load");
+  if (__poly_key_pressed(_keys, "snap") || keyboard_check_pressed(220)) __poly_push_sel_to_grid(_ed);
   var _has_undo = variable_struct_exists(_keys, "undo");
   var _has_redo = variable_struct_exists(_keys, "redo");
 
@@ -313,8 +322,7 @@ function __poly_libdrop_commit_preview(_ed, _asset, _spawn, _drop) {
   __poly_spawn_register(
     _ed,
     _ed.drag_preview,
-    _asset.key,
-    __poly_fresh_label(_ed, __poly_asset_label(_asset))
+    _asset.key
   );
   __poly_spawn_shadow_apply(_ed, _asset, _ed.drag_preview);
   _ed.sel = [ _ed.drag_preview ];
@@ -330,8 +338,7 @@ function __poly_libdrop_place_new(_ed, _asset, _spawn, _drop) {
     _asset.model,
     [ _drop.x, _drop.y, _drop.z ],
     _spawn.rot,
-    _spawn.sca,
-    __poly_fresh_label(_ed, __poly_asset_label(_asset))
+    _spawn.sca
   );
 
   if (_node != undefined) {

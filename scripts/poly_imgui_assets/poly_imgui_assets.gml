@@ -4,11 +4,11 @@
 // Shared row bits
 // ---------------------------------------------------------------------------
 
-// Checks if an entry matches the lowercase filter (key or label).
+// Checks if an entry matches the lowercase filter (key or file name).
 function __poly_asset_visible(_entry, _flt) {
   if (_flt == "") return true;
   if (string_pos(_flt, string_lower(_entry.key)) > 0) return true;
-  return string_pos(_flt, string_lower(__poly_asset_label(_entry))) > 0;
+  return string_pos(_flt, string_lower(__poly_display_from_key(_entry.key))) > 0;
 }
 
 // Selects a library entry and clears the scene selection.
@@ -31,9 +31,9 @@ function __poly_asset_drag_begin(_ed, _entry, _idx) {
   }
 }
 
-// Shows the model tooltip (delayed) with label text.
+// Shows the model tooltip (delayed) with file name text.
 function __poly_asset_tip(_entry, _hovering) {
-  __poly_imgui_tip_delayed("model|" + _entry.key, __poly_asset_label(_entry), _hovering);
+  __poly_imgui_tip_delayed("model|" + _entry.key, __poly_display_from_key(_entry.key), _hovering);
 }
 
 // Calls a no-arg ImGui query, returning a fallback when unavailable.
@@ -54,7 +54,10 @@ function __poly_imgui_asset_list(_ed) {
   var _ui = _ed.imgui;
 
   if (!variable_struct_exists(_ui, "models_view")) _ui.models_view = "cards";
-  ImGui.SetNextItemWidth(max(80, ImGui.GetContentRegionAvailX() - 108));
+  var _avail = ImGui.GetContentRegionAvailX();
+  var _filter_w = min(170, max(80, _avail - 108));
+  ImGui.SameLine(max(0, _avail - (_filter_w + 108)));
+  ImGui.SetNextItemWidth(_filter_w);
   _ui.filter = __poly_imgui_text_hint("##filter", "Filter models...", _ui.filter);
   ImGui.SameLine();
 
@@ -77,7 +80,7 @@ function __poly_imgui_asset_list(_ed) {
     if (!__poly_asset_visible(_entry, _flt)) continue;
     ImGui.PushID(_i);
 
-    if (ImGui.Selectable(__poly_asset_label(_entry), _ed.lib_sel == _i)) if (_ed.drag_lib == undefined) __poly_asset_pick(_ed, _i);
+    if (ImGui.Selectable(__poly_display_from_key(_entry.key), _ed.lib_sel == _i)) if (_ed.drag_lib == undefined) __poly_asset_pick(_ed, _i);
     __poly_asset_tip(_entry, _ed.drag_lib == undefined && ImGui.IsItemHovered());
     __poly_asset_drag_begin(_ed, _entry, _i);
 
@@ -216,7 +219,7 @@ function __poly_imgui_card_face(_entry, _hov, _sel, _x, _y, _cs) {
   ImGui.DrawListAddRect(_dl, _x, _y, _x + _cs, _y + _cs, _edge);
   ImGui.SetWindowFontScale(12 / 13);
 
-  var _caption = __poly_imgui_trunc_text(__poly_asset_label(_entry), _cs - 6);
+  var _caption = __poly_imgui_trunc_text(__poly_display_from_key(_entry.key), _cs - 6);
   ImGui.DrawListAddText(_dl, _x + 4, _y + _cs + 2, _caption, c_white);
   ImGui.SetWindowFontScale(1);
 }

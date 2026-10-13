@@ -1,15 +1,15 @@
 // poly_load — public API.
 
 // Loads scene file into runtime scene.
-// _assets: struct mapping asset key -> { model, label?, on_create? } (same
+// _assets: struct mapping asset key -> { model, on_create? } (same
 // shape as the poly_create config).
-// _on_create (optional): function(node, asset, model, id, label) called for
+// _on_create (optional): function(node, asset, model, id) called for
 // every spawned instance, before the per-model on_create. Model stays 3rd
 // so existing hooks keep working unchanged.
 // Actor bindings saved by the editor (top-level "assets" map:
 // { key: { type: "model", actor: { object, layer } } }) spawn a companion
 // GameMaker instance per bound model via instance_create_layer, receiving
-// { node, poly_id, poly_asset, poly_label }. Missing objects or
+// { node, poly_id, poly_asset_id }. Missing objects or
 // layers never fail the load: they become report warnings.
 // Returns { placed, failed, companions, warnings }.
 function poly_load(_scene, _fname, _assets, _on_create = undefined) {
@@ -47,9 +47,9 @@ function poly_load(_scene, _fname, _assets, _on_create = undefined) {
 
     _rep.placed++;
     if (!is_struct(_pl) || _pl.kind != "instance") continue;
-    if (is_method(_on_create)) _on_create(_pl.node, _pl.asset, _pl.model, _pl.id, _pl.label);
+    if (is_method(_on_create)) _on_create(_pl.node, _pl.asset, _pl.model, _pl.id);
     var _entry = _assets[$ _pl.asset];
-    if (is_struct(_entry) && is_method(_entry[$ "on_create"])) _entry.on_create(_pl.node, _pl.asset, _pl.model, _pl.id, _pl.label);
+    if (is_struct(_entry) && is_method(_entry[$ "on_create"])) _entry.on_create(_pl.node, _pl.asset, _pl.model, _pl.id);
     var _inst = undefined;
 
     if (__poly_load_actor(_actors, _pl, _rep)) {

@@ -18,7 +18,7 @@
 // Read ops expose world/model-space AABBs (see bounds below) so callers
 // never guess Y: spawn with base_y / on_top_of, or snap with the two ops.
 // Conventions (same as the scene format / save system):
-//   - node identity is the stable wrapper id ("__PolygonEditor__N"), never the label.
+//   - node identity is the stable wrapper id ("__PolygonEditor__N").
 //   - transforms are LOCAL to the wrapper node (it owns the instance transform).
 //   - rotation input/output for create/transform is Euler DEGREES [rx, ry, rz],
 //     XYZ order (same convention as library spawn defaults); details also
@@ -315,7 +315,7 @@ function __poly_ai_frame(_ed, _chunk) {
 // Execution
 // ---------------------------------------------------------------------------
 
-// Modal UI open: mutations would conflict with dialogs/inline rename.
+// Modal UI open: mutations would conflict with dialogs/inline edits.
 // Builds an error response.
 function __poly_ai_fail(_id, _code, _msg) {
   return { id: _id, ok: false, error: _code + ": " + _msg };
@@ -474,7 +474,7 @@ function __poly_ai_v_rename(_ed, _p) {
   return __poly_ai_v_node(_ed, _p);
 }
 
-// Validates the rename label.
+// Validates the custom instance name.
 function __poly_ai_v_label(_p) {
   var _lb = _p[$ "label"];
 
@@ -549,7 +549,7 @@ function __poly_ai_node_info(_ed, _node) {
   var _info = {
     id: _en.id,
     kind: is_string(_en.kind) ? _en.kind : "instance",
-    label: is_string(_en.label) ? _en.label : _en.id,
+    label: __poly_node_display(_ed, _node, _en),
     assetId: is_string(_en.asset) ? _en.asset : "",
     selected: __poly_sel_has(_ed, _node),
     hidden: _en.hidden == true,
@@ -712,7 +712,7 @@ function __poly_ai_op_assets(_ed) {
       var _entry = _ed.assets[_i];
 
       if (is_struct(_entry) && is_string(_entry.key)) {
-        var _item = { key: _entry.key, label: __poly_asset_label(_entry) };
+        var _item = { key: _entry.key };
         // Model-space bounds + pivot: bottom is the model-space min Y,
         // so resting Y = supportTopY - bottom * scaleY (before rotation).
         // origin is "base" (bottom ~= 0), "center", or "custom".
@@ -824,9 +824,9 @@ function __poly_ai_op_create(_ed, _p, _commit) {
   // Fail fast on unknown support before touching the scene.
   var _support = _on_id != undefined ? __poly_ai_node(_ed, _on_id) : undefined;
 
-  var _base = __poly_asset_label(_entry);
+  var _opt_label = undefined;
 
-  if (variable_struct_exists(_p, "label") && is_string(_p.label) && _p.label != "") _base = _p.label;
+  if (variable_struct_exists(_p, "label") && is_string(_p.label) && _p.label != "") _opt_label = _p.label;
   var _before = _commit ? __poly_history_snap(_ed) : undefined;
   var _node = __poly_place(
     _ed,
@@ -835,7 +835,7 @@ function __poly_ai_op_create(_ed, _p, _commit) {
     [ _p.position[0], _p.position[1], _p.position[2] ],
     __poly_euler_to_quat(degtorad(_rot[0]), degtorad(_rot[1]), degtorad(_rot[2])),
     _sca,
-    __poly_fresh_label(_ed, _base)
+    _opt_label
   );
 
   if (_node == undefined) return __poly_ai_err("failed", "spawn failed for asset: " + _p.asset);
@@ -877,7 +877,7 @@ function __poly_ai_op_create(_ed, _p, _commit) {
   __poly_sel_assign(_ed, [ _node ]);
 
   if (_commit) __poly_history_commit(_ed, _before);
-  var _res = { id: _en != undefined ? _en.id : _node.name, label: _en != undefined ? _en.label : "" };
+  var _res = { id: _en != undefined ? _en.id : _node.name, label: __poly_node_display(_ed, _node, _en) };
 
   if (is_struct(_bounds) && _bounds.valid == true) _res.bounds = _bounds;
   return _res;

@@ -191,8 +191,7 @@ function __poly_mouse_delta(_max_abs = 64) {
   ];
 }
 
-// Rotates camera incrementally from mouse deltas (Unity-style free loop,
-// no pole clamp): yaw about world up, then pitch about the new camera right.
+// Rotates camera incrementally from mouse deltas: yaw about world up, then pitch about the new camera right.
 // Sets the node rotation directly and returns the live forward vector.
 function __poly_orbit_apply(_ed, _dx, _dy) {
   var _node = _ed.rt.cam;

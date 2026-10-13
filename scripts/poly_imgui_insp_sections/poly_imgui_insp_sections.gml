@@ -102,7 +102,7 @@ function __poly_shadow_owner_note(_ed, _node) {
 
   if (_owner == undefined) return false;
   ImGui.TextDisabled("Shadow maps already enabled on light:");
-  ImGui.TextDisabled("\"" + __poly_label_get(_ed, _owner) + "\"");
+  ImGui.TextDisabled("\"" + __poly_node_display(_ed, _owner) + "\"");
   ImGui.SameLine();
 
   if (ImGui.SmallButton("Select")) __poly_sel_assign(_ed, [ _owner ]);
@@ -286,7 +286,7 @@ function __poly_imgui_spawn_sec(_ed, _entry) {
   }
 
   var _thumb = variable_struct_exists(_entry, "thumb") && sprite_exists(_entry.thumb) ? _entry.thumb : -1;
-  __poly_imgui_inspector_asset_header(__poly_asset_label(_entry), "Prefab", _thumb, 96);
+  __poly_imgui_inspector_asset_header(__poly_display_from_key(_entry.key), "Prefab", _thumb, 96);
 
   __poly_imgui_sec_open();
 
@@ -413,13 +413,13 @@ function __poly_imgui_actor_sec(_ed, _entry) {
     ImGui.EndCombo();
   }
 
-  // Dangling binding (renamed/deleted object): flag it where it is
+  // Dangling binding (deleted object): flag it where it is
   // configured, instead of discovering it at load time.
   if (is_string(_ac[$ "object"]) && _ac.object != "") {
     var _oi = asset_get_index(_ac.object);
 
     if (_oi < 0 || !object_exists(_oi)) {
-      ImGui.TextColored("object not found (renamed?)", make_colour_rgb(235, 90, 90));
+      ImGui.TextColored("object not found (deleted?)", make_colour_rgb(235, 90, 90));
     }
   }
 

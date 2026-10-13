@@ -169,15 +169,41 @@ function __poly_hidden_get(_ed, _node) {
   return __poly_flag_get(_ed, _node, "hidden");
 }
 
-// Hides or unhides node meshes.
+// Ensures visibility-menu flags exist with defaults (all views on).
+function __poly_vis_defaults(_ed) {
+  if (_ed == undefined) return;
+  if (!variable_struct_exists(_ed, "vis_hidden")) _ed.vis_hidden = true;
+  if (!variable_struct_exists(_ed, "vis_sky")) _ed.vis_sky = true;
+  if (!variable_struct_exists(_ed, "vis_outline")) _ed.vis_outline = true;
+}
+
+// Re-applies the global hidden-objects override to every flagged node
+// (flags are kept: toggling back restores the per-node state).
+function __poly_hidden_apply_all(_ed) {
+  if (_ed == undefined) return;
+  __poly_vis_defaults(_ed);
+  var _show = _ed.vis_hidden != true;
+  var _pairs = __poly_root_pairs(_ed);
+
+  for (var _i = 0, _n = array_length(_pairs); _i < _n; _i++) {
+    if (_pairs[_i].en == undefined || _pairs[_i].en.hidden != true) continue;
+    __poly_walk_tree(_pairs[_i].node, __poly_meshes_visit, { on: _show });
+  }
+
+  _ed.view_dirty = true;
+  if (_ed.rt != undefined && _ed.rt.scene != undefined) _ed.rt.scene.update(0);
+}
+
+// Hides or unhides node meshes (global "show everything" override wins).
 function __poly_hidden_set(_ed, _node, _hide) {
   if (_ed == undefined || _node == undefined) return false;
   var _en = __poly_registry_find(_ed, _node);
 
   if (_en == undefined) return false;
+  __poly_vis_defaults(_ed);
   _en.hidden = (_hide == true);
   _ed.view_dirty = true;
-  __poly_walk_tree(_node, __poly_meshes_visit, { on: !_en.hidden });
+  __poly_walk_tree(_node, __poly_meshes_visit, { on: !_en.hidden || _ed.vis_hidden != true });
 
   if (_ed.rt != undefined && _ed.rt.scene != undefined) _ed.rt.scene.update(0);
   return true;

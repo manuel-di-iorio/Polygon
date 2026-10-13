@@ -13,7 +13,7 @@ Polygon opens inside your running game (press **F1** in the demo), mirrors the l
 
 **Editing**
 - Drag models from the **Models** panel into the viewport (live drop preview)
-- Move / Rotate / Scale gizmos with axis, planar and trackball handles, World or Local space
+- Move / Rotate / Scale gizmos with axis, planar and trackball handles, World or Local space, Pivot or Center handles
 - Position, rotation and grid snapping (hold **Ctrl** for temporary snap)
 - Multi-selection: click, Shift+click, rubber-band rectangle, and depth cycling on repeated clicks
 - Duplicate, delete, rename, focus, and **undo/redo**
@@ -58,15 +58,15 @@ Polygon only needs a small **config** struct. It never touches your game instanc
 ```gml
 // oGame / Create
 var assets = {};
-assets[$ "models/tree.glb"] = { model: my_model_a, label: "Tree" };
-assets[$ "models/rock.glb"] = { model: my_model_b, label: "Rock", on_create: my_rock_setup };
+assets[$ "models/tree.glb"] = { model: my_model_a };
+assets[$ "models/rock.glb"] = { model: my_model_b, on_create: my_rock_setup };
 
 var config = {
   scene: my_scene,          // your live GM3D_Scene (mirrored on enable)
   cam: my_camera_node,      // your gameplay camera node (seeds the editor view)
   on_create: my_on_create,    // optional: called for every spawned node
   on_close: my_on_close,    // optional: called when the editor closes
-  assets,           // struct keyed by asset id: { model, label?, on_create? }
+  assets,           // struct keyed by asset id: { model, on_create? }
 };
 
 instance_create_layer(0, 0, layer, oEditor, { config });
@@ -101,8 +101,8 @@ Close it from the editor with **File → Close Editor** (Ctrl+W).
 |------------|-------------|
 | `scene`    | Live scene. On every enable, Polygon imports it (see below). |
 | `cam`      | Gameplay camera node, used to seed the editor camera. |
-| `assets`   | Struct `{ assetKey: { model, label?, on_create? } }`. The key is the stable asset id used in scene files (usually the load path). `on_create` is an optional per-model hook, called after the global one. |
-| `on_create` | `function(node, assetId, model, id, label)`. Called for every spawned node: global hook first, then the per-model `on_create` from the library entry. `assetId` is the stable key (same string as in files); `model` is the resolved library model. Walk the subtree: the model root lives inside the wrapper. |
+| `assets`   | Struct `{ assetKey: { model, on_create? } }`. The key is the stable asset id used in scene files (usually the load path); the file name (no path, no extension) is used as display text everywhere. `on_create` is an optional per-model hook, called after the global one. |
+| `on_create` | `function(node, assetId, model, id)`. Called for every spawned node: global hook first, then the per-model `on_create` from the library entry. `assetId` is the stable key (same string as in files); `model` is the resolved library model. Walk the subtree: the model root lives inside the wrapper. |
 | `on_close` | Called after the editor closes. |
 
 ---
@@ -129,14 +129,18 @@ The cursor wraps at window edges during camera and gizmo drags.
 
 | Key | Action |
 |-----|--------|
-| `1` `2` `3` `4` | View, Move, Rotate, Scale |
+| `Q` `W` `E` `R` | View, Move, Rotate, Scale |
+| `X` | Toggle World / Local axes |
+| `Z` | Toggle Pivot / Center handles |
 | `Del` | Delete selection (confirms for multiple objects) |
-| `F2` | Rename |
+| `F2` | Rename instance (custom name, saved to JSON) |
 | Arrow keys | Nudge selection on X/Z |
 | `Esc` | Cancel the current gesture, otherwise clear selection |
 | `Ctrl+S` / `Ctrl+L` / `Ctrl+N` | Save / Load / New |
 | `Ctrl+D` | Duplicate |
 | `Ctrl+Z` / `Ctrl+Y` (or `Ctrl+Shift+Z`) | Undo / Redo |
+| `\` | Toggle snap on/off |
+| `Ctrl+\` | Push selection to grid (undoable) |
 | `Ctrl+W` | Close editor |
 | `F9` | FPS overlay |
 
@@ -146,18 +150,20 @@ The cursor wraps at window edges during camera and gizmo drags.
 - **Shift+click** toggles an object; drag on empty space for a **rectangle selection** (hold Shift to add).
 - With **Move**, hold **Shift** for a screen-space move handle; the squares between axes move on a plane.
 - With **Rotate**, the outer ring rotates around the view axis and the inner disc acts as a trackball.
-- Hold **Ctrl** while dragging to snap. Configure grid size and axes from the grid combo in the toolbar.
+- Hold **Ctrl** while dragging to snap, or press **`\`** to toggle snap. **Ctrl+`\`** pushes the selection onto the grid. Configure grid size and axes from the grid combo in the toolbar.
+- The toolbar **Pivot/Center** toggle moves the gizmo handles between the node positions (Pivot, the default) and the center of the selection bounds (Center).
 - Scale needs a uniform handle (center) or an axis handle; environment nodes cannot be transformed.
 
 ### Panels
 
 - **Models**: filterable list or cards of your library. Drag into the viewport to place. Select one to edit its spawn defaults.
 - **Hierarchy**: eye = hide, hand = lock (locked objects cannot be selected). Ctrl+click selects a range, right-click opens the context menu, rubber-band selects rows. The filter button limits types (models, lights, cameras, environment).
+- **Eye menu** (toolbar, next to AA): toggle hidden-objects visibility, skybox and selection outline.
 - **Inspector**: Transform, Light / Camera / Environment, Shadows, Materials, Animations. Prefab instances show an **Overrides** menu to revert or apply rotation, scale and shadow changes.
 
 ### Creating lights, cameras and environment
 
-Use the **Create** menu: Directional Light, Point Light (up to 8 lights), Perspective Camera, Ortho Camera, Environment (one per scene). The camera labeled `MainCamera` is the gameplay camera; otherwise the first enabled one is used.
+Use the **Create** menu: Directional Light, Point Light (up to 8 lights), Perspective Camera, Ortho Camera, Environment (one per scene). The first enabled camera is the gameplay camera; otherwise the first one is used.
 
 ---
 
@@ -170,8 +176,8 @@ Load a scene in your game, without the editor, with:
 ```gml
 // assets: same struct shape as the poly_create config
 var assets = {};
-assets[$ "models/tree.glb"] = { model: my_model_a, label: "Tree" };
-assets[$ "models/rock.glb"] = { model: my_model_b, label: "Rock", on_create: my_rock_setup };
+assets[$ "models/tree.glb"] = { model: my_model_a };
+assets[$ "models/rock.glb"] = { model: my_model_b, on_create: my_rock_setup };
 
 var report = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", assets, my_on_create);
 // report = { placed, failed, companions, warnings, placements }
@@ -180,7 +186,7 @@ var report = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", assets,
 
 `poly_load` spawns instances, lights, cameras and environments, preserving node ids. For every instance it calls, in order:
 
-1. the global `on_create(node, assetId, model, id, label)` (4th argument, optional),
+1. the global `on_create(node, assetId, model, id)` (4th argument, optional),
 2. the per-model `on_create` from `assets[key]` (optional),
 3. the companion spawn below (when configured).
 
@@ -192,7 +198,7 @@ In the Models panel, selecting a model shows an **Actor** section in the Inspect
 { "assets": { "models/fox.glb": { "type": "model", "actor": { "object": "oEnemy", "layer": "Actors" } } } }
 ```
 
-At load, every instance of a bound model spawns a companion via `instance_create_layer(0, 0, layer, obj, { node, poly_id, poly_asset_id, poly_label })` - the object reads the node from its creation variables and drives it in its own Step/Draw events. Missing objects or layers never fail the load: they become `report.warnings` entries. Layer defaults to `"Instances"`.
+At load, every instance of a bound model spawns a companion via `instance_create_layer(0, 0, layer, obj, { node, poly_id, poly_asset_id })` - the object reads the node from its creation variables and drives it in its own Step/Draw events. Missing objects or layers never fail the load: they become `report.warnings` entries. Layer defaults to `"Instances"`.
 
 Bindings store the **object name**: renaming the object in GameMaker breaks the binding (the node still spawns, without companion). The Actor section flags unknown objects in red; a renamed object is fixed by re-picking it, or with a text search across scene files.
 
@@ -232,7 +238,7 @@ poly_actor_of(node);       // companion instance id bound to a node, or undefine
 }
 ```
 
-`kind` is one of `instance`, `light`, `camera`, `environment` (the last three carry a `light` / `camera` / `environment` sub-object). The transform lives in `transform: { position, rotation, scale }` (rotation is a quaternion `[x, y, z, w]`). Instances link their model via `assetId`. Node ids are stable and are what the AI bridge uses.
+`kind` is one of `instance`, `light`, `camera`, `environment` (the last three carry a `light` / `camera` / `environment` sub-object). The transform lives in `transform: { position, rotation, scale }` (rotation is a quaternion `[x, y, z, w]`). Instances link their model via `assetId`. `label` is an optional custom instance name (F2 in the Hierarchy); without it, the asset file name + id number is shown. Node ids are stable and are what the AI bridge uses.
 
 ---
 

@@ -37,21 +37,49 @@ function __poly_asset_find(_ed, _key) {
   return _entry == undefined ? undefined : _entry.model;
 }
 
-// Returns a non-empty string field of a struct, else "".
-function __poly_asset_str(_entry, _field) {
-  if (is_struct(_entry) && variable_struct_exists(_entry, _field) && is_string(_entry[$ _field]) && _entry[$ _field] != "") return _entry[$ _field];
-  return "";
+// Derives display text from an asset id: file name without path or
+// extension ("house/Prop_Bar_Stool.glb" -> "Prop_Bar_Stool").
+function __poly_display_from_key(_key) {
+  var _s = is_string(_key) ? _key : "";
+  var _slash = string_last_pos("/", _s);
+
+  if (_slash > 0) _s = string_copy(_s, _slash + 1, string_length(_s) - _slash);
+  var _dot = string_last_pos(".", _s);
+
+  if (_dot > 1) _s = string_copy(_s, 1, _dot - 1);
+  return _s;
 }
 
-// Returns the display label for a library entry (label, else root name, else id).
-function __poly_asset_label(_entry) {
-  var _label = __poly_asset_str(_entry, "label");
+// Extracts the trailing number of a stable id ("__PolygonEditor__47" -> "47").
+function __poly_id_number(_id) {
+  if (!is_string(_id)) return "";
+  var _n = string_length(_id);
+  var _i = _n;
 
-  if (_label != "") return _label;
-  var _name = __poly_asset_str(_entry, "name");
+  while (_i >= 1 && string_char_at(_id, _i) >= "0" && string_char_at(_id, _i) <= "9") _i--;
+  return string_copy(_id, _i + 1, _n - _i);
+}
 
-  if (_name != "") return _name;
-  return __poly_asset_str(_entry, "key");
+// Returns the display text for a node: the custom instance name when set,
+// else the asset file name (or kind for lights/cameras/environment) plus
+// the stable id number, so rows stay unique ("Prop_Bar_Stool #47").
+function __poly_node_display(_ed, _node, _en = undefined) {
+  if (_node == undefined) return "node";
+  _en ??= __poly_registry_find(_ed, _node);
+
+  if (_en != undefined && is_string(_en.label) && _en.label != "") return _en.label;
+  var _base = "";
+
+  if (_en != undefined && is_string(_en.asset) && _en.asset != "") {
+    _base = __poly_display_from_key(_en.asset);
+  } else if (_en != undefined && is_string(_en.kind) && _en.kind != "") {
+    _base = _en.kind == "light" ? "Light" : _en.kind == "camera" ? "Camera" : _en.kind == "environment" ? "Environment" : "node";
+  }
+
+  if (_base == "") _base = "node";
+  var _id = _en != undefined ? _en.id : __poly_wrap_id_of(_node);
+  var _num = __poly_id_number(_id);
+  return _num != "" ? _base + " #" + _num : _base;
 }
 
 // ---------------------------------------------------------------------------

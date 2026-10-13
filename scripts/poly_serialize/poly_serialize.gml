@@ -46,14 +46,16 @@ function __poly_node_desc(_ed, _node) {
   var _asset = __poly_asset_desc(_ed, _node);
 
   if (_asset == undefined) return undefined;
-  return {
+  var _desc = {
     kind: "instance",
     id: _asset.id,
-    label: _asset.label,
     assetId: _asset.asset,
     transform: _asset.transform,
     shadows: _asset.shadows,
   };
+
+  if (is_string(_asset.label) && _asset.label != "") _desc.label = _asset.label;
+  return _desc;
 }
 
 // Reads prop data from registry entry, else live from the node.
@@ -174,7 +176,6 @@ function __poly_env_desc(_pd) {
 // Builds light camera environment descriptor.
 function __poly_prop_desc(_ed, _node, _kind) {
   var _en = __poly_registry_find(_ed, _node);
-  var _label = (_en != undefined && is_string(_en.label) && _en.label != "") ? _en.label : _node.name;
   var _id = (_en != undefined && is_string(_en.id)) ? _en.id : _node.name;
   var _pos = _node.getLocalPosition();
   var _rot = _node.getLocalRotation();
@@ -184,7 +185,6 @@ function __poly_prop_desc(_ed, _node, _kind) {
   var _desc = {
     kind: _kind,
     id: _id,
-    label: _label,
     assetId: "",
     transform: {
       position: [ _pos.x, _pos.y, _pos.z ],
@@ -192,6 +192,8 @@ function __poly_prop_desc(_ed, _node, _kind) {
       scale: [ _sca.x, _sca.y, _sca.z ],
     },
   };
+
+  if (_en != undefined && is_string(_en.label) && _en.label != "") _desc.label = _en.label;
   var _data = __poly_prop_data(_ed, _node, _kind);
 
   if (_kind == "light") {
@@ -298,8 +300,8 @@ function __poly_is_env_struct(_d) {
   return true;
 }
 
-// Validates scene descriptor array structure (strict v2: kind, id,
-// label and assetId are all required; no legacy name fallback).
+// Validates scene descriptor array structure (strict v2: kind, id and
+// assetId are required; "label" is an optional custom instance name).
 function __poly_validate_descs(_nodes) {
   if (!is_array(_nodes)) return false;
 
@@ -309,7 +311,7 @@ function __poly_validate_descs(_nodes) {
     if (!is_struct(_desc)) return false;
     if (!variable_struct_exists(_desc, "kind") || !is_string(_desc.kind)) return false;
     if (!variable_struct_exists(_desc, "id") || !is_string(_desc.id) || _desc.id == "") return false;
-    if (!variable_struct_exists(_desc, "label") || !is_string(_desc.label) || _desc.label == "") return false;
+    if (variable_struct_exists(_desc, "label") && !is_string(_desc.label)) return false;
     if (!variable_struct_exists(_desc, "assetId") || !is_string(_desc.assetId)) return false;
     var _kind = _desc.kind;
 
@@ -399,7 +401,7 @@ function __poly_rebuild_place_asset(_ed, _p, _key) {
     pos: _p.transform.position,
     rotation: _p.transform.rotation,
     scale: _p.transform.scale,
-    label: _p.label,
+    label: _p[$ "label"],
     id: __poly_wrap_claim(_ed, _p.id),
     data: _flags,
   });
@@ -531,7 +533,7 @@ function __poly_rebuild_prop(_ed, _p, _kind) {
     pos: _t[$ "position"],
     rotation: _rot,
     scale: _t[$ "scale"],
-    label: _p.label,
+    label: _p[$ "label"],
     id: __poly_wrap_claim(_ed, _p.id),
     data: _data,
   });
@@ -583,7 +585,7 @@ function __poly_write_file_assets(_ed) {
   return _out;
 }
 
-// Writes serialized scene to JSON file (v2: seq + id/label/asset + file assets).
+// Writes serialized scene to JSON file (v2: seq + id/asset + file assets).
 function __poly_save_scene(_ed) {
   __poly_reg_ensure(_ed);
   var _nodes = __poly_serialize_scene(_ed);

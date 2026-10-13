@@ -96,7 +96,7 @@ function __poly_imgui_lock(_locked, _ghost, _tipkey) {
 }
 
 // ---------------------------------------------------------------------------
-// Rename
+// Rename (custom instance name)
 // ---------------------------------------------------------------------------
 
 // Starts in-place node rename mode.
@@ -104,10 +104,7 @@ function __poly_rename_begin(_ed, _node) {
   if (_node == undefined) return;
   if (_ed.giz.drag != -1) return;
   if (__poly_registry_find(_ed, _node) == undefined) return;
-  var _label = __poly_label_get(_ed, _node);
-
-  if (!is_string(_label) || _label == "") return;
-  _ed.rename_name = _label;
+  _ed.rename_name = __poly_node_display(_ed, _node);
   _ed.rename_id = _node.name;
   _ed.imgui.win_hier.open = true;
 }
@@ -118,7 +115,6 @@ function __poly_rename_cancel(_ed) {
   _ed.rename_id = undefined;
 }
 
-// Checks node matches rename target id.
 // ---------------------------------------------------------------------------
 // Kind icons
 // ---------------------------------------------------------------------------
@@ -187,13 +183,7 @@ function __poly_imgui_kind_icon(_ed, _node, _kind, _hidden, _idx) {
 function __poly_scene_row_meta(_ed, _node, _en = undefined, _selset = undefined) {
   _en ??= __poly_registry_find(_ed, _node);
 
-  var _label = "node";
-
-  if (_en != undefined && is_string(_en.label) && _en.label != "") {
-    _label = _en.label;
-  } else if (is_string(_node.name)) {
-    _label = _node.name;
-  }
+  var _label = __poly_node_display(_ed, _node, _en);
 
   var _kind = undefined;
 
@@ -212,7 +202,7 @@ function __poly_scene_row_meta(_ed, _node, _en = undefined, _selset = undefined)
   var _sel = _selset != undefined ? __poly_sel_in(_selset, _node, _en) : __poly_node_list_has(_ed.sel, _node);
   return {
     node: _node,
-    label: _label,
+    display: _label,
     kind: _kind,
     hidden: _en != undefined && _en.hidden == true,
     locked: _en != undefined && _en.locked == true,
@@ -288,7 +278,7 @@ function __poly_scene_filter(_ed, _pairs, _selset, _kinds, _flt) {
     var _meta = __poly_scene_row_meta(_ed, _pairs[_r].node, _pairs[_r].en, _selset);
 
     if (!__poly_kind_shown(_kinds, _meta.kind)) continue;
-    if (_flt != "" && string_pos(_flt, string_lower(_meta.label)) <= 0) continue;
+    if (_flt != "" && string_pos(_flt, string_lower(_meta.display)) <= 0) continue;
     array_push(_rows, _meta);
   }
 
@@ -297,12 +287,12 @@ function __poly_scene_filter(_ed, _pairs, _selset, _kinds, _flt) {
 
 // Draws the rename editor for a row, committing on focus loss.
 function __poly_scene_row_rename(_ed, _meta) {
-  var _res = __poly_imgui_text("rename", "##rename", _meta.label);
+  var _res = __poly_imgui_text("rename", "##rename", _meta.display);
 
   if (_res.was_active && !_res.active) {
     var _next = string_trim(_res.text);
 
-    if (_next != "" && _next != _meta.label) __poly_scene_commit_rename(_ed, _meta.node, _next);
+    if (_next != "" && _next != _meta.display) __poly_scene_commit_rename(_ed, _meta.node, _next);
     __poly_rename_cancel(_ed);
   }
 }
@@ -329,13 +319,13 @@ function __poly_scene_row(_ed, _ui, _meta, _idx) {
   __poly_imgui_kind_icon(_ed, _node, _meta.kind, _meta.hidden, _idx);
   ImGui.SameLine();
 
-  var _short = __poly_short_name(_meta.label);
+  var _short = __poly_short_name(_meta.display);
 
   if (ImGui.Selectable(_short, _meta.sel)) __poly_scene_click(_ed, _node, _idx, _ed.hier_rows);
 
   if (ImGui.IsItemHovered()) {
     __poly_scene_row_reveal(_ui, _idx);
-    __poly_imgui_tip_delayed("hier|name|" + string(_idx), _meta.label, true);
+    __poly_imgui_tip_delayed("hier|name|" + string(_idx), _meta.display, true);
   }
 
   if (ImGui.IsMouseDoubleClicked(0) && ImGui.IsItemHovered()) __poly_focus_node(_ed, _node);
@@ -486,7 +476,7 @@ function __poly_imgui_scene_list(_ed) {
     _ed.hier_row_y[$ string(_i)] = ImGui.GetCursorScreenPosY();
     ImGui.PushID(_i);
 
-    if (_ed.rename_name != undefined && _rows[_i].label == _ed.rename_name && _rows[_i].node != undefined && _rows[_i].node.name == _ed.rename_id) {
+    if (_ed.rename_name != undefined && _rows[_i].display == _ed.rename_name && _rows[_i].node != undefined && _rows[_i].node.name == _ed.rename_id) {
       __poly_scene_row_rename(_ed, _rows[_i]);
     } else {
       __poly_scene_row(_ed, _ui, _rows[_i], _i);

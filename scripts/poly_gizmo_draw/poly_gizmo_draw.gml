@@ -11,7 +11,7 @@ function __poly_gizmo_draw(_ed, _vp) {
 
   if (array_length(_ed.sel) == 0) return;
   if (!__poly_gizmo_allowed(_ed)) return;
-  var _pivot = __poly_gizmo_pivot(_ed.sel);
+  var _pivot = __poly_gizmo_pivot_draw(_ed);
   var _ps = __poly_world_to_screen(_vp, _pivot);
 
   if (_ps == undefined) {
@@ -82,7 +82,7 @@ function __poly_gizmo_draw_axes(_ed, _vp, _pivot, _ps, _dirs, _ws, _cols, _high)
     var _col = _hot ? _high[_a] : _cols[_a];
     var _al = 1;
 
-    if (_ed.giz.drag != -1 && !_mine) {
+    if (_ed.giz.drag != -1 && !_mine && _ed.giz.tool != PolygonEditorTool.Rotate) {
       _col = merge_colour(_col, c_white, 0.6);
       _al = 0.2;
     }
@@ -114,11 +114,16 @@ function __poly_gizmo_draw_axes(_ed, _vp, _pivot, _ps, _dirs, _ws, _cols, _high)
       draw_set_alpha(1);
     } else if (_ed.giz.tool == PolygonEditorTool.Rotate) {
       var _pts = __poly_gizmo_ring_front(_vp, _pivot, _dirs[_a], _ws);
-      var _th = _ed.giz.hover == _a || _ed.giz.drag == _a ? 3 : 2;
+      var _ring_hot = _ed.giz.hover == _a || _ed.giz.drag == _a;
+      var _ring_full = _ed.giz.drag == _a;
+      var _th = _ring_hot ? 3 : 2;
       draw_set_alpha(_al);
 
       for (var _p = 0, _n = array_length(_pts); _p < _n - 1; _p++) {
-        if (_pts[_p].s == undefined || _pts[_p + 1].s == undefined || !_pts[_p].front || !_pts[_p + 1].front) continue;
+        if (_pts[_p].s == undefined || _pts[_p + 1].s == undefined) continue;
+        // Full circle only while dragging this ring; on hover the front
+        // arc alone highlights.
+        if (!_ring_full && (!_pts[_p].front || !_pts[_p + 1].front)) continue;
         __poly_vp_line(_pts[_p].s[0], _pts[_p].s[1], _pts[_p + 1].s[0], _pts[_p + 1].s[1], _th, _col);
       }
 
@@ -149,17 +154,17 @@ function __poly_gizmo_disc_radius(_pts, _ps) {
 // Draws camera-facing rotation ring and trackball disc.
 function __poly_gizmo_draw_viewring(_ed, _vp, _pivot, _look, _ws) {
   if (_ed.giz.tool == PolygonEditorTool.Rotate) {
-    var _pts = __poly_gizmo_ring_pts(_vp, _pivot, _look, _ws);
+    var _pts = __poly_gizmo_ring_pts(_vp, _pivot, _look, __poly_gizmo_viewring_ws(_ws));
     var _pc = __poly_world_to_screen(_vp, _pivot);
 
     if (_pc != undefined && array_length(_pts) > 0) {
-      var _rr = __poly_gizmo_disc_radius(_pts, _pc);
+      // Trackball disc keeps the axis-rings extent (as before the outer
+      // ring was enlarged); only the white polyline uses the larger radius.
+      var _rr = __poly_gizmo_disc_radius(__poly_gizmo_ring_pts(_vp, _pivot, _look, _ws), _pc);
 
-      if (_rr > 1) {
-        var _disc_hot = _ed.giz.hover == 7 || _ed.giz.drag == 7;
-        var _disc_col = _disc_hot ? c_gray : c_white;
-        draw_set_alpha(_disc_hot ? 0.22 : 0.05);
-        draw_circle_colour(_pc[0], _pc[1], _rr, _disc_col, _disc_col, false);
+      if (_rr > 1 && (_ed.giz.hover == 7 || _ed.giz.drag == 7)) {
+        draw_set_alpha(0.25);
+        draw_circle_colour(_pc[0], _pc[1], _rr, c_black, c_black, false);
         draw_set_alpha(1);
       }
     }
@@ -168,8 +173,10 @@ function __poly_gizmo_draw_viewring(_ed, _vp, _pivot, _look, _ws) {
     var _th = _ring_hot ? 3 : 2;
     var _col = _ring_hot ? c_yellow : c_white;
     var _al = 1;
+    var _hh = _ed.giz.hover;
+    var _dd = _ed.giz.drag;
 
-    if (_ed.giz.drag != -1 && _ed.giz.drag != 6) _al = 0.2;
+    if ((_hh >= 0 && _hh <= 2) || (_dd >= 0 && _dd <= 2) || _hh == 7 || _dd == 7) _al = 0.2;
     draw_set_alpha(_al);
 
     for (var _v = 0, _n = array_length(_pts); _v < _n - 1; _v++) __poly_vp_line(_pts[_v][0], _pts[_v][1], _pts[_v + 1][0], _pts[_v + 1][1], _th, _col);
@@ -283,9 +290,10 @@ function __poly_gizmo_draw_rotate_sweep(_ed, _vp, _pivot, _ps, _ws, _high) {
   var _sweep = _ed.giz.display_ang;
 
   if (abs(_sweep) <= 0.01) return;
+  var _wsr = _ed.giz.drag == 6 ? __poly_gizmo_viewring_ws(_ws) : _ws;
   var _t0 = _ed.giz.sector_t0;
   var _draw_sweep = clamp(_sweep, -2 * pi, 2 * pi);
-  var _arc = __poly_sweep_pts(_ed, _vp, _pivot, _ws, _t0, _draw_sweep);
+  var _arc = __poly_sweep_pts(_ed, _vp, _pivot, _wsr, _t0, _draw_sweep);
   var _basis = __poly_gizmo_ring_basis(_ed.giz.dir);
   var _bu = _basis[0];
   var _bv = _basis[1];
@@ -306,15 +314,15 @@ function __poly_gizmo_draw_rotate_sweep(_ed, _vp, _pivot, _ps, _ws, _high) {
       if (abs(_rem) > 0.01) {
         var _tri_col = merge_colour(c_yellow, c_black, min(0.25 + _laps * 0.15, 0.7));
         var _tri_al = min(0.3 + _boost, 0.85);
-        __poly_sweep_fan(_ps, __poly_sweep_pts(_ed, _vp, _pivot, _ws, _t0, _rem), _tri_col, _tri_al);
+        __poly_sweep_fan(_ps, __poly_sweep_pts(_ed, _vp, _pivot, _wsr, _t0, _rem), _tri_col, _tri_al);
       }
     }
 
     draw_set_alpha(min(0.8 + _boost, 1.0));
 
     for (var _e = 0, _ne = array_length(_arc) - 1; _e < _ne - 1; _e++) __poly_vp_line(_arc[_e][0], _arc[_e][1], _arc[_e + 1][0], _arc[_e + 1][1], 2, _col);
-    var _start = __poly_world_to_screen(_vp, __poly_gizmo_ring_point_fast(_pivot, _bu, _bv, _ws, _t0));
-    var _current = __poly_world_to_screen(_vp, __poly_gizmo_ring_point_fast(_pivot, _bu, _bv, _ws, _t0 + _sweep));
+    var _start = __poly_world_to_screen(_vp, __poly_gizmo_ring_point_fast(_pivot, _bu, _bv, _wsr, _t0));
+    var _current = __poly_world_to_screen(_vp, __poly_gizmo_ring_point_fast(_pivot, _bu, _bv, _wsr, _t0 + _sweep));
 
     if (_start != undefined) __poly_vp_line(_ps[0], _ps[1], _start[0], _start[1], 1, _rim);
     if (_current != undefined) __poly_vp_line(_ps[0], _ps[1], _current[0], _current[1], 1, _rim);
