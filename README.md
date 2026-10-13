@@ -255,7 +255,7 @@ pointing a the address `127.0.0.1:5192`.
 
 No socket is ever opened unless the editor is active and the bridge is on. Only whitelisted operations are accepted (no arbitrary GML):
 
-`status`, `hierarchy`, `selection`, `details`, `assets`, `raycast_down`, `select`, `focus`, `create`, `transform`, `rename`, `delete`, `save`, `batch`, `drop_to_ground`, `place_on`
+`status`, `hierarchy`, `selection`, `details`, `assets`, `raycast_down`, `select`, `focus`, `create`, `transform`, `rename`, `delete`, `save`, `batch`, `drop_to_ground`, `place_on`, `screenshot`, `audit`
 
 ---
 

@@ -632,7 +632,7 @@ function __poly_create_state(_rt) {
     show_grid: true,
     show_shadows: true,
     show_unlit: false,
-    vis_hidden: true,
+    show_hidden: false,
     vis_sky: true,
     vis_outline: true,
     unlit_quiet: false,

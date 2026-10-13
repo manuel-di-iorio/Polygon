@@ -14,7 +14,7 @@
 //
 // Ops: status | hierarchy | selection | details | assets | raycast_down |
 //      select | focus | create | transform | rename | delete | save | batch |
-//      drop_to_ground | place_on
+//      drop_to_ground | place_on | screenshot | audit
 // Read ops expose world/model-space AABBs (see bounds below) so callers
 // never guess Y: spawn with base_y / on_top_of, or snap with the two ops.
 // Conventions (same as the scene format / save system):
@@ -650,6 +650,8 @@ function __poly_ai_exec(_ed, _msg) {
     case "rename": _r = __poly_ai_op_rename(_ed, _p, true); break;
     case "delete": _r = __poly_ai_op_delete(_ed, _p, true); break;
     case "save": _r = __poly_ai_op_save(_ed, _p); break;
+    case "screenshot": _r = __poly_ai_op_shot(_ed); break;
+    case "audit": _r = __poly_ai_op_audit(_ed, _p); break;
     case "batch": _r = __poly_ai_op_batch(_ed, _p); break;
     case "raycast_down": _r = __poly_ai_op_raycast(_ed, _p); break;
     case "drop_to_ground": _r = __poly_ai_op_drop(_ed, _p, true); break;
@@ -929,6 +931,113 @@ function __poly_ai_op_raycast(_ed, _p) {
   }
 
   return { found: true, top: _best_top, id: _best_id };
+}
+
+// Captures the composed viewport surface to a PNG in the OS temp folder
+// (temp_directory: cleaned by the OS; only the last 10 shots are kept).
+// Returns { file } with the absolute path for the caller to read back.
+function __poly_ai_op_shot(_ed) {
+  if (_ed == undefined || _ed.active != true) return __poly_ai_err("no_view", "editor viewport not active");
+  if (!variable_struct_exists(_ed, "scene_surf") || !surface_exists(_ed.scene_surf)) return __poly_ai_err("no_view", "no composed viewport frame yet");
+  var _dir = temp_directory;
+  var _last = string_char_at(_dir, string_length(_dir));
+
+  if (_last != "\\" && _last != "/") _dir += "\\";
+  var _seq = 0;
+
+  if (variable_struct_exists(_ed, "shot_seq") && is_real(_ed.shot_seq)) _seq = floor(_ed.shot_seq);
+  _seq = (_seq + 1) mod 10;
+  _ed.shot_seq = _seq;
+  var _path = _dir + "poly_shot_" + string(_seq) + ".png";
+  surface_save(_ed.scene_surf, _path);
+
+  if (!file_exists(_path)) return __poly_ai_err("failed", "could not write screenshot");
+  return { file: _path };
+}
+
+// Reports instance pairs whose world AABBs interpenetrate at or beyond
+// min_overlap (default 0.02m), sorted by depth desc. Intentional contacts
+// (wall corners, slabs) also appear: narrow with ids/ignore.
+// Params: { min_overlap?, ids? (scope), ignore? }.
+function __poly_ai_op_audit(_ed, _p) {
+  var _min = 0.02;
+
+  if (variable_struct_exists(_p, "min_overlap")) {
+    if (!is_real(_p.min_overlap) || _p.min_overlap < 0) return __poly_ai_err("bad_params", "min_overlap must be a non-negative number");
+    _min = _p.min_overlap;
+  }
+
+  var _ign = [];
+
+  if (variable_struct_exists(_p, "ignore")) {
+    if (!is_array(_p.ignore)) return __poly_ai_err("bad_params", "ignore must be an array of node ids");
+
+    for (var _g = 0, _ng = array_length(_p.ignore); _g < _ng; _g++) {
+      var _gn = __poly_ai_node(_ed, _p.ignore[_g]);
+
+      if (_gn == undefined) return __poly_ai_err("not_found", "unknown or system node: " + string(_p.ignore[_g]));
+      array_push(_ign, _gn);
+    }
+  }
+
+  var _scope = undefined;
+
+  if (variable_struct_exists(_p, "ids")) {
+    if (!is_array(_p.ids)) return __poly_ai_err("bad_params", "ids must be an array of node ids");
+    _scope = [];
+
+    for (var _s = 0, _ns = array_length(_p.ids); _s < _ns; _s++) {
+      var _sn = __poly_ai_node(_ed, _p.ids[_s]);
+
+      if (_sn == undefined) return __poly_ai_err("not_found", "unknown or system node: " + string(_p.ids[_s]));
+      array_push(_scope, _sn);
+    }
+  }
+
+  var _pairs = __poly_root_pairs(_ed);
+  var _cands = [];
+
+  for (var _i = 0, _n = array_length(_pairs); _i < _n; _i++) {
+    var _node = _pairs[_i].node;
+    var _en = _pairs[_i].en;
+
+    if (_node == undefined || _en == undefined || !is_string(_en.kind) || _en.kind != "instance") continue;
+    if (_scope != undefined && !__poly_node_list_has(_scope, _node)) continue;
+    if (array_length(_ign) > 0 && __poly_node_list_has(_ign, _node)) continue;
+    var _b = __poly_ai_bounds_of(_node);
+
+    if (!is_struct(_b) || _b.valid != true) continue;
+    array_push(_cands, { node: _node, en: _en, b: _b });
+  }
+
+  var _out = [];
+  var _nc = array_length(_cands);
+
+  for (var _a = 0; _a < _nc; _a++) {
+    for (var _b = _a + 1; _b < _nc; _b++) {
+      var _ba = _cands[_a].b;
+      var _bb = _cands[_b].b;
+      var _ox = min(_ba.max[0], _bb.max[0]) - max(_ba.min[0], _bb.min[0]);
+      var _oy = min(_ba.max[1], _bb.max[1]) - max(_ba.min[1], _bb.min[1]);
+      var _oz = min(_ba.max[2], _bb.max[2]) - max(_ba.min[2], _bb.min[2]);
+
+      if (!(_ox > 0 && _oy > 0 && _oz > 0)) continue;
+      var _depth = min(_ox, min(_oy, _oz));
+
+      if (_depth < _min) continue;
+      array_push(_out, {
+        a: _cands[_a].en.id,
+        b: _cands[_b].en.id,
+        alabel: __poly_node_display(_ed, _cands[_a].node, _cands[_a].en),
+        blabel: __poly_node_display(_ed, _cands[_b].node, _cands[_b].en),
+        overlap: [ _ox, _oy, _oz ],
+        depth: _depth,
+      });
+    }
+  }
+
+  __poly_sort_by_field(_out, "depth", false);
+  return { checked: _nc, pairs: _out };
 }
 
 // Snaps one node so its world bottom rests on ground_y (default 0).

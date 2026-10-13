@@ -177,7 +177,7 @@ function __poly_overlay_draw(_ed, _vp) {
     var _kind = is_string(_en.kind) ? _en.kind : undefined;
 
     if (_kind != "light" && _kind != "camera" && _kind != "environment") continue;
-    if (_en.hidden == true && _ed.vis_hidden != false) continue;
+    if (_en.hidden == true && _ed.show_hidden != true) continue;
     var _wp = _node.getWorldPosition();
     var _sp = __poly_world_to_screen(_vp, _wp);
     var _sel = __poly_sel_in(_selset, _node, _en);

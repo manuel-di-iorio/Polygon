@@ -105,12 +105,12 @@ function __poly_imgui_toolbar(_ed) {
   if (__poly_imgui_icon_btn("##tb_vis", "Visibility: hidden objects, skybox, outline", false, "Ey", "sprPolygonEditorIconEye", 15, 15)) ImGui.OpenPopup("##visoptions");
 
   if (ImGui.BeginPopup("##visoptions")) {
-    var _vh = ImGui.Checkbox("Hidden objects", _ed.vis_hidden);
+    var _vh = ImGui.Checkbox("Hidden objects", _ed.show_hidden);
 
     if (ImGui.IsItemHovered()) ImGui.SetTooltip("Click to toggle hidden objects visibility");
 
-    if (_vh != _ed.vis_hidden) {
-      _ed.vis_hidden = _vh;
+    if (_vh != _ed.show_hidden) {
+      _ed.show_hidden = _vh;
       __poly_hidden_apply_all(_ed);
     }
 

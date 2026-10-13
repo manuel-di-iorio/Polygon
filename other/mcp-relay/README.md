@@ -68,11 +68,11 @@ args = ["C:/.../poly/other/mcp-relay/server.js"]
 Claude Desktop / Cursor: same command+args in the `mcpServers` JSON block.
 No secrets or credentials are involved.
 
-## Tools (16)
+## Tools (18)
 
 Status/inspect: `poly_get_status`, `poly_get_scene_hierarchy`,
 `poly_get_selection`, `poly_get_object_details`, `poly_get_assets`,
-`poly_raycast_down`.
+`poly_raycast_down`, `poly_take_screenshot`, `poly_audit_overlaps`.
 Edit: `poly_select_objects`, `poly_focus_object`,
 `poly_create_object`, `poly_set_transform`, `poly_rename_object`,
 `poly_delete_objects`, `poly_save_scene`, `poly_apply_batch`,

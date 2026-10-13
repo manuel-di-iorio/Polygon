@@ -189,6 +189,18 @@ async function main() {
       gap: z.number().optional().describe("Extra lift above the support top, default 0"),
     }, "place_on");
 
+  bridgeTool(server, bridge, "poly_take_screenshot",
+    "Capture the current editor viewport to a PNG in the OS temp folder (auto-cleaned; last 10 kept) and return its absolute path. Read the file to SEE the scene, then iterate placement with follow-up ops.",
+    {}, "screenshot");
+
+  bridgeTool(server, bridge, "poly_audit_overlaps",
+    "Report instance pairs whose world AABBs interpenetrate at or beyond min_overlap (default 0.02m), sorted by depth desc with readable labels. Intentional contacts (wall corners, slabs) also appear: narrow the scope with ids or filter them out with ignore.",
+    {
+      min_overlap: z.number().optional().describe("Minimum penetration depth in meters to report, default 0.02"),
+      ids: z.array(z.string()).optional().describe("Limit the check to these node ids"),
+      ignore: z.array(z.string()).optional().describe("Node ids to exclude from the check"),
+    }, "audit");
+
   const shutdown = async () => {
     await bridge.stop();
     process.exit(0);

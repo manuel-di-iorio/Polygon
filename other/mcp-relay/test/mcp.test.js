@@ -26,6 +26,8 @@ const EXPECTED_TOOLS = [
   "poly_apply_batch",
   "poly_drop_to_ground",
   "poly_place_on",
+  "poly_take_screenshot",
+  "poly_audit_overlaps",
   "poly_raycast_down",
 ];
 
