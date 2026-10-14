@@ -207,6 +207,7 @@ function __poly_compose_speedtip(_ed, _vp) {
 
 // Renders viewport overlays into scene surface (target already set).
 function __poly_compose_viewport(_ed) {
+  if (__poly_ai_capture_clean(_ed)) return;
   var _vp = __poly_viewport_cached(_ed);
   var _was_blend = gpu_get_blendenable();
   var _was_mode = gpu_get_blendmode_ext_sepalpha();
@@ -665,6 +666,7 @@ function __poly_step(_ed, _dt) {
   var _keys = _ed.cfg.keys;
 
   if (!_ed.active) return;
+  if (__poly_ai_capture_active(_ed)) return;
   if (keyboard_check_pressed(vk_f9)) _ed.show_fps = !_ed.show_fps;
   __poly_view_sync(_ed);
 

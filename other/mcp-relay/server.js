@@ -5,6 +5,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { BridgeLink, BridgeError } from "./bridge.js";
+import { auditWalkability } from "./walkability.js";
+import { readFile, realpath, stat } from "node:fs/promises";
+import path from "node:path";
+import os from "node:os";
+import { createHash } from "node:crypto";
 
 const RELAY_VERSION = "1.1.0";
 const DEFAULT_PORT = 5192;
@@ -26,6 +31,46 @@ function parseArgs(argv) {
 // Wraps a bridge call as an MCP tool result (throws = tool error).
 function toolResult(result) {
   return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+}
+
+async function saveResult(result) {
+  if (!result.content_md5) return toolResult(result);
+  const matches = [];
+  for (const filename of new Set([result.requested_path, result.sandbox_path])) {
+    if (typeof filename !== "string" || !path.isAbsolute(filename)) continue;
+    try {
+      const text = await readFile(filename, "utf8");
+      const hash = createHash("md5").update(text.replace(/\r\n|\r|\n/g, ""), "utf8").digest("hex");
+      if (text.length && hash === result.content_md5.toLowerCase()) matches.push(filename);
+    } catch {}
+  }
+  const actual = matches.length === 1 ? matches[0] : "";
+  return toolResult({ ...result, actual_path: actual, path_verified: !!actual, sandbox_redirected: !!actual && actual !== result.requested_path, matching_paths: matches });
+}
+
+async function captureResult(result, includeImages = true) {
+  if (!includeImages) return toolResult(result);
+  const content = [];
+  const skipped = [];
+  let encodedBytes = 0;
+  const tempRoot = await realpath(os.tmpdir());
+  for (const view of result.views ?? [result]) {
+    try {
+      const filename = await realpath(view.file);
+      const relative = path.relative(tempRoot, filename);
+      if (!relative || relative.startsWith("..") || path.isAbsolute(relative) || path.extname(filename).toLowerCase() !== ".png") throw new Error("image is not a PNG inside OS temp");
+      const info = await stat(filename);
+      if (info.size > 8 * 1024 * 1024 || encodedBytes + Math.ceil(info.size / 3) * 4 > 20 * 1024 * 1024) throw new Error("image response size limit");
+      const image = await readFile(filename);
+      if (!image.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) throw new Error("invalid PNG signature");
+      const data = image.toString("base64");
+      encodedBytes += data.length;
+      content.push({ type: "image", data, mimeType: "image/png" });
+    } catch (error) {
+      skipped.push({ name: view.name, reason: error.message });
+    }
+  }
+  return { content: [...toolResult({ ...result, embedded_images: content.length, ...(skipped.length ? { skipped_images: skipped } : {}) }).content, ...content] };
 }
 
 function bridgeTool(server, bridge, name, description, schema, op, mapParams = (a) => a) {
@@ -173,9 +218,11 @@ async function main() {
     "Delete nodes by stable id (game camera is protected and rejected). Undoable.",
     { ids: z.array(z.string()).min(1) }, "delete");
 
-  bridgeTool(server, bridge, "poly_save_scene",
-    "Save through the editor's own persistence. Omit name to overwrite the current file; pass name to save-as (sanitized to 64 chars, .json added).",
-    { name: z.string().optional() }, "save");
+  server.registerTool("poly_save_scene", {
+    description:
+    "Save through the editor's own persistence. Returns file, requested_path, actual_path, path_verified, sandbox_redirected and nodes. Omit name to overwrite; pass name to save-as (sanitized to 64 chars, .json added).",
+    inputSchema: { name: z.string().optional() },
+  }, async (params) => saveResult(await bridge.call("save", params)));
 
   bridgeTool(server, bridge, "poly_apply_batch",
     "Validate-then-apply up to 64 ops (create|transform|rename|delete|select|drop_to_ground|place_on) with a single undo entry. Nothing is touched if any op is invalid. NOTE: on_top_of/on must reference an already existing node (same-batch forward refs fail validation like transform does): create supports first, then stack in a second batch.",
@@ -212,9 +259,23 @@ async function main() {
     "Load a saved scene by name through a chunked loader (progress bar, no freeze). Refuses when the current scene has unsaved changes (save first with poly_save_scene) or another load is running. Returns the node count being loaded; poll poly_get_status until dirty=false.",
     { name: z.string().describe("Saved scene name, e.g. casa") }, "load");
 
-  bridgeTool(server, bridge, "poly_take_screenshot",
-    "Capture the current editor viewport to a PNG in the OS temp folder (auto-cleaned; last 10 kept) and return its absolute path. Read the file to SEE the scene, then iterate placement with follow-up ops.",
-    {}, "screenshot");
+  server.registerTool("poly_take_screenshot", {
+    description: "Capture a freshly rendered viewport to a unique temporary PNG. Returns path, dimensions and an embedded MCP image when possible. Optionally hide editor overlays. Camera/visibility restored. include_images=false returns paths only; image responses capped at 20 MB.",
+    inputSchema: { hide_overlays: z.boolean().optional(), include_images: z.boolean().optional() },
+  }, async ({ include_images, ...params }) => captureResult(await bridge.call("screenshot", params), include_images));
+
+  server.registerTool("poly_capture_views", {
+    description: "Capture 1-32 named camera views, one freshly rendered frame per view. Temporarily hide nodes and gizmos/icons/outlines, then restore camera and visibility even on failure. Returns views with unique PNG paths and dimensions; files remain until OS temp cleanup.",
+    inputSchema: {
+      views: z.array(z.object({ name: z.string().min(1).max(64), position: VEC3, target: VEC3.optional(), rotation: VEC3.optional() }).refine((view) => (view.target !== undefined) !== (view.rotation !== undefined), "use exactly one of target/rotation")).min(1).max(32),
+      hide_ids: z.array(z.string()).max(512).optional(),
+      hide_overlays: z.boolean().optional(),
+      include_images: z.boolean().optional(),
+    },
+  }, async ({ include_images, ...params }) => {
+    const result = await bridge.call("capture_views", params, { timeoutMs: 10000 + params.views.length * 2000 });
+    return captureResult(result, include_images);
+  });
 
   bridgeTool(server, bridge, "poly_audit_overlaps",
     "Report instance pairs whose world AABBs interpenetrate at or beyond min_overlap (default 0.02m), sorted by depth desc with readable labels. Intentional contacts (wall corners, slabs) also appear: narrow the scope with ids or filter them out with ignore.",
@@ -223,6 +284,27 @@ async function main() {
       ids: z.array(z.string()).optional().describe("Limit the check to these node ids"),
       ignore: z.array(z.string()).optional().describe("Node ids to exclude from the check"),
     }, "audit");
+
+  server.registerTool("poly_audit_walkability", {
+    description: "Read-only, conservative per-floor AABB/grid audit for a character radius/height: connected regions, isolated areas and named point reachability. Accounts for floor voids and headroom. Not physics/navmesh; stairs do not join levels and assumed-open doorway apertures are estimated. Hidden viewport objects remain geometry.",
+    inputSchema: {
+      floor_y: z.number().finite(),
+      radius: z.number().positive().max(5).optional(),
+      height: z.number().positive().max(10).optional(),
+      cell_size: z.number().min(0.05).max(1).optional(),
+      step_height: z.number().min(0).max(1).optional(),
+      floor_tolerance: z.number().min(0).max(0.2).optional(),
+      min_area: z.number().min(0).optional(),
+      floor_ids: z.array(z.string()).min(1).optional(),
+      ignore: z.array(z.string()).optional(),
+      assume_open_doors: z.boolean().optional(),
+      start: z.object({ x: z.number().finite(), z: z.number().finite() }).optional(),
+      probes: z.array(z.object({ name: z.string(), x: z.number().finite(), z: z.number().finite() })).max(128).optional(),
+    },
+  }, async (params) => {
+    const hierarchy = await bridge.call("hierarchy");
+    return toolResult(auditWalkability(hierarchy.nodes, params));
+  });
 
   const shutdown = async () => {
     await bridge.stop();

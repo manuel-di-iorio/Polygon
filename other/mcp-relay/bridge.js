@@ -60,7 +60,7 @@ export class BridgeLink {
         reject(err);
       });
       this.server.listen(this.port, this.host, () => {
-        this.log(`listening on ${this.host}:${this.port} (waiting for editor)`);
+        this.log(`listening on ${this.host}:${this.server.address().port} (waiting for editor)`);
         resolve();
       });
     });

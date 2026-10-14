@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "check": "node server.js --check",
-    "test": "node --test test/"
+    "test": "node --test test/framing.test.js test/bridge.test.js test/mcp.test.js test/walkability.test.js"
   },
   "license": "MIT",
   "dependencies": {

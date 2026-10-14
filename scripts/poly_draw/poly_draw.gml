@@ -54,4 +54,5 @@ function poly_draw() {
   __poly_outline_capture(_ed);
   __poly_graveyard_step(_ed[$ "surf_graveyard"], __poly_surf_graveyard_free);
   __poly_scene_panel_render(_ed);
+  __poly_ai_capture_draw(_ed);
 }
