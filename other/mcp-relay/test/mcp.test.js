@@ -8,8 +8,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import net from "node:net";
 import os from "node:os";
-import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, writeFile, rm, readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
+import vm from "node:vm";
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const serverJs = path.join(dir, "..", "server.js");
@@ -152,6 +153,14 @@ describe("MCP server", async () => {
     assert.doesNotMatch(JSON.stringify(res), /not_connected/);
   });
 
+  it("rejects incomplete or conflicting single capture poses", async () => {
+    for (const argumentsValue of [{ position: [1, 2, 3] }, { target: [0, 0, 0] }, { focus_id: "sofa", rotation: [0, 0, 0] }]) {
+      const res = await request("tools/call", { name: "poly_take_screenshot", arguments: argumentsValue });
+      assert.equal(res.result.isError, true);
+      assert.doesNotMatch(JSON.stringify(res), /not_connected/);
+    }
+  });
+
   it("forwards a valid capture and reports a disconnected editor", async () => {
     const res = await request("tools/call", { name: "poly_capture_views", arguments: { views: [{ name: "room", position: [0, 2, 3], target: [0, 0, 0] }], hide_ids: [], hide_overlays: true } });
     assert.equal(res.result.isError, true);
@@ -183,9 +192,14 @@ describe("MCP server", async () => {
       assert.equal(capture.result.content[1].type, "image");
       assert.equal(JSON.parse(capture.result.content[0].text).restored, true);
       assert.deepEqual(requests[0].params.hide_ids, ["roof"]);
-      const shot = await request("tools/call", { name: "poly_take_screenshot", arguments: {} });
+      const shot = await request("tools/call", { name: "poly_take_screenshot", arguments: { position: [1, 2, 3], target: [0, 0, 0], hide_ids: ["roof"] } });
       assert.equal(shot.result.content.length, 1);
       assert.equal(JSON.parse(shot.result.content[0].text).skipped_images.length, 1);
+      assert.equal(requests[1].op, "screenshot");
+      assert.deepEqual(requests[1].params.position, [1, 2, 3]);
+      const focused = await request("tools/call", { name: "poly_capture_views", arguments: { views: [{ name: "sofa", focus_id: "sofa" }], include_images: false } });
+      assert.equal(focused.result.isError, undefined);
+      assert.equal(requests[2].params.views[0].focus_id, "sofa");
       const save = await request("tools/call", { name: "poly_save_scene", arguments: {} });
       assert.equal(JSON.parse(save.result.content[0].text).sandbox_redirected, true);
       assert.equal(JSON.parse(save.result.content[0].text).actual_path, saveFile);
@@ -200,5 +214,76 @@ describe("MCP server", async () => {
       socket.destroy();
       await rm(temporary, { recursive: true, force: true });
     }
+  });
+});
+
+describe("offscreen GML capture contracts", async () => {
+  const source = await readFile(path.join(dir, "../../../scripts/poly_ai/poly_ai.gml"), "utf8");
+  const functionSource = (name) => {
+    const start = source.indexOf(`function ${name}(`);
+    const following = source.indexOf("\nfunction ", start + 1);
+    const end = following === -1 ? source.indexOf("\n// Reports", start) : following;
+    return source.slice(start, end);
+  };
+  const makeContext = (failRender = false) => {
+    let cameraPositionWrites = 0;
+    let saved = false;
+    let finished = "pending";
+    const component = { enabled: true, getEnabled() { return this.enabled; }, setEnabled(value) { this.enabled = value; }, setScreenRect() {} };
+    const editorCamera = { getCameraComponent: () => component, getChildren: () => [], getLocalPosition: () => ({ x: 5, y: 6, z: 7 }), setLocalPosition: () => { cameraPositionWrites++; } };
+    const camera = { addComponent() {}, getCameraComponent: () => ({ setEnabled() {}, setScreenRect() {} }) };
+    const scene = { createNode: () => camera, update() {} };
+    const node = { getChildren: () => [] };
+    const animation = { t: 0.5 };
+    const editor = { active: true, rt: { cam: editorCamera, scene }, scene_w: 800, scene_h: 600, cam_anim: animation, ai: { capture: undefined } };
+    const muted = { enabled: true };
+    const context = {
+      undefined, current_time: 0, temp_directory: "temp/",
+      variable_struct_exists: (value, key) => value !== undefined && Object.hasOwn(value, key),
+      is_struct: (value) => value !== undefined && value !== null && typeof value === "object" && !Array.isArray(value),
+      is_array: Array.isArray, is_string: (value) => typeof value === "string", array_length: (value) => value.length,
+      array_push: (array, value) => array.push(value), string: String, string_copy: (value, start, count) => value.slice(start - 1, start - 1 + count),
+      round: Math.round, clamp: (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value)),
+      surface_create: () => 1, surface_exists: (value) => value === 1, surface_set_target() {}, surface_reset_target() {}, surface_save: () => { saved = true; },
+      surface_get_width: () => 800, surface_get_height: () => 600, draw_clear() {}, c_black: 0, file_exists: () => saved,
+      GM3D_Renderer: class { render() { assert.equal(component.enabled, false); if (failRender) throw new Error("render failure"); } },
+      GM3D_CameraComponent: class {}, __poly_ai_state: (value) => value.ai,
+      __poly_ai_err: (code, message) => ({ error: true, error_code: code, error_msg: message }), __poly_ai_v_camera: (pose) => Array.isArray(pose.position) && Array.isArray(pose.rotation ?? pose.target) ? undefined : "invalid pose",
+      __poly_ai_v_err: (value) => value, __poly_ai_node: () => node, __poly_locked_get: () => false,
+      __poly_camera_read: () => ({ enabled: true }), __poly_camera_apply() {}, __poly_ai_transform_of: () => ({ rotation_euler_deg: [0, 0, 0] }),
+      __poly_ai_op_camera: (value) => { assert.notEqual(value, editor); assert.equal(value.rt.cam, camera); return {}; },
+      __poly_tracked_nodes: () => [], __poly_walk_tree: (value, callback, states) => callback(value, states),
+      __poly_walk_mute_node: (value, states) => { states.push({ comp: muted, was: muted.enabled }); muted.enabled = false; },
+      __poly_walk_restore: (swapped, states) => { for (const state of states) state.comp.enabled = state.was; },
+      __poly_destroy_subtree() {}, __poly_sanitize_scene_name: (value) => value,
+      __poly_ai_capture_finish: (value, code = "") => { finished = code; value.ai.capture = undefined; },
+    };
+    vm.createContext(context);
+    for (const name of ["__poly_ai_capture_active", "__poly_ai_capture_pose", "__poly_ai_capture_begin", "__poly_ai_capture_draw"]) vm.runInContext(functionSource(name), context);
+    return { context, editor, component, muted, animation, positionWrites: () => cameraPositionWrites, finished: () => finished };
+  };
+
+  it("renders with a separate camera and leaves editor pose, animation and input untouched", async () => {
+    const state = makeContext();
+    state.context.__poly_ai_capture_begin(state.editor, "test", { hide_ids: ["roof"] }, true);
+    assert.equal(state.muted.enabled, true);
+    state.context.__poly_ai_capture_draw(state.editor);
+    assert.equal(state.finished(), "");
+    assert.equal(state.positionWrites(), 0);
+    assert.equal(state.editor.cam_anim, state.animation);
+    assert.equal(state.component.enabled, true);
+    assert.equal(state.muted.enabled, true);
+    const core = await readFile(path.join(dir, "../../../scripts/poly_core/poly_core.gml"), "utf8");
+    assert.doesNotMatch(core, /if \(__poly_ai_capture_active\(_ed\)\) return/);
+  });
+
+  it("restores render flags even when the offscreen renderer throws", () => {
+    const state = makeContext(true);
+    state.context.__poly_ai_capture_begin(state.editor, "test", { hide_ids: ["roof"] }, true);
+    state.context.__poly_ai_capture_draw(state.editor);
+    assert.equal(state.finished(), "failed");
+    assert.equal(state.positionWrites(), 0);
+    assert.equal(state.component.enabled, true);
+    assert.equal(state.muted.enabled, true);
   });
 });

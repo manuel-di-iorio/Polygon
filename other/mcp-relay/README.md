@@ -97,12 +97,19 @@ already existing node (create supports first, then stack).
 
 ## Multiple View Captures
 
-`poly_capture_views` accepts 1-32 named camera poses. Each pose requires
-`position` and exactly one of `target` or `rotation`. `hide_ids` temporarily
-hides occluders; `hide_overlays` defaults to true for multi-view captures.
-Camera position/orientation, camera animation and visibility are restored
-after completion, errors, cancellation or timeout. Viewport controls and
-incoming bridge operations are suspended while captures are running.
+`poly_capture_views` accepts 1-32 named camera poses. Use `position` and
+exactly one of `target` or `rotation`, or `focus_id` with optional `position`.
+Focus without a position auto-frames the object's world bounds from an
+oblique angle. A position with focus aims from that position at the bounds
+center. Focus cannot be combined with target/rotation.
+
+Each capture uses an auxiliary camera and a dedicated offscreen surface.
+It does not change the editor camera pose or animation, nor suspend editor
+input. `hide_ids` mutes meshes only during the capture render, then restores
+their actual current states; persistent visibility is never changed.
+Incoming bridge operations wait until the capture batch completes.
+An enabled-camera swap happens only inside the Draw callback, after the
+normal viewport has rendered, and is restored even when rendering fails.
 
 ```json
 {
@@ -116,9 +123,12 @@ incoming bridge operations are suspended while captures are running.
 }
 ```
 
-Each image is captured after its camera has rendered a new viewport frame,
-at the current viewport resolution. Results include `name`, unique `file`,
-`width` and `height`; multi-view results include `restored: true`.
+Each view renders one fresh offscreen frame at the current viewport
+resolution, independently of the viewport panel being open. Images are raw
+scene renders without editor overlays or the viewport's postprocess AA.
+`hide_overlays` remains accepted for compatibility but all offscreen views
+are clean. Results include `name`, unique `file`, `width`, `height` and
+`editor_camera_unchanged: true`; batches also include `restored: true`.
 Successful files remain in GameMaker's temporary directory; failed jobs
 remove completed images. They no longer rotate through ten filenames.
 
@@ -126,8 +136,11 @@ Images are embedded as MCP image content by default, provided they are PNGs
 inside OS temp, at most 8 MB each and at most 20 MB base64 in total.
 Skipped images are reported in `skipped_images`, while file descriptors
 remain available. Use `include_images: false` for paths only.
-`poly_take_screenshot` supports the same image option and optional
-`hide_overlays` (false by default), without moving the camera.
+`poly_take_screenshot` supports the same image options, `hide_ids`, and
+direct `position` + `target`/`rotation` or `focus_id`. With no pose, it renders
+the current editor camera's viewpoint offscreen; no preceding set-camera or
+focus operation is needed. `poly_get_status.capture_mode` is `offscreen`
+after the updated GameMaker scripts have been rebuilt.
 
 ## Walkability Audit
 

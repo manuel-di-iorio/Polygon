@@ -724,6 +724,7 @@ function __poly_ai_exec(_ed, _msg) {
 function __poly_ai_op_status(_ed) {
   return {
     bridge: "poly-ai/1",
+    capture_mode: "offscreen",
     active: _ed.active == true,
     tracked: __poly_reg_count(_ed),
     selected: is_array(_ed.sel) ? array_length(_ed.sel) : 0,
@@ -1057,29 +1058,44 @@ function __poly_ai_op_raycast(_ed, _p) {
   return { found: true, top: _best_top, id: _best_id };
 }
 
-// Deferred captures consume freshly rendered frames and restore viewport state.
+// Deferred captures render offscreen without changing the editor camera.
 function __poly_ai_capture_active(_ed) {
   return variable_struct_exists(_ed, "ai") && is_struct(_ed.ai) && is_struct(_ed.ai.capture);
 }
 
-function __poly_ai_capture_clean(_ed) {
-  return __poly_ai_capture_active(_ed) && _ed.ai.capture.hide_overlays;
+function __poly_ai_capture_pose(_ed, _view) {
+  if (variable_struct_exists(_view, "focus_id")) {
+    if (!is_string(_view.focus_id)) return __poly_ai_err("bad_params", "focus_id must be a string");
+    var _node = __poly_ai_node(_ed, _view.focus_id);
+    if (_node == undefined) return __poly_ai_err("not_found", "unknown focus node: " + _view.focus_id);
+    var _bounds = __poly_ai_bounds_of(_node);
+    if (!is_struct(_bounds) || !_bounds.valid) return __poly_ai_err("bad_params", "focus node has no bounds");
+    if (variable_struct_exists(_view, "target") || variable_struct_exists(_view, "rotation")) return __poly_ai_err("bad_params", "focus_id cannot be combined with target/rotation");
+    var _center = [ (_bounds.min[0] + _bounds.max[0]) * 0.5, (_bounds.min[1] + _bounds.max[1]) * 0.5, (_bounds.min[2] + _bounds.max[2]) * 0.5 ];
+    var _distance = max(1, point_distance_3d(_bounds.min[0], _bounds.min[1], _bounds.min[2], _bounds.max[0], _bounds.max[1], _bounds.max[2]));
+    var _settings = __poly_camera_read(_ed.rt.cam);
+    _distance /= max(0.1, sin(degtorad(_settings.fov * 0.5)));
+    return { position: variable_struct_exists(_view, "position") ? _view.position : [ _center[0] + _distance * 0.6, _center[1] + _distance * 0.4, _center[2] + _distance * 0.6 ], target: _center };
+  }
+  if (variable_struct_exists(_view, "position") || variable_struct_exists(_view, "target") || variable_struct_exists(_view, "rotation")) return _view;
+  var _position = _ed.rt.cam.getLocalPosition();
+  return { position: [ _position.x, _position.y, _position.z ], rotation: __poly_ai_transform_of(_ed.rt.cam).rotation_euler_deg };
 }
 
 function __poly_ai_capture_begin(_ed, _id, _p, _single) {
   if (!_ed.active || _ed.rt == undefined || _ed.rt.cam == undefined) return __poly_ai_err("no_view", "editor viewport not active");
   if (__poly_ai_capture_active(_ed)) return __poly_ai_err("busy", "capture already running");
   if (variable_struct_exists(_ed, "load_job") && is_struct(_ed.load_job)) return __poly_ai_err("busy", "scene load in progress");
-  var _views = _single ? [ { name: "viewport" } ] : (variable_struct_exists(_p, "views") ? _p.views : undefined);
+  var _views = _single ? [ _p ] : (variable_struct_exists(_p, "views") ? _p.views : undefined);
   if (!is_array(_views) || array_length(_views) < 1 || array_length(_views) > 32) return __poly_ai_err("bad_params", "views must contain 1 to 32 cameras");
   for (var _view_index = 0; _view_index < array_length(_views); _view_index++) {
     var _view = _views[_view_index];
     if (!is_struct(_view)) return __poly_ai_err("bad_params", "each view must be a camera struct");
-    if (!_single) {
-      var _validation = __poly_ai_v_camera(_view);
-      if (_validation != undefined) return __poly_ai_v_err(_validation);
-      if (variable_struct_exists(_view, "target") && point_distance_3d(_view.position[0], _view.position[1], _view.position[2], _view.target[0], _view.target[1], _view.target[2]) < 0.000001) return __poly_ai_err("bad_params", "target too close to position");
-    }
+    var _pose = __poly_ai_capture_pose(_ed, _view);
+    if (variable_struct_exists(_pose, "error")) return _pose;
+    var _validation = __poly_ai_v_camera(_pose);
+    if (_validation != undefined) return __poly_ai_v_err(_validation);
+    if (variable_struct_exists(_pose, "target") && point_distance_3d(_pose.position[0], _pose.position[1], _pose.position[2], _pose.target[0], _pose.target[1], _pose.target[2]) < 0.000001) return __poly_ai_err("bad_params", "target too close to position");
     if (variable_struct_exists(_view, "name") && !is_string(_view.name)) return __poly_ai_err("bad_params", "view name must be a string");
   }
   var _hide_ids = variable_struct_exists(_p, "hide_ids") ? _p.hide_ids : [];
@@ -1090,23 +1106,14 @@ function __poly_ai_capture_begin(_ed, _id, _p, _single) {
     var _hide_node = __poly_ai_node(_ed, _hide_ids[_hide_index]);
     if (_hide_node == undefined) return __poly_ai_err("not_found", "unknown node: " + _hide_ids[_hide_index]);
     if (__poly_locked_get(_ed, _hide_node)) return __poly_ai_err("locked", "node is locked: " + _hide_ids[_hide_index]);
-    array_push(_hidden, { node: _hide_node, hidden: __poly_hidden_get(_ed, _hide_node) });
+    array_push(_hidden, _hide_ids[_hide_index]);
   }
-  var _camera_position = _ed.rt.cam.getLocalPosition();
-  var _camera_rotation = _ed.rt.cam.getLocalRotation();
   var _ai = __poly_ai_state(_ed);
   _ai.capture = {
     id: _id, single: _single, views: _views, index: 0, shots: [], hidden: _hidden,
-    position: new GM3D_Vec3(_camera_position.x, _camera_position.y, _camera_position.z),
-    rotation: new GM3D_Quaternion(_camera_rotation.x, _camera_rotation.y, _camera_rotation.z, _camera_rotation.w),
-    animation: _ed.cam_anim,
-    hide_overlays: variable_struct_exists(_p, "hide_overlays") ? (_p.hide_overlays == true) : !_single,
+    surface: -1, renderer: undefined, scene: _ed.rt.scene,
     deadline: current_time + 5000 + array_length(_views) * 1500,
   };
-  for (var _hidden_index = 0; _hidden_index < array_length(_hidden); _hidden_index++) __poly_hidden_set(_ed, _hidden[_hidden_index].node, true);
-  _ed.cam_anim = undefined;
-  if (!_single) __poly_ai_op_camera(_ed, _views[0]);
-  _ed.view_dirty = true;
   return { deferred: true };
 }
 
@@ -1115,19 +1122,14 @@ function __poly_ai_capture_finish(_ed, _code = "", _message = "") {
   var _job = _ai.capture;
   if (!is_struct(_job)) return;
   _ai.capture = undefined;
-  for (var _restore_index = 0; _restore_index < array_length(_job.hidden); _restore_index++) __poly_hidden_set(_ed, _job.hidden[_restore_index].node, _job.hidden[_restore_index].hidden);
-  if (_ed.rt != undefined && _ed.rt.cam != undefined) {
-    _ed.rt.cam.setLocalPosition(_job.position);
-    _ed.rt.cam.setLocalRotation(_job.rotation);
-  }
-  _ed.cam_anim = _job.animation;
-  _ed.view_dirty = true;
+  if (surface_exists(_job.surface)) __poly_surf_retire(_ed, _job.surface);
+  _job.renderer = undefined;
   var _response = undefined;
   if (_code != "") {
     for (var _cleanup_index = 0; _cleanup_index < array_length(_job.shots); _cleanup_index++) file_delete(_job.shots[_cleanup_index].file);
     _response = __poly_ai_fail(_job.id, _code, _message);
   } else {
-    _response = { id: _job.id, ok: true, result: _job.single ? _job.shots[0] : { views: _job.shots, restored: true } };
+    _response = { id: _job.id, ok: true, result: _job.single ? _job.shots[0] : { views: _job.shots, restored: true, editor_camera_unchanged: true } };
   }
   _ai.seen[$ _job.id] = _response;
   array_push(_ai.seen_order, _job.id);
@@ -1136,28 +1138,73 @@ function __poly_ai_capture_finish(_ed, _code = "", _message = "") {
 }
 
 function __poly_ai_capture_draw(_ed) {
-  if (!__poly_ai_capture_active(_ed) || _ed.view_dirty || !surface_exists(_ed.scene_surf)) return;
+  if (!__poly_ai_capture_active(_ed)) return;
   var _job = _ed.ai.capture;
-  try {
-    var _view = _job.views[_job.index];
-    var _name = variable_struct_exists(_view, "name") ? _view.name : "view_" + string(_job.index + 1);
-    var _path = temp_directory + "poly_capture_" + __poly_sanitize_scene_name(_job.id) + "_" + string(_job.index) + "_" + string_copy(__poly_sanitize_scene_name(_name), 1, 24) + ".png";
-    surface_save(_ed.scene_surf, _path);
-    if (!file_exists(_path)) {
-      __poly_ai_capture_finish(_ed, "failed", "could not write screenshot");
-      return;
-    }
-    array_push(_job.shots, { name: _name, file: _path, width: surface_get_width(_ed.scene_surf), height: surface_get_height(_ed.scene_surf) });
-    _job.index++;
-    if (_job.index >= array_length(_job.views)) {
-      __poly_ai_capture_finish(_ed);
-    } else {
-      var _result = __poly_ai_op_camera(_ed, _job.views[_job.index]);
-      if (variable_struct_exists(_result, "error")) __poly_ai_capture_finish(_ed, _result.error_code, _result.error_msg);
-    }
-  } catch (_exception) {
-    __poly_ai_capture_finish(_ed, "failed", string(_exception));
+  if (!_ed.active || _ed.rt == undefined || _ed.rt.scene != _job.scene) {
+    __poly_ai_capture_finish(_ed, "cancelled", "scene changed during capture");
+    return;
   }
+  var _camera = undefined;
+  var _cameras = [];
+  var _muted = [];
+  var _target_set = false;
+  var _failure = "";
+  try {
+    if (!surface_exists(_job.surface)) _job.surface = surface_create(clamp(round(_ed.scene_w), 160, 1920), clamp(round(_ed.scene_h), 90, 1080));
+    if (!surface_exists(_job.surface)) throw "could not allocate capture surface";
+    if (_job.renderer == undefined) _job.renderer = new GM3D_Renderer();
+    var _view = _job.views[_job.index];
+    var _pose = __poly_ai_capture_pose(_ed, _view);
+    if (variable_struct_exists(_pose, "error")) throw _pose.error_msg;
+    _camera = _job.scene.createNode("__capture_camera");
+    _camera.addComponent(new GM3D_CameraComponent());
+    var _settings = __poly_camera_read(_ed.rt.cam);
+    _settings.enabled = false;
+    __poly_camera_apply(_camera, _settings);
+    _camera.getCameraComponent().setScreenRect([ 0, 0, 1, 1 ]);
+    var _camera_context = { rt: { cam: _camera }, cam_anim: undefined };
+    var _camera_result = __poly_ai_op_camera(_camera_context, _pose);
+    if (variable_struct_exists(_camera_result, "error")) throw _camera_result.error_msg;
+    var _roots = __poly_tracked_nodes(_ed);
+    array_push(_roots, _ed.rt.cam);
+    for (var _root_index = 0; _root_index < array_length(_roots); _root_index++) {
+      __poly_walk_tree(_roots[_root_index], function(_node, _states) {
+        var _component = _node.getCameraComponent();
+        if (_component != undefined && _component.getEnabled()) {
+          array_push(_states, _component);
+          _component.setEnabled(false);
+        }
+      }, _cameras);
+    }
+    for (var _hide_index = 0; _hide_index < array_length(_job.hidden); _hide_index++) {
+      var _hide_node = __poly_ai_node(_ed, _job.hidden[_hide_index]);
+      if (_hide_node == undefined) throw "hidden node removed during capture";
+      __poly_walk_tree(_hide_node, function(_node, _states) { __poly_walk_mute_node(_node, _states); }, _muted);
+    }
+    _camera.getCameraComponent().setEnabled(true);
+    _job.scene.update(0);
+    surface_set_target(_job.surface);
+    _target_set = true;
+    draw_clear(c_black);
+    _job.renderer.render(_job.scene);
+    surface_reset_target();
+    _target_set = false;
+    var _name = variable_struct_exists(_view, "name") ? _view.name : (_job.single ? "viewport" : "view_" + string(_job.index + 1));
+    var _path = temp_directory + "poly_capture_" + __poly_sanitize_scene_name(_job.id) + "_" + string(_job.index) + "_" + string_copy(__poly_sanitize_scene_name(_name), 1, 24) + ".png";
+    surface_save(_job.surface, _path);
+    if (!file_exists(_path)) throw "could not write screenshot";
+    array_push(_job.shots, { name: _name, file: _path, width: surface_get_width(_job.surface), height: surface_get_height(_job.surface), editor_camera_unchanged: true });
+    _job.index++;
+  } catch (_exception) {
+    _failure = string(_exception);
+  }
+  if (_target_set) surface_reset_target();
+  if (_camera != undefined) __poly_destroy_subtree(_camera);
+  __poly_walk_restore([], _muted);
+  for (var _restore_index = 0; _restore_index < array_length(_cameras); _restore_index++) _cameras[_restore_index].setEnabled(true);
+  _job.scene.update(0);
+  if (_failure != "") __poly_ai_capture_finish(_ed, "failed", _failure);
+  else if (_job.index >= array_length(_job.views)) __poly_ai_capture_finish(_ed);
 }
 
 // Reports instance pairs whose world AABBs interpenetrate at or beyond

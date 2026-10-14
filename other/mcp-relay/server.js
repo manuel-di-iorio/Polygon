@@ -14,6 +14,17 @@ import { createHash } from "node:crypto";
 const RELAY_VERSION = "1.1.0";
 const DEFAULT_PORT = 5192;
 const VEC3 = z.array(z.number()).length(3);
+const CAPTURE_POSE = {
+  position: VEC3.optional(),
+  target: VEC3.optional(),
+  rotation: VEC3.optional(),
+  focus_id: z.string().min(1).optional(),
+};
+const validCapturePose = (view, allowViewport = false) => {
+  if (view.focus_id !== undefined) return view.target === undefined && view.rotation === undefined;
+  if (view.position === undefined) return allowViewport && view.target === undefined && view.rotation === undefined;
+  return (view.target !== undefined) !== (view.rotation !== undefined);
+};
 
 const log = (msg) => console.error(`[polygon-mcp-relay] ${msg}`);
 
@@ -260,14 +271,17 @@ async function main() {
     { name: z.string().describe("Saved scene name, e.g. casa") }, "load");
 
   server.registerTool("poly_take_screenshot", {
-    description: "Capture a freshly rendered viewport to a unique temporary PNG. Returns path, dimensions and an embedded MCP image when possible. Optionally hide editor overlays. Camera/visibility restored. include_images=false returns paths only; image responses capped at 20 MB.",
-    inputSchema: { hide_overlays: z.boolean().optional(), include_images: z.boolean().optional() },
-  }, async ({ include_images, ...params }) => captureResult(await bridge.call("screenshot", params), include_images));
+    description: "Render an offscreen screenshot without moving or blocking the editor camera. Supply position plus target/rotation, or focus_id with optional position; omit pose to use the current editor view. Clean scene render without overlays, unique PNG path/dimensions and optional MCP image. include_images=false returns paths only; image responses capped at 20 MB.",
+    inputSchema: { ...CAPTURE_POSE, hide_ids: z.array(z.string()).max(512).optional(), hide_overlays: z.boolean().optional(), include_images: z.boolean().optional() },
+  }, async ({ include_images, ...params }) => {
+    if (!validCapturePose(params, true)) throw new Error("bad_params: use position with exactly one of target/rotation, or focus_id without target/rotation");
+    return captureResult(await bridge.call("screenshot", params), include_images);
+  });
 
   server.registerTool("poly_capture_views", {
-    description: "Capture 1-32 named camera views, one freshly rendered frame per view. Temporarily hide nodes and gizmos/icons/outlines, then restore camera and visibility even on failure. Returns views with unique PNG paths and dimensions; files remain until OS temp cleanup.",
+    description: "Render 1-32 named offscreen views without moving/blocking the editor camera. Each view uses position+target/rotation or focus_id with optional position. hide_ids affects only each capture render. Clean scene images without overlays; unique temporary PNG paths, dimensions and optional embedded images.",
     inputSchema: {
-      views: z.array(z.object({ name: z.string().min(1).max(64), position: VEC3, target: VEC3.optional(), rotation: VEC3.optional() }).refine((view) => (view.target !== undefined) !== (view.rotation !== undefined), "use exactly one of target/rotation")).min(1).max(32),
+      views: z.array(z.object({ name: z.string().min(1).max(64), ...CAPTURE_POSE }).refine((view) => validCapturePose(view), "use position+target/rotation or focus_id")).min(1).max(32),
       hide_ids: z.array(z.string()).max(512).optional(),
       hide_overlays: z.boolean().optional(),
       include_images: z.boolean().optional(),
