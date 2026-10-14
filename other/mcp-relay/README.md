@@ -185,6 +185,12 @@ sets `path_verified: true`. If neither or both match, `actual_path` is empty
 and callers must inspect the candidates instead of assuming a write target.
 Verification identifies a matching saved copy, not a filesystem write trace.
 
+GMRT does not expose the legacy `save_directory` global. On Windows the
+relay can locate a project-named `.yyp` in up to eight ancestors of the
+requested path and check `%LOCALAPPDATA%/<project-name>/<file>` as a sandbox
+candidate. If no project is found, that candidate is unknown; verification
+does not guess paths for packaged builds or other platforms.
+
 GameMaker can redirect writes from included assets into its save sandbox.
 Saving does not synchronize that copy back into Build assets. Copy a verified
 file explicitly when the project needs that synchronization.

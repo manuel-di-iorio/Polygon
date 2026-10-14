@@ -8,7 +8,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import net from "node:net";
 import os from "node:os";
-import { mkdtemp, writeFile, rm, readFile } from "node:fs/promises";
+import { mkdtemp, writeFile, rm, readFile, mkdir } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import vm from "node:vm";
 
@@ -41,8 +41,8 @@ const EXPECTED_TOOLS = [
   "poly_raycast_down",
 ];
 
-function launch() {
-  const child = spawn(process.execPath, [serverJs, "--port", "0"], { stdio: ["pipe", "pipe", "pipe"] });
+function launch(env = process.env) {
+  const child = spawn(process.execPath, [serverJs, "--port", "0"], { stdio: ["pipe", "pipe", "pipe"], env });
   let logBuffer = "";
   const port = new Promise((resolve) => {
     child.stderr.setEncoding("utf8");
@@ -105,8 +105,9 @@ function launch() {
 }
 
 describe("MCP server", async () => {
-  const { child, request, notify, connectGame } = launch();
-  after(() => child.kill());
+  const localAppData = await mkdtemp(path.join(os.tmpdir(), "poly-save-root-"));
+  const { child, request, notify, connectGame } = launch({ ...process.env, LOCALAPPDATA: localAppData });
+  after(async () => { child.kill(); await rm(localAppData, { recursive: true, force: true }); });
 
   it("handshakes (initialize)", async () => {
     const res = await request("initialize", {
@@ -175,12 +176,13 @@ describe("MCP server", async () => {
     const includedFile = path.join(temporary, "included.json");
     const savedText = '{"version":2,"nodes":[]}';
     await writeFile(saveFile, savedText);
+    let saveMetadata = { file: "scenes/casa.json", requested_path: includedFile, sandbox_path: saveFile, content_md5: createHash("md5").update(savedText).digest("hex"), nodes: 424 };
     const requests = [];
     const socket = await connectGame((message) => {
       requests.push(message);
       if (message.op === "capture_views") return { views: [{ name: "room", file: filename, width: 1, height: 1 }], restored: true };
       if (message.op === "screenshot") return { name: "viewport", file: path.join(dir, "outside.png"), width: 1, height: 1 };
-      if (message.op === "save") return { file: "scenes/casa.json", requested_path: includedFile, sandbox_path: saveFile, content_md5: createHash("md5").update(savedText).digest("hex"), nodes: 424 };
+      if (message.op === "save") return saveMetadata;
       return { nodes: [
         { id: "floor", kind: "instance", assetId: "floor", bounds: { valid: true, min: [0, -0.2, 0], max: [8, 0, 6] } },
         { id: "wall", kind: "instance", assetId: "wall", bounds: { valid: true, min: [3.9, 0, 0], max: [4.1, 2.6, 6] } },
@@ -208,6 +210,16 @@ describe("MCP server", async () => {
       const ambiguous = await request("tools/call", { name: "poly_save_scene", arguments: {} });
       assert.equal(JSON.parse(ambiguous.result.content[0].text).path_verified, false);
       assert.equal(JSON.parse(ambiguous.result.content[0].text).matching_paths.length, 2);
+      const projectDirectory = path.join(temporary, "fixture");
+      const sandboxFile = path.join(localAppData, "fixture", "scenes", "casa.json");
+      await mkdir(projectDirectory, { recursive: true });
+      await writeFile(path.join(projectDirectory, "fixture.yyp"), "{}");
+      await mkdir(path.dirname(sandboxFile), { recursive: true });
+      await writeFile(sandboxFile, savedText);
+      saveMetadata = { ...saveMetadata, requested_path: path.join(projectDirectory, "Build", "scenes", "casa.json"), sandbox_path: undefined };
+      const gmrtSave = await request("tools/call", { name: "poly_save_scene", arguments: {} });
+      assert.equal(JSON.parse(gmrtSave.result.content[0].text).path_verified, true);
+      assert.equal(JSON.parse(gmrtSave.result.content[0].text).actual_path, sandboxFile);
       const audit = await request("tools/call", { name: "poly_audit_walkability", arguments: { floor_y: 0, start: { x: 1, z: 1 }, probes: [{ name: "isolated", x: 6, z: 3 }] } });
       assert.equal(JSON.parse(audit.result.content[0].text).probes[0].reachable, false);
     } finally {
@@ -227,6 +239,7 @@ describe("offscreen GML capture contracts", async () => {
   };
   const makeContext = (failRender = false) => {
     let cameraPositionWrites = 0;
+    let rendererCount = 0;
     let saved = false;
     let finished = "pending";
     const component = { enabled: true, getEnabled() { return this.enabled; }, setEnabled(value) { this.enabled = value; }, setScreenRect() {} };
@@ -246,7 +259,7 @@ describe("offscreen GML capture contracts", async () => {
       round: Math.round, clamp: (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value)),
       surface_create: () => 1, surface_exists: (value) => value === 1, surface_set_target() {}, surface_reset_target() {}, surface_save: () => { saved = true; },
       surface_get_width: () => 800, surface_get_height: () => 600, draw_clear() {}, c_black: 0, file_exists: () => saved,
-      GM3D_Renderer: class { render() { assert.equal(component.enabled, false); if (failRender) throw new Error("render failure"); } },
+      GM3D_Renderer: class { constructor() { rendererCount++; } render() { assert.equal(component.enabled, false); if (failRender) throw new Error("render failure"); } },
       GM3D_CameraComponent: class {}, __poly_ai_state: (value) => value.ai,
       __poly_ai_err: (code, message) => ({ error: true, error_code: code, error_msg: message }), __poly_ai_v_camera: (pose) => Array.isArray(pose.position) && Array.isArray(pose.rotation ?? pose.target) ? undefined : "invalid pose",
       __poly_ai_v_err: (value) => value, __poly_ai_node: () => node, __poly_locked_get: () => false,
@@ -260,8 +273,30 @@ describe("offscreen GML capture contracts", async () => {
     };
     vm.createContext(context);
     for (const name of ["__poly_ai_capture_active", "__poly_ai_capture_pose", "__poly_ai_capture_begin", "__poly_ai_capture_draw"]) vm.runInContext(functionSource(name), context);
-    return { context, editor, component, muted, animation, positionWrites: () => cameraPositionWrites, finished: () => finished };
+    return { context, editor, component, muted, animation, positionWrites: () => cameraPositionWrites, rendererCount: () => rendererCount, finished: () => finished };
   };
+
+  it("returns save metadata without the unavailable GMRT save_directory global", () => {
+    const text = '{"version":2,"nodes":[]}';
+    const context = {
+      variable_struct_exists: (value, key) => Object.hasOwn(value, key),
+      is_string: (value) => typeof value === "string",
+      string_pos: (value, textValue) => textValue.indexOf(value) + 1,
+      string_char_at: (value, index) => value.charAt(index - 1),
+      working_directory: "C:/fixture/Build/assets/",
+      __poly_save_scene: () => true,
+      __poly_read_text_file: () => text,
+      __poly_serialize_scene: () => [],
+      array_length: (value) => value.length,
+      md5_string_utf8: (value) => createHash("md5").update(value).digest("hex"),
+    };
+    vm.createContext(context);
+    vm.runInContext(functionSource("__poly_ai_op_save"), context);
+    const result = context.__poly_ai_op_save({ scene_file: "__PolygonEditor__/scenes/casa.json" }, {});
+    assert.equal(result.requested_path, "C:/fixture/Build/assets/__PolygonEditor__/scenes/casa.json");
+    assert.equal(result.content_md5, createHash("md5").update(text).digest("hex"));
+    assert.equal(result.path_verified, false);
+  });
 
   it("renders with a separate camera and leaves editor pose, animation and input untouched", async () => {
     const state = makeContext();
@@ -285,5 +320,20 @@ describe("offscreen GML capture contracts", async () => {
     assert.equal(state.positionWrites(), 0);
     assert.equal(state.component.enabled, true);
     assert.equal(state.muted.enabled, true);
+  });
+
+  it("uses a fresh renderer for each batch view instead of reusing camera state", () => {
+    const state = makeContext();
+    state.context.__poly_ai_capture_begin(state.editor, "batch", { views: [
+      { name: "first", position: [1, 2, 3], rotation: [0, 0, 0] },
+      { name: "second", position: [4, 2, 1], rotation: [0, 90, 0] },
+    ] }, false);
+    state.context.__poly_ai_capture_draw(state.editor);
+    assert.equal(state.rendererCount(), 1);
+    assert.equal(state.finished(), "pending");
+    state.context.__poly_ai_capture_draw(state.editor);
+    assert.equal(state.rendererCount(), 2);
+    assert.equal(state.finished(), "");
+    assert.equal(state.positionWrites(), 0);
   });
 });

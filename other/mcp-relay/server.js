@@ -44,10 +44,27 @@ function toolResult(result) {
   return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
 }
 
+async function saveSandboxPath(result) {
+  if (result.sandbox_path) return result.sandbox_path;
+  if (!process.env.LOCALAPPDATA || typeof result.file !== "string" || path.isAbsolute(result.file) || result.file.split(/[\\/]/).includes("..") || typeof result.requested_path !== "string" || !path.isAbsolute(result.requested_path)) return "";
+  let directory = path.dirname(result.requested_path);
+  for (let depth = 0; depth < 8; depth++) {
+    const name = path.basename(directory);
+    try {
+      if ((await stat(path.join(directory, `${name}.yyp`))).isFile()) return path.join(process.env.LOCALAPPDATA, name, result.file);
+    } catch {}
+    const parent = path.dirname(directory);
+    if (parent === directory) break;
+    directory = parent;
+  }
+  return "";
+}
+
 async function saveResult(result) {
   if (!result.content_md5) return toolResult(result);
+  const sandboxPath = await saveSandboxPath(result);
   const matches = [];
-  for (const filename of new Set([result.requested_path, result.sandbox_path])) {
+  for (const filename of new Set([result.requested_path, sandboxPath])) {
     if (typeof filename !== "string" || !path.isAbsolute(filename)) continue;
     try {
       const text = await readFile(filename, "utf8");
@@ -56,7 +73,7 @@ async function saveResult(result) {
     } catch {}
   }
   const actual = matches.length === 1 ? matches[0] : "";
-  return toolResult({ ...result, actual_path: actual, path_verified: !!actual, sandbox_redirected: !!actual && actual !== result.requested_path, matching_paths: matches });
+  return toolResult({ ...result, sandbox_path: sandboxPath, actual_path: actual, path_verified: !!actual, sandbox_redirected: !!actual && actual !== result.requested_path, matching_paths: matches });
 }
 
 async function captureResult(result, includeImages = true) {

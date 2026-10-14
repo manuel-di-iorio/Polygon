@@ -1152,7 +1152,7 @@ function __poly_ai_capture_draw(_ed) {
   try {
     if (!surface_exists(_job.surface)) _job.surface = surface_create(clamp(round(_ed.scene_w), 160, 1920), clamp(round(_ed.scene_h), 90, 1080));
     if (!surface_exists(_job.surface)) throw "could not allocate capture surface";
-    if (_job.renderer == undefined) _job.renderer = new GM3D_Renderer();
+    _job.renderer = new GM3D_Renderer();
     var _view = _job.views[_job.index];
     var _pose = __poly_ai_capture_pose(_ed, _view);
     if (variable_struct_exists(_pose, "error")) throw _pose.error_msg;
@@ -1437,12 +1437,10 @@ function __poly_ai_op_save(_ed, _p) {
   var _relative = _ed.scene_file;
   var _absolute = string_pos(":", _relative) > 0 || string_char_at(_relative, 1) == "/" || string_char_at(_relative, 1) == "\\";
   var _requested = _absolute ? _relative : working_directory + _relative;
-  var _sandbox = _absolute ? _relative : save_directory + _relative;
   var _saved_text = __poly_read_text_file(_requested);
   return {
     file: _relative,
     requested_path: _requested,
-    sandbox_path: _sandbox,
     content_md5: md5_string_utf8(_saved_text),
     actual_path: "",
     path_verified: false,

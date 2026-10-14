@@ -180,7 +180,7 @@ export class BridgeLink {
     if (msg.ok === true) {
       p.resolve(msg.result === undefined ? {} : msg.result);
     } else {
-      p.reject(BridgeError.fromResponse(msg));
+      p.reject(BridgeLink.fromResponse(msg));
     }
   }
 

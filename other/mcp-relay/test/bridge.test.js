@@ -32,6 +32,35 @@ const respond = (sock, id, result) =>
   sock.write(JSON.stringify({ id, ok: true, result }) + "\n");
 
 describe("BridgeLink", () => {
+  it("reports editor errors without crashing or disconnecting the bridge", async () => {
+    let markReady;
+    const ready = new Promise((resolve) => { markReady = resolve; });
+    const bridge = new BridgeLink({ port: 0, log: (message) => {
+      if (message === "editor connected (protocol v1)") markReady();
+    } });
+    await bridge.start();
+    const sock = await stubGame(bridge.server.address().port, (socket, message) => {
+      if (message.op === "status") respond(socket, message.id, { tracked: 424 });
+      else socket.write(JSON.stringify({ id: message.id, ok: false, error: message.params.error }) + "\n");
+    });
+    try {
+      await ready;
+      for (const [error, code] of [
+        ["failed: could not write scene file", "failed"],
+        ["busy: editor dialog open", "busy"],
+        [undefined, "bridge_error"],
+      ]) {
+        await assert.rejects(bridge.call("save", { error }), (failure) => failure instanceof BridgeError && failure.code === code);
+        assert.equal(bridge.connected(), true);
+        assert.equal(bridge.pending.size, 0);
+        assert.deepEqual(await bridge.call("status"), { tracked: 424 });
+      }
+    } finally {
+      sock.destroy();
+      await bridge.stop();
+    }
+  });
+
   it("roundtrips an op through a stub game", async () => {
     const bridge = new BridgeLink({ port: 0, log: () => {} });
     await bridge.start();
