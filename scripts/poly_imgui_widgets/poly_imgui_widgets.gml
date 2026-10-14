@@ -39,8 +39,9 @@ function __poly_imgui_dragfloat(_label, _val, _speed) {
   return _out;
 }
 
-// Renders text input showing placeholder hint.
-function __poly_imgui_text_hint(_id_label, _hint, _val) {
+// Renders text input showing placeholder hint. Pass _focus=true to move
+// keyboard focus into the field this frame (one-shot: caller clears it).
+function __poly_imgui_text_hint(_id_label, _hint, _val, _focus = false) {
   static _active = {};
   static _bufs = {};
   var _base = _val;
@@ -49,6 +50,13 @@ function __poly_imgui_text_hint(_id_label, _hint, _val) {
   var _was = _active[$ _id_label] == true;
 
   if (!_was || !variable_struct_exists(_bufs, _id_label)) _bufs[$ _id_label] = __poly_imgui_pad(_base);
+
+  if (_focus == true) {
+    var _skf = ImGui[$ "SetKeyboardFocusHere"];
+
+    if (_skf != undefined) method(ImGui, _skf)();
+  }
+
   var _out = ImGui.InputTextWithHint(
     _id_label,
     _hint,

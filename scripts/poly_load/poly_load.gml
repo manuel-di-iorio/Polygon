@@ -1,6 +1,7 @@
 // poly_load — public API.
 
-// Loads scene file into runtime scene.
+// Loads scene file into runtime scene (JSON or PLYB .bin, auto-detected
+// by extension with magic fallback, so mislabeled files still load).
 // _assets: struct mapping asset key -> { model, on_create? } (same
 // shape as the poly_create config).
 // _on_create (optional): function(node, asset, model, id) called for
@@ -17,21 +18,33 @@ function poly_load(_scene, _fname, _assets, _on_create = undefined) {
 
   if (_scene == undefined || _fname == undefined || _fname == "" || !is_struct(_assets)) return _rep;
   if (!file_exists(_fname)) return _rep;
-  var _json = "";
-  var _f = file_text_open_read(_fname);
+  var _data = undefined;
 
-  if (_f < 0) return _rep;
-
-  while (!file_text_eof(_f)) {
-    _json += file_text_read_string(_f);
-    file_text_readln(_f);
+  if (__poly_bin_is_path(_fname) || __poly_bin_has_magic(_fname)) {
+    _data = __poly_bin_load_data(_fname);
   }
 
-  file_text_close(_f);
+  if (_data == undefined) {
+    var _json = "";
+    var _f = file_text_open_read(_fname);
 
-  if (_json == "") return _rep;
-  var _data = undefined;
-  _data = json_parse(_json);
+    if (_f < 0) return _rep;
+
+    while (!file_text_eof(_f)) {
+      _json += file_text_read_string(_f);
+      file_text_readln(_f);
+    }
+
+    file_text_close(_f);
+
+    if (_json == "") return _rep;
+
+    try {
+      _data = json_parse(_json);
+    } catch (_ex) {
+      return _rep;
+    }
+  }
 
   if (!is_struct(_data) || !variable_struct_exists(_data, "nodes") || !is_array(_data.nodes)) return _rep;
   var _actors = __poly_file_assets(_data);

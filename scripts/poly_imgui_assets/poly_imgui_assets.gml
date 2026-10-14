@@ -58,7 +58,10 @@ function __poly_imgui_asset_list(_ed) {
   var _filter_w = min(170, max(80, _avail - 108));
   ImGui.SameLine(max(0, _avail - (_filter_w + 108)));
   ImGui.SetNextItemWidth(_filter_w);
-  _ui.filter = __poly_imgui_text_hint("##filter", "Filter models...", _ui.filter);
+  if (!variable_struct_exists(_ui, "models_focus_search")) _ui.models_focus_search = false;
+  var _want_search = _ui.models_focus_search == true;
+  _ui.models_focus_search = false;
+  _ui.filter = __poly_imgui_text_hint("##filter", "Filter models...", _ui.filter, _want_search);
   ImGui.SameLine();
 
   if (__poly_imgui_small_btn("List", _ui.models_view == "list")) _ui.models_view = "list";

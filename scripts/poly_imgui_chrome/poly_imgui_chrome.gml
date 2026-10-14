@@ -264,7 +264,7 @@ function __poly_menu_file(_ed) {
   var _pending = { do_new: false, do_load: false, do_saveas: false, do_close: false };
 
   if (!ImGui.BeginMenu("File")) return _pending;
-  ImGui.TextDisabled(_ed.scene_file != "" ? _ed.scene_file : "(unsaved scene)");
+  ImGui.TextDisabled(_ed.scene_file != "" ? __poly_base_name(_ed.scene_file) : "(unsaved scene)");
 
   if (ImGui.MenuItem("New", "Ctrl+N")) _pending.do_new = true;
   if (ImGui.MenuItem("Save", "Ctrl+S")) __poly_save_or_ask(_ed);

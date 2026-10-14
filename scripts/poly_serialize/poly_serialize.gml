@@ -300,7 +300,7 @@ function __poly_is_env_struct(_d) {
   return true;
 }
 
-// Validates scene descriptor array structure (strict v2: kind, id and
+// Validates scene descriptor array structure (strict v1: kind, id and
 // assetId are required; "label" is an optional custom instance name).
 function __poly_validate_descs(_nodes) {
   if (!is_array(_nodes)) return false;
@@ -464,35 +464,69 @@ function __poly_rebuild_place_one(_ed, _p, _report) {
   _report.placed++;
 }
 
+// Loads scene data from an absolute path (JSON v1 or PLYB binary).
+// Returns { seq, assets, nodes } or undefined.
+function __poly_load_data_file(_abs) {
+  if (!is_string(_abs) || _abs == "" || !file_exists(_abs)) return undefined;
+  // Binary first when the extension (or magic) says so.
+  if (__poly_bin_is_path(_abs) || __poly_bin_has_magic(_abs)) {
+    var _bin = __poly_bin_load_data(_abs);
+
+    if (_bin != undefined) return _bin;
+    // Fall through to JSON: a mislabeled file still gets a chance.
+  }
+
+  var _json = __poly_read_text_file(_abs);
+
+  if (_json == "") return undefined;
+  var _data = undefined;
+
+  try {
+    _data = json_parse(_json);
+  } catch (_ex) {
+    return undefined;
+  }
+
+  var _ok = is_struct(_data) && _data.version == 1 && variable_struct_exists(_data, "nodes") && is_array(_data.nodes);
+
+  if (!_ok) return undefined;
+  return { seq: _data[$ "seq"], assets: _data[$ "assets"], nodes: _data.nodes };
+}
+
 // Starts a chunked scene load: parses now, places nodes across steps so
 // the Load dialog can show progress instead of freezing. Returns "" on
 // start, else an error message (same cases as the sync load).
 function __poly_load_scene_begin(_ed) {
   var _path = __poly_scene_path(_ed);
 
-  if (_path == "" || !file_exists(_path)) return "missing";
-  var _json = __poly_read_text_file(_path);
+  if (_path == "" || !file_exists(_path)) {
+    // Fallback to the other extension (radio may point at the wrong one).
+    var _alt = __poly_scene_path_as(_path, __poly_scene_fmt_of(_path) == "bin" ? "json" : "bin");
 
-  if (_json == "") return "missing";
-  var _data = json_parse(_json);
-  var _ok = is_struct(_data) && _data.version == 2 && variable_struct_exists(_data, "nodes") && is_array(_data.nodes);
+    if (_alt == "" || !file_exists(_alt)) return "missing";
+    _ed.scene_file = __poly_scene_path_as(_ed.scene_file, __poly_scene_fmt_of(_alt));
+    _path = _alt;
+  }
 
-  if (!_ok) return "invalid";
+  var _file = __poly_load_data_file(_path);
 
-  if (!__poly_validate_descs(_data.nodes)) return "invalid";
+  if (_file == undefined) return "invalid";
+  var _nodes = _file.nodes;
 
-  if (variable_struct_exists(_data, "seq") && is_real(_data.seq)) {
+  if (!__poly_validate_descs(_nodes)) return "invalid";
+
+  if (is_real(_file[$ "seq"])) {
     __poly_reg_ensure(_ed);
-    _ed.id_seq = max(_ed.id_seq, floor(_data.seq));
+    _ed.id_seq = max(_ed.id_seq, floor(_file.seq));
   }
 
   __poly_drop_preview_clear(_ed);
   _ed.unlit_quiet = false;
   var _states = __poly_rebuild_clear(_ed);
   _ed.unlit_quiet = true;
-  _ed.asset_meta = __poly_file_assets(_data);
+  _ed.asset_meta = __poly_file_assets(_file);
   __poly_history_clear(_ed);
-  _ed.load_job = { nodes: _data.nodes, idx: 0, report: { placed: 0, failed: 0, err: "" }, states: _states };
+  _ed.load_job = { nodes: _nodes, idx: 0, report: { placed: 0, failed: 0, err: "" }, states: _states };
   return "";
 }
 
@@ -529,7 +563,7 @@ function __poly_load_scene_finish(_ed) {
   __poly_cameras_mute(_ed);
   __poly_unlit_apply(_ed);
   __poly_rebuild_restore_states(_ed, _job.states);
-  // Files rarely carry sun/env (casa.json has neither): without them the
+  // Files rarely carry sun/env: without them the
   // exterior renders pitch black. Same ensure as import/new scene.
   if (__poly_light_count(_ed) == 0) __poly_default_sun(_ed);
   if (__poly_env_node(_ed) == undefined) __poly_create_env(_ed);
@@ -666,41 +700,54 @@ function __poly_write_file_assets(_ed) {
   return _out;
 }
 
-// Writes serialized scene to JSON file (v2: seq + id/asset + file assets).
+// Writes serialized scene to disk (JSON v1 or PLYB binary by extension).
 function __poly_save_scene(_ed) {
   __poly_reg_ensure(_ed);
   var _nodes = __poly_serialize_scene(_ed);
-  var _json = json_stringify({ version: 2, seq: _ed.id_seq, assets: __poly_write_file_assets(_ed), nodes: _nodes }, true);
+  var _assets = __poly_write_file_assets(_ed);
   var _path = __poly_scene_path(_ed);
 
   if (_path == "") return false;
   __poly_ensure_dir(_path);
 
-  if (!__poly_write_text_file(_path, _json)) return false;
+  if (__poly_scene_fmt_of(_path) == "bin") {
+    if (!__poly_bin_save_descs(_path, _ed.id_seq, _assets, _nodes)) return false;
+  } else {
+    var _json = __poly_json_stringify_ordered({ version: 1, seq: _ed.id_seq, assets: _assets, nodes: _nodes }, true, 100);
+
+    if (!__poly_write_text_file(_path, _json)) return false;
+  }
+
   _ed.dirty = false;
   return true;
 }
 
-// Loads scene JSON into editor.
+// Loads a scene file (JSON v1 or PLYB binary) into the editor.
 function __poly_load_scene(_ed) {
   var _path = __poly_scene_path(_ed);
 
-  if (_path == "" || !file_exists(_path)) return false;
-  var _json = __poly_read_text_file(_path);
+  if (_path == "" || !file_exists(_path)) {
+    var _alt = __poly_scene_path_as(_path, __poly_scene_fmt_of(_path) == "bin" ? "json" : "bin");
 
-  if (_json == "") return false;
-  var _data = json_parse(_json);
-  var _ok = is_struct(_data) && _data.version == 2 && variable_struct_exists(_data, "nodes") && is_array(_data.nodes);
-
-  if (!_ok) return false;
-
-  if (variable_struct_exists(_data, "seq") && is_real(_data.seq)) {
-    __poly_reg_ensure(_ed);
-    _ed.id_seq = max(_ed.id_seq, floor(_data.seq));
+    if (_alt == "" || !file_exists(_alt)) return false;
+    _ed.scene_file = __poly_scene_path_as(_ed.scene_file, __poly_scene_fmt_of(_alt));
+    _path = _alt;
   }
 
-  __poly_rebuild(_ed, _data.nodes);
-  _ed.asset_meta = __poly_file_assets(_data);
+  var _file = __poly_load_data_file(_path);
+
+  if (_file == undefined) return false;
+  var _nodes = _file.nodes;
+
+  if (!__poly_validate_descs(_nodes)) return false;
+
+  if (is_real(_file[$ "seq"])) {
+    __poly_reg_ensure(_ed);
+    _ed.id_seq = max(_ed.id_seq, floor(_file.seq));
+  }
+
+  __poly_rebuild(_ed, _nodes);
+  _ed.asset_meta = __poly_file_assets(_file);
   if (__poly_light_count(_ed) == 0) __poly_default_sun(_ed);
   if (__poly_env_node(_ed) == undefined) __poly_create_env(_ed);
   __poly_viewcam_seed(_ed);

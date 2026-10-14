@@ -188,8 +188,8 @@ function __poly_delete_sel(_ed) {
   __poly_history_commit(_ed, _before);
 }
 
-// Duplicates one asset node with offset, copying shadow flags.
-function __poly_duplicate_asset(_ed, _src, _off) {
+// Duplicates one asset node in place, copying shadow flags.
+function __poly_duplicate_asset(_ed, _src) {
   var _key = __poly_asset_name(_ed, _src);
 
   if (_key == undefined) return undefined;
@@ -204,7 +204,7 @@ function __poly_duplicate_asset(_ed, _src, _off) {
     _ed,
     _key,
     _model,
-    [ _pos.x + _off, _pos.y, _pos.z + _off ],
+    [ _pos.x, _pos.y, _pos.z ],
     _src.getLocalRotation().clone(),
     [ _sca.x, _sca.y, _sca.z ],
     _copy_label
@@ -227,14 +227,13 @@ function __poly_duplicate_asset(_ed, _src, _off) {
   return _copy;
 }
 
-// Duplicates selected nodes with offset.
+// Duplicates selected nodes in place.
 function __poly_duplicate_sel(_ed) {
   var _n = array_length(_ed.sel);
 
   if (_n == 0) return;
   var _before = __poly_history_snap(_ed);
   var _out = [];
-  var _off = _ed.cfg.duplicate_offset;
 
   for (var _i = 0; _i < _n; _i++) {
     var _src = _ed.sel[_i];
@@ -242,9 +241,9 @@ function __poly_duplicate_sel(_ed) {
     var _copy = undefined;
 
     if (_kind == "light" || _kind == "camera" || _kind == "environment") {
-      _copy = __poly_duplicate_prop(_ed, _src, _kind, _off);
+      _copy = __poly_duplicate_prop(_ed, _src, _kind);
     } else {
-      _copy = __poly_duplicate_asset(_ed, _src, _off);
+      _copy = __poly_duplicate_asset(_ed, _src);
     }
 
     if (_copy != undefined) array_push(_out, _copy);
@@ -262,8 +261,8 @@ function __poly_duplicate_prop_data(_src_data) {
   return json_parse(json_stringify(_src_data));
 }
 
-// Duplicates light camera environment node (fresh wrapper id).
-function __poly_duplicate_prop(_ed, _src, _kind, _off) {
+// Duplicates light camera environment node in place (fresh wrapper id).
+function __poly_duplicate_prop(_ed, _src, _kind) {
   var _en = __poly_registry_find(_ed, _src);
 
   if (_en == undefined || !is_struct(_en.data)) return undefined;
@@ -272,7 +271,7 @@ function __poly_duplicate_prop(_ed, _src, _kind, _off) {
 
   if (_node == undefined) return undefined;
   var _pos = _src.getLocalPosition();
-  _node.setLocalPosition(new GM3D_Vec3(_pos.x + _off, _pos.y, _pos.z + _off));
+  _node.setLocalPosition(new GM3D_Vec3(_pos.x, _pos.y, _pos.z));
   _node.setLocalScale(_src.getLocalScale().clone());
   _node.setLocalRotation(_src.getLocalRotation().clone());
   var _data = __poly_duplicate_prop_data(_en.data);
@@ -303,6 +302,162 @@ function __poly_duplicate_prop(_ed, _src, _kind, _off) {
   if (__poly_locked_get(_ed, _src)) __poly_locked_set(_ed, _node, true);
   __poly_cameras_mute(_ed);
   return _node;
+}
+
+// ---------------------------------------------------------------------------
+// Clipboard (copy/cut/paste) and invert selection
+// ---------------------------------------------------------------------------
+
+// Snapshots current selection as descriptors (skips system nodes).
+function __poly_clipboard_descs(_ed) {
+  var _out = [];
+
+  if (_ed == undefined || !is_array(_ed.sel)) return _out;
+
+  for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++) {
+    var _d = __poly_node_to_descriptor(_ed, _ed.sel[_i]);
+
+    if (_d != undefined) array_push(_out, _d);
+  }
+
+  return _out;
+}
+
+// Copies selection to the clipboard (no scene change, no undo).
+function __poly_clipboard_copy(_ed) {
+  if (_ed == undefined) return false;
+  var _descs = __poly_clipboard_descs(_ed);
+
+  if (array_length(_descs) == 0) return false;
+  _ed.clipboard = { descs: _descs, cut: false };
+  return true;
+}
+
+// Cuts selection to the clipboard (single undo entry with the delete).
+function __poly_clipboard_cut(_ed) {
+  if (_ed == undefined || !is_array(_ed.sel) || array_length(_ed.sel) == 0) return false;
+  var _descs = __poly_clipboard_descs(_ed);
+
+  if (array_length(_descs) == 0) return false;
+  var _victims = [];
+
+  for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++) {
+    if (_ed.rt != undefined && __poly_node_same(_ed.sel[_i], _ed.rt.cam)) continue;
+    array_push(_victims, _ed.sel[_i]);
+  }
+
+  if (array_length(_victims) == 0) return false;
+  var _before = __poly_history_snap(_ed);
+  _ed.clipboard = { descs: _descs, cut: true };
+
+  for (var _j = 0, _nv = array_length(_victims); _j < _nv; _j++) {
+    __poly_spawn_unregister(_ed, _victims[_j]);
+    __poly_destroy_subtree(_victims[_j]);
+  }
+
+  _ed.rt.scene.update(0);
+  __poly_sel_clear(_ed);
+  __poly_history_commit(_ed, _before);
+  return true;
+}
+
+// Pastes clipboard content in place with fresh ids
+// (single undo entry; unknown models are skipped, no commit when empty).
+function __poly_clipboard_paste(_ed) {
+  if (_ed == undefined) return false;
+  var _cb = variable_struct_exists(_ed, "clipboard") ? _ed.clipboard : undefined;
+
+  if (!is_struct(_cb) || !is_array(_cb.descs) || array_length(_cb.descs) == 0) return false;
+  var _before = __poly_history_snap(_ed);
+  var _rep = { placed: 0, failed: 0, err: "" };
+  var _ids = [];
+
+  for (var _i = 0, _n = array_length(_cb.descs); _i < _n; _i++) {
+    var _d = json_parse(json_stringify(_cb.descs[_i]));
+    _d.id = __poly_wrap_new(_ed);
+
+    try {
+      __poly_rebuild_place_one(_ed, _d, _rep);
+      array_push(_ids, _d.id);
+    } catch (_ex) {
+      _rep.failed++;
+    }
+  }
+
+  if (array_length(_ids) == 0) return false;
+  var _nodes = [];
+
+  for (var _k = 0, _nk = array_length(_ids); _k < _nk; _k++) {
+    var _node = __poly_find_by_id(_ed, _ids[_k]);
+
+    if (_node != undefined) array_push(_nodes, _node);
+  }
+
+  _ed.rt.scene.update(0);
+  __poly_seq_reseed(_ed);
+  __poly_cameras_mute(_ed);
+
+  if (array_length(_nodes) > 0) __poly_sel_assign(_ed, _nodes);
+  __poly_history_commit(_ed, _before);
+  return true;
+}
+
+// Inverts selection over tracked roots (locked nodes are never picked up).
+function __poly_invert_sel(_ed) {
+  if (_ed == undefined) return false;
+  var _all = __poly_root_list(_ed, false);
+  var _out = [];
+
+  for (var _i = 0, _n = array_length(_all); _i < _n; _i++) {
+    var _node = _all[_i];
+
+    if (_node == undefined || __poly_locked_get(_ed, _node)) continue;
+    if (__poly_node_list_has(_ed.sel, _node)) continue;
+    array_push(_out, _node);
+  }
+
+  __poly_sel_assign(_ed, _out);
+  _ed.scene_anchor = undefined;
+  return true;
+}
+
+// Selects all tracked root nodes (locked nodes excluded).
+function __poly_select_all(_ed) {
+  if (_ed == undefined) return false;
+  var _all = __poly_root_list(_ed, false);
+  var _out = [];
+
+  for (var _i = 0, _n = array_length(_all); _i < _n; _i++) {
+    var _node = _all[_i];
+
+    if (_node == undefined || __poly_locked_get(_ed, _node)) continue;
+    array_push(_out, _node);
+  }
+
+  __poly_sel_assign(_ed, _out);
+  _ed.scene_anchor = undefined;
+  return true;
+}
+
+// Focuses the Hierarchy or Models search field (Ctrl+F), whichever panel
+// was focused last frame. No-op when neither is focused/open.
+function __poly_focus_search(_ed) {
+  if (_ed == undefined || !is_struct(_ed.imgui)) return false;
+  var _ui = _ed.imgui;
+  var _hier_foc = variable_struct_exists(_ui, "hier_focused") && _ui.hier_focused == true;
+  var _models_foc = variable_struct_exists(_ui, "models_focused") && _ui.models_focused == true;
+
+  if (_hier_foc && _ui.win_hier.open) {
+    _ui.scene_focus_search = true;
+    return true;
+  }
+
+  if (_models_foc && _ui.win_assets.open) {
+    _ui.models_focus_search = true;
+    return true;
+  }
+
+  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -584,7 +739,7 @@ function __poly_scene_commit_rename(_ed, _node, _new_label) {
 }
 
 // Applies pending scene list actions.
-function __poly_scene_list_commit(_ed, _ren, _foc, _dup, _del) {
+function __poly_scene_list_commit(_ed, _ren, _foc, _dup, _del, _cop = false, _cut = false, _pas = false) {
   if (_ren != undefined) {
     __poly_scene_select(_ed, _ren);
     __poly_rename_begin(_ed, _ren);
@@ -601,6 +756,12 @@ function __poly_scene_list_commit(_ed, _ren, _foc, _dup, _del) {
     if (!__poly_sel_has(_ed, _del) || array_length(_ed.sel) <= 1) __poly_scene_select(_ed, _del);
     __poly_delete_ask(_ed);
   }
+
+  if (_cop == true) __poly_clipboard_copy(_ed);
+
+  if (_cut == true) __poly_clipboard_cut(_ed);
+
+  if (_pas == true) __poly_clipboard_paste(_ed);
 }
 
 // ---------------------------------------------------------------------------

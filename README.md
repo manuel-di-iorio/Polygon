@@ -133,11 +133,16 @@ The cursor wraps at window edges during camera and gizmo drags.
 | `X` | Toggle World / Local axes |
 | `Z` | Toggle Pivot / Center handles |
 | `Del` | Delete selection (confirms for multiple objects) |
-| `F2` | Rename instance (custom name, saved to JSON) |
+| `Shift+D` | Deselect all |
+| `F2` | Rename instance |
 | Arrow keys | Nudge selection on X/Z |
 | `Esc` | Cancel the current gesture, otherwise clear selection |
 | `Ctrl+S` / `Ctrl+L` / `Ctrl+N` | Save / Load / New |
 | `Ctrl+D` | Duplicate |
+| `Ctrl+C` / `Ctrl+X` / `Ctrl+V` | Copy / Cut / Paste (cut + paste in one undo step each) |
+| `Ctrl+I` | Invert selection (locked nodes never selected) |
+| `Ctrl+A` | Select all (locked nodes excluded) |
+| `Ctrl+F` | Find object (focuses the Hierarchy / Models search field) |
 | `Ctrl+Z` / `Ctrl+Y` (or `Ctrl+Shift+Z`) | Undo / Redo |
 | `\` | Toggle snap on/off |
 | `Ctrl+\` | Push selection to grid (undoable) |
@@ -169,7 +174,7 @@ Use the **Create** menu: Directional Light, Point Light (up to 8 lights), Perspe
 
 ## Saving and loading scenes
 
-Scenes are saved from **File → Save / Save As** into `working_directory/__PolygonEditor__/scenes/<name>.json`. **File → Load** lists saved scenes with search and delete.
+Scenes are saved from **File → Save / Save As** into `working_directory/__PolygonEditor__/scenes/<name>.json` or `<name>.bin`. The save dialog has a **JSON / Binary** radio (no extra modal): Binary is a compact buffer format (`PLYB` magic, `buffer_*` types, no JSON inside) with the same content as JSON v1. **File → Load** shows a search + file list with one row per file (`scene.json` and `scene.bin` listed separately); `poly_load` opens either one.
 
 Load a scene in your game, without the editor, with:
 
@@ -180,6 +185,7 @@ assets[$ "models/tree.glb"] = { model: my_model_a };
 assets[$ "models/rock.glb"] = { model: my_model_b, on_create: my_rock_setup };
 
 var report = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", assets, my_on_create);
+// works with .json and .bin (auto-detected): "__PolygonEditor__/scenes/level1.bin"
 // report = { placed, failed, companions, warnings, placements }
 // placements = [{ node, asset, id, label, model, instance }]
 ```
@@ -190,9 +196,9 @@ var report = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", assets,
 2. the per-model `on_create` from `assets[key]` (optional),
 3. the companion spawn below (when configured).
 
-### Actors (companions)
+### Actors
 
-In the Models panel, selecting a model shows an **Actor** section in the Inspector. Enabling **Spawn actor** and picking a GameMaker object + layer stores a per-model binding in the scene file:
+In the Models panel, selecting a model shows an **Actor** section in the Inspector. By picking a GameMaker object + layer stores a per-model binding in the scene file:
 
 ```json
 { "assets": { "models/fox.glb": { "type": "model", "actor": { "object": "oEnemy", "layer": "Actors" } } } }
@@ -200,7 +206,7 @@ In the Models panel, selecting a model shows an **Actor** section in the Inspect
 
 At load, every instance of a bound model spawns a companion via `instance_create_layer(0, 0, layer, obj, { node, poly_id, poly_asset_id })` - the object reads the node from its creation variables and drives it in its own Step/Draw events. Missing objects or layers never fail the load: they become `report.warnings` entries. Layer defaults to `"Instances"`.
 
-Bindings store the **object name**: renaming the object in GameMaker breaks the binding (the node still spawns, without companion). The Actor section flags unknown objects in red; a renamed object is fixed by re-picking it, or with a text search across scene files.
+Bindings store the **object name**: renaming the object in GameMaker breaks the binding (the node still spawns, without companion). The Actor section flags unknown objects in red; a renamed object is fixed by re-picking it.
 
 Kill actors only through the helper, never with `node.destroy` / `instance_destroy` directly, or the other half is left orphaned:
 
@@ -216,7 +222,7 @@ poly_actor_of(node);       // companion instance id bound to a node, or undefine
 
 ```json
 {
-  "version": 2,
+  "version": 1,
   "seq": 12,
   "assets": {
     "models/tree.glb": { "type": "model", "actor": { "object": "oTree", "layer": "Actors" } }
@@ -240,6 +246,8 @@ poly_actor_of(node);       // companion instance id bound to a node, or undefine
 
 `kind` is one of `instance`, `light`, `camera`, `environment` (the last three carry a `light` / `camera` / `environment` sub-object). The transform lives in `transform: { position, rotation, scale }` (rotation is a quaternion `[x, y, z, w]`). Instances link their model via `assetId`. `label` is an optional custom instance name (F2 in the Hierarchy); without it, the asset file name + id number is shown. Node ids are stable and are what the AI bridge uses.
 
+The Binary variant (`.bin`, magic `PLYB`, version 1) stores the same fields with `buffer_*` types: strings as `buffer_string`, transforms as `f32`, colors as `u8`, flags packed in bits — no JSON inside.
+
 ---
 
 ## AI bridge (optional)
@@ -247,41 +255,21 @@ poly_actor_of(node);       // companion instance id bound to a node, or undefine
 Polygon can connect to a local **MCP relay** (`other/mcp-relay`, Node) so an AI client can inspect and edit the scene.
 
 1. Install [Node.js](https://nodejs.org/en/download/archive/v24.21.0) v24.21
-2. On your AI tool (OpenCode, Codex, Claude Code), configure the MCP server 
-pointing a the address `127.0.0.1:5192`.
+2. On your AI tool (eg. OpenCode, Codex, Claude Code), configure the MCP server 
+pointing at the address `127.0.0.1:5192`.
 
-    Note: If your editor does not start the server automatically, then you need to open a terminal (eg. Powershell on Windows), move inside the _mcp-relay_ folder and start it with the command: `$ node index.js`.
+    Note: If your editor does not start the server automatically, then you need to open a terminal (eg. Powershell on Windows), move inside the _mcp-relay_ folder and start it with the command: `$ node server.js`.
+
+    If it says, that the port is already occupied, then maybe the server is already running or there is another process on that port.
+
 3. In the editor, click the **AI** button in the menu bar. The status shows *Connecting*, *Connected* or *Reconnecting*.
 
-No socket is ever opened unless the editor is active and the bridge is on. Only whitelisted operations are accepted (no arbitrary GML):
+Available tools (23, all prefixed `poly_`):
 
-`status`, `hierarchy`, `selection`, `details`, `assets`, `raycast_down`, `select`, `focus`, `create`, `transform`, `rename`, `delete`, `save`, `batch`, `drop_to_ground`, `place_on`, `screenshot`, `audit`
+Inspect: `poly_get_status`, `poly_get_scene_hierarchy`, `poly_get_selection`, `poly_get_object_details`, `poly_get_assets`, `poly_raycast_down`, `poly_take_screenshot`, `poly_capture_views`, `poly_audit_overlaps`, `poly_audit_walkability`.
+Edit: `poly_select_objects`, `poly_focus_object`, `poly_set_camera`, `poly_create_object`, `poly_set_transform`, `poly_rename_object`, `poly_delete_objects`, `poly_save_scene`, `poly_apply_batch`, `poly_drop_to_ground`, `poly_place_on`, `poly_set_visible`, `poly_load_scene`.
 
----
-
-## Project layout
-
-```
-objects/oEditor            editor object (event wiring)
-scripts/poly_*            public API, one script per function
-scripts/poly_core       init, frame entry points, state
-scripts/poly_input      hotkeys, gizmo/library/rect/hover steps
-scripts/poly_gizmo*     transform handles and drawing
-scripts/poly_gpu_pick   ID-buffer picking
-scripts/poly_outline    selection outline
-scripts/poly_imgui_*    Hierarchy, Inspector, Models, Scene, toolbar, dock
-scripts/poly_registry   tracked node registry and spawn pipeline
-scripts/poly_serialize  descriptors, validation, save/load
-scripts/poly_ai         AI bridge (TCP client)
-scripts/scr_demo           demo world
-```
-
-## Troubleshooting
-
-- **No grid or sky:** check that `grid.glb` and `skybox.glb` are in `__PolygonEditor__/models/` in Included Files.
-- **Pink / magenta meshes:** a model has no material; Polygon paints it magenta as a fallback. Assign materials in your `on_create` hook or fix the model.
-- **Library thumbnails missing:** they are rendered once at startup; make sure the models loaded successfully.
-- **AI shows "AI Server not available":** start the relay first; the editor gives up after 3 attempts.
+Details in [`other/mcp-relay/README.md`](other/mcp-relay/README.md).
 
 ---
 

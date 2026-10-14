@@ -174,7 +174,7 @@ describe("MCP server", async () => {
     await writeFile(filename, Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jZ0kAAAAASUVORK5CYII=", "base64"));
     const saveFile = path.join(temporary, "saved.json");
     const includedFile = path.join(temporary, "included.json");
-    const savedText = '{"version":2,"nodes":[]}';
+    const savedText = '{"version":1,"nodes":[]}';
     await writeFile(saveFile, savedText);
     let saveMetadata = { file: "scenes/casa.json", requested_path: includedFile, sandbox_path: saveFile, content_md5: createHash("md5").update(savedText).digest("hex"), nodes: 424 };
     const requests = [];
@@ -277,7 +277,7 @@ describe("offscreen GML capture contracts", async () => {
   };
 
   it("returns save metadata without the unavailable GMRT save_directory global", () => {
-    const text = '{"version":2,"nodes":[]}';
+    const text = '{"version":1,"nodes":[]}';
     const context = {
       variable_struct_exists: (value, key) => Object.hasOwn(value, key),
       is_string: (value) => typeof value === "string",

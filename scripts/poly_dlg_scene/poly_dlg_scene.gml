@@ -1,6 +1,6 @@
-// poly_dlg_scene — scene new/load/save-as dialog.
+// poly_dlg_scene — scene save (name + format) / load (file list) dialog.
 
-// Shows save/load scene dialog (name only, fixed folder).
+// Shows save/load scene dialog (fixed folder).
 function __poly_imgui_scene_dlg(_ed) {
   var _dlg = _ed.scene_dlg;
 
@@ -13,7 +13,7 @@ function __poly_imgui_scene_dlg(_ed) {
 
   var _is_save = _dlg.mode != "load";
   var _w = 400;
-  var _h = _is_save ? 120 : 360;
+  var _h = _is_save ? 160 : 400;
   var _begun = __poly_modal_begin(_ed, _is_save ? "Save scene" : "Load scene", _w, _h, _dlg);
 
   if (!_begun) {
@@ -21,7 +21,7 @@ function __poly_imgui_scene_dlg(_ed) {
     return;
   }
 
-  if (variable_struct_exists(_dlg, "delete_pending") && is_string(_dlg.delete_pending)) {
+  if (variable_struct_exists(_dlg, "delete_pending") && is_struct(_dlg.delete_pending)) {
     __poly_scene_dlg_delete(_dlg);
   } else {
     __poly_scene_dlg_form(_ed, _dlg, _is_save);
@@ -30,26 +30,27 @@ function __poly_imgui_scene_dlg(_ed) {
   __poly_modal_end();
 }
 
-// Draws the delete-confirmation variant of the dialog.
+// Draws the delete-confirmation variant of the dialog (one file entry).
 function __poly_scene_dlg_delete(_dlg) {
-  var _name = _dlg.delete_pending;
+  var _pend = _dlg.delete_pending;
+  var _file = _pend.name + (_pend.fmt == "bin" ? ".bin" : ".json");
   ImGui.Spacing();
   ImGui.Text("Are you sure you want to delete");
-  ImGui.Text("the scene \"" + _name + "\"?");
+  ImGui.Text("the scene \"" + _file + "\"?");
   ImGui.Spacing();
   ImGui.TextDisabled("This cannot be undone.");
   ImGui.Dummy(0, 16);
 
   if (ImGui.Button("Delete", 0, 0)) {
-    if (__poly_delete_scene_named(_name)) {
-      if (_dlg.name == _name) {
+    if (__poly_delete_scene_named(_pend.name, _pend.fmt)) {
+      if (_dlg.name == _pend.name && _dlg.fmt == _pend.fmt) {
         _dlg.name = "";
         _dlg.buf = __poly_imgui_pad("");
       }
 
       _dlg.list = __poly_scene_list();
     } else {
-      _dlg.error = "Could not delete scene \"" + _name + "\".";
+      _dlg.error = "Could not delete scene \"" + _file + "\".";
       _dlg.err_name = _dlg.name;
     }
 
@@ -61,7 +62,7 @@ function __poly_scene_dlg_delete(_dlg) {
   if (ImGui.Button("Cancel", 0, 0)) _dlg.delete_pending = undefined;
 }
 
-// Draws the name field, scene list and action buttons.
+// Draws the save form (name + format) or the load form (search + list).
 function __poly_scene_dlg_form(_ed, _dlg, _is_save) {
   // Chunked load in progress: bar only (no buttons until finish closes us).
   if (!_is_save && variable_struct_exists(_ed, "load_job") && is_struct(_ed.load_job)) {
@@ -69,6 +70,23 @@ function __poly_scene_dlg_form(_ed, _dlg, _is_save) {
     return;
   }
 
+  if (_is_save) {
+    __poly_scene_dlg_save_fields(_dlg);
+  } else {
+    __poly_scene_dlg_list(_ed, _dlg);
+  }
+
+  __poly_scene_dlg_status(_ed, _dlg, _is_save);
+
+  if (ImGui.Button(_is_save ? "Save" : "Load", 0, 0)) __poly_scene_dlg_commit(_ed, _is_save);
+  ImGui.SameLine();
+
+  if (ImGui.Button("Cancel", 0, 0)) _ed.scene_dlg = undefined;
+  if (_ed.scene_dlg != undefined && keyboard_check_pressed(vk_enter)) __poly_scene_dlg_commit(_ed, _is_save);
+}
+
+// Draws the save name field + format radio.
+function __poly_scene_dlg_save_fields(_dlg) {
   ImGui.Text("Scene name:");
 
   if (!variable_struct_exists(_dlg, "buf") || !is_string(_dlg.buf)) _dlg.buf = __poly_imgui_pad(_dlg.name);
@@ -84,20 +102,24 @@ function __poly_scene_dlg_form(_ed, _dlg, _is_save) {
     _dlg.err_name = "";
   }
 
-  if (!_is_save) __poly_scene_dlg_list(_ed, _dlg);
-  __poly_scene_dlg_status(_ed, _dlg, _is_save);
-
-  if (ImGui.Button(_is_save ? "Save" : "Load", 0, 0)) __poly_scene_dlg_commit(_ed, _is_save);
-  ImGui.SameLine();
-
-  if (ImGui.Button("Cancel", 0, 0)) _ed.scene_dlg = undefined;
-  if (_ed.scene_dlg != undefined && keyboard_check_pressed(vk_enter)) __poly_scene_dlg_commit(_ed, _is_save);
+  __poly_scene_dlg_format(_dlg);
 }
 
-// Draws the searchable list of saved scenes (load mode).
+// Draws the JSON/Binary format radio (same dialog, no new modal).
+function __poly_scene_dlg_format(_dlg) {
+  if (_dlg[$ "fmt"] != "bin") _dlg.fmt = "json";
+  ImGui.TextDisabled("Format:");
+  ImGui.SameLine();
+
+  if (ImGui.RadioButton("JSON", _dlg.fmt == "json")) _dlg.fmt = "json";
+  ImGui.SameLine();
+
+  if (ImGui.RadioButton("Binary", _dlg.fmt == "bin")) _dlg.fmt = "bin";
+}
+
+// Draws the searchable list of saved scene files, one row per file
+// (scene.json and scene.bin are separate rows). Selection sets name + fmt.
 function __poly_scene_dlg_list(_ed, _dlg) {
-  ImGui.Separator();
-  ImGui.TextDisabled("Existing:");
   ImGui.SetNextItemWidth(-1);
 
   if (!variable_struct_exists(_dlg, "search") || !is_string(_dlg.search)) _dlg.search = "";
@@ -109,21 +131,26 @@ function __poly_scene_dlg_list(_ed, _dlg) {
     var _sel_w = ImGui.GetContentRegionAvailX() - 28 - 8;
 
     for (var _i = 0, _n = array_length(_dlg.list); _i < _n; _i++) {
-      var _name = _dlg.list[_i];
+      var _en = _dlg.list[_i];
 
-      if (_filter != "" && string_pos(_filter, string_lower(_name)) <= 0) continue;
+      if (!is_struct(_en) || !is_string(_en[$ "name"])) continue;
+      if (_filter != "" && string_pos(_filter, string_lower(_en.name)) <= 0) continue;
       ImGui.PushID(_i);
       _matched++;
+      var _label = _en.name + (_en.fmt == "bin" ? ".bin" : ".json");
 
-      if (ImGui.Selectable(_name, _dlg.name == _name, 0, _sel_w, 0)) {
-        _dlg.name = _name;
-        _dlg.buf = __poly_imgui_pad(_name);
+      if (ImGui.Selectable(_label, _dlg.name == _en.name && _dlg.fmt == _en.fmt, 0, _sel_w, 0)) {
+        _dlg.name = _en.name;
+        _dlg.fmt = _en.fmt;
+        _dlg.buf = __poly_imgui_pad(_en.name);
+        _dlg.error = "";
+        _dlg.err_name = "";
       }
 
       if (ImGui.IsMouseDoubleClicked(0) && ImGui.IsItemHovered()) __poly_scene_dlg_do_load(_ed);
       ImGui.SameLine();
 
-      if (ImGui.SmallButton("x##del_" + string(_i))) _dlg.delete_pending = _name;
+      if (ImGui.SmallButton("x##del_" + string(_i))) _dlg.delete_pending = { name: _en.name, fmt: _en.fmt };
       ImGui.PopID();
     }
   }
@@ -176,13 +203,11 @@ function __poly_scene_dlg_commit(_ed, _is_save) {
   }
 }
 
-// Checks if sanitized name matches a listed scene.
+// Checks if a scene file with the dialog format already exists.
 function __poly_scene_dlg_exists(_ed, _name) {
-  var _clean = string_lower(__poly_sanitize_scene_name(_name));
+  var _clean = __poly_sanitize_scene_name(_name);
 
   if (_clean == "") return false;
-  var _list = _ed.scene_dlg.list;
-
-  for (var _i = 0, _n = array_length(_list); _i < _n; _i++) if (string_lower(_list[_i]) == _clean) return true;
-  return false;
+  var _fmt = (_ed.scene_dlg != undefined && _ed.scene_dlg[$ "fmt"] == "bin") ? "bin" : "json";
+  return file_exists(__poly_scenes_dir() + _clean + (_fmt == "bin" ? ".bin" : ".json"));
 }

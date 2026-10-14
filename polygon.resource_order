@@ -4,6 +4,7 @@
     {"name":"Polygon Editor","order":15,"path":"folders/Polygon Editor.yy",},
     {"name":"Internal","order":1,"path":"folders/Polygon Editor/Internal.yy",},
     {"name":"Gizmo","order":3,"path":"folders/Polygon Editor/Internal/Gizmo.yy",},
+    {"name":"Utils","order":7,"path":"folders/Polygon Editor/Internal/Utils.yy",},
     {"name":"Icons","order":6,"path":"folders/Polygon Editor/Internal/Icons.yy",},
     {"name":"ImGUI","order":5,"path":"folders/Polygon Editor/Internal/ImGUI.yy",},
     {"name":"Scene","order":1,"path":"folders/Polygon Editor/Internal/Scene.yy",},

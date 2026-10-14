@@ -93,6 +93,7 @@ function __poly_imgui_assets(_ed) {
   }
 
   __poly_imgui_panel_save(_ed, "assets");
+  _ui.models_focused = __poly_imgui_safe("IsWindowFocused", false);
   __poly_imgui_asset_list(_ed);
 
   if (

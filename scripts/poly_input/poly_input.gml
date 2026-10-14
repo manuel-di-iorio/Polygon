@@ -170,7 +170,8 @@ function __poly_step_hotkeys(_ed, _input) {
 
     for (var _t = 0, _nt = array_length(_tools); _t < _nt; _t++) if (!_flying && __poly_key_pressed(_keys, _tools[_t][0])) _ed.giz.tool = _tools[_t][1];
     if (keyboard_check_pressed(_keys.del)) __poly_delete_ask(_ed);
-    if (__poly_key_pressed(_keys, "focus")) __poly_focus_selection(_ed);
+    if (keyboard_check(vk_shift) && keyboard_check_pressed(_keys.deselect)) __poly_sel_clear(_ed);
+    if (!keyboard_check(vk_shift) && __poly_key_pressed(_keys, "focus")) __poly_focus_selection(_ed);
     if (__poly_key_pressed(_keys, "snap") || keyboard_check_pressed(220)) _ed.snap_on = !_ed.snap_on;
     if (__poly_key_pressed(_keys, "pivot")) __poly_toggle_pivot(_ed);
     if (__poly_key_pressed(_keys, "orient")) __poly_toggle_orient(_ed);
@@ -181,6 +182,12 @@ function __poly_step_hotkeys(_ed, _input) {
   if (_gesture || !_ctrl) return;
   if (keyboard_check_pressed(_keys.save)) __poly_save_or_ask(_ed);
   if (keyboard_check_pressed(_keys.dupe)) __poly_duplicate_sel(_ed);
+  if (__poly_key_pressed(_keys, "copy")) __poly_clipboard_copy(_ed);
+  if (__poly_key_pressed(_keys, "cut")) __poly_clipboard_cut(_ed);
+  if (__poly_key_pressed(_keys, "paste")) __poly_clipboard_paste(_ed);
+  if (__poly_key_pressed(_keys, "invert")) __poly_invert_sel(_ed);
+  if (__poly_key_pressed(_keys, "select_all")) __poly_select_all(_ed);
+  if (__poly_key_pressed(_keys, "focus")) __poly_focus_search(_ed);
   if (keyboard_check_pressed(_keys.new_scene)) __poly_confirm_ask(_ed, "new");
   if (keyboard_check_pressed(_keys.close)) __poly_confirm_ask(_ed, "close");
   if (__poly_key_pressed(_keys, "load")) __poly_confirm_ask(_ed, "load");

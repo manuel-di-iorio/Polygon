@@ -164,7 +164,7 @@ File: `scripts/poly_serialize/poly_serialize.gml`
 - `__poly_validate_asset_desc`: valida nuovo sottostruct (shape/motion enum, `halfExtents` num3, `offset` num3, `friction/restitution` real).
 - `__poly_rebuild_place_asset`: passa `physics` in `_opt.data`.
 - `__poly_write_file_assets`: overlay `physics` default per-modello.
-- Compatibilità: resta `version: 2` perché il campo è opzionale; i file vecchi caricano con `physics=None`.
+- Compatibilità: resta `version: 1` perché il campo è opzionale; i file vecchi caricano con `physics=None`.
 
 Validazione tollerante: `motion/shape` sconosciuti -> `None` + `report.warnings`, mai throw (stesso principio actor).
 
@@ -238,7 +238,7 @@ Estensione minima in `poly_ai`:
 - [ ] serialize/deserialize/validate `physics`
 - [ ] `asset_meta` default per-modello
 - [ ] `poly_load` runtime + report
-- [ ] test: round-trip JSON, file v2 senza physics, file con physics corrotto
+- [ ] test: round-trip JSON, file v1 senza physics, file con physics corrotto
 
 ### Fase 3 - Inspector + viewport
 - [ ] `poly_imgui_insp_physics.gml` + sezione in inspector
@@ -277,4 +277,4 @@ Estensione minima in `poly_ai`:
 - `poly_load` senza world non crasha; con world i corpi cadono/collidono.
 - Apro l'editor su scena con fisica: i body vengono adottati (non persi); chiudo e `on_close` ricostruisce live + `syncScene`.
 - Con editor aperto il gioco non avanza `step/interpolate/restore`.
-- File v2 esistenti continuano a caricarsi.
+- File v1 esistenti continuano a caricarsi.

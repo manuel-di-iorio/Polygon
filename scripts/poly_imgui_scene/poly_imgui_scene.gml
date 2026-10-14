@@ -29,6 +29,7 @@ function __poly_imgui_scene_win(_ed) {
   }
 
   __poly_imgui_panel_save(_ed, "hier");
+  _ui.hier_focused = __poly_imgui_safe("IsWindowFocused", false);
   __poly_imgui_scene_list(_ed);
   ImGui.End();
 }
@@ -353,6 +354,21 @@ function __poly_scene_row_menu(_ed, _meta, _node, _idx, _pending) {
     ImGui.CloseCurrentPopup();
   }
 
+  if (ImGui.MenuItem("Copy", "Ctrl+C")) {
+    _pending.cop = true;
+    ImGui.CloseCurrentPopup();
+  }
+
+  if (ImGui.MenuItem("Cut", "Ctrl+X")) {
+    _pending.cut = true;
+    ImGui.CloseCurrentPopup();
+  }
+
+  if (ImGui.MenuItem("Paste", "Ctrl+V")) {
+    _pending.pas = true;
+    ImGui.CloseCurrentPopup();
+  }
+
   if (ImGui.MenuItem("Delete", "Del")) {
     _pending.del = _node;
     ImGui.CloseCurrentPopup();
@@ -392,7 +408,10 @@ function __poly_imgui_scene_list(_ed) {
   }
 
   ImGui.SetNextItemWidth(max(80, ImGui.GetContentRegionAvailX() - 32));
-  _ui.scene_filter = __poly_imgui_text_hint("##scenefilter", "Filter nodes...", _ui.scene_filter);
+  if (!variable_struct_exists(_ui, "scene_focus_search")) _ui.scene_focus_search = false;
+  var _want_search = _ui.scene_focus_search == true;
+  _ui.scene_focus_search = false;
+  _ui.scene_filter = __poly_imgui_text_hint("##scenefilter", "Filter nodes...", _ui.scene_filter, _want_search);
   ImGui.SameLine();
 
   if (__poly_imgui_icon_btn("##scenefilters", "Filter asset types", false, "Fl", "sprPolygonEditorIconFilters", 13, 13)) ImGui.OpenPopup("##scenekindfilters");
@@ -414,7 +433,7 @@ function __poly_imgui_scene_list(_ed) {
     return;
   }
 
-  var _pending = { ren: undefined, foc: undefined, dup: undefined, del: undefined };
+  var _pending = { ren: undefined, foc: undefined, dup: undefined, del: undefined, cop: false, cut: false, pas: false };
 
   if (!variable_struct_exists(_ed, "scene_click_idx")) {
     _ed.scene_click_idx = -1;
@@ -434,7 +453,7 @@ function __poly_imgui_scene_list(_ed) {
 
   if (!ImGui.BeginChild("##hierarchy_node_rows", 0, -_status_h, ImGuiChildFlags.None)) {
     ImGui.EndChild();
-    __poly_scene_list_commit(_ed, _pending.ren, _pending.foc, _pending.dup, _pending.del);
+    __poly_scene_list_commit(_ed, _pending.ren, _pending.foc, _pending.dup, _pending.del, _pending.cop, _pending.cut, _pending.pas);
     __poly_hier_status(_ed, _n, _total);
     return;
   }

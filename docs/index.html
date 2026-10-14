@@ -273,7 +273,7 @@ my_game_destroy();</code></pre>
       <section id="format" class="reveal">
         <h2>Scene file format</h2>
         <p class="sub">
-          <code>{ "version": 2, "seq": 14, "assets": {...}, "nodes": [...] }</code>, one
+          <code>{ "version": 1, "seq": 14, "assets": {...}, "nodes": [...] }</code>, one
           descriptor per node. <code>assets</code> holds per-model file metadata
           (e.g. Actor bindings). Every descriptor has a
           <code>id</code> and, for instances, an
@@ -436,6 +436,10 @@ var _rep = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", _assets, 
             <tr>
               <td>Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z)</td>
               <td>Undo / Redo</td>
+            </tr>
+            <tr>
+              <td>Ctrl+F</td>
+              <td>Find object</td>
             </tr>
             <tr>
               <td>Esc</td>

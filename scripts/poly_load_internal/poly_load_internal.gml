@@ -65,7 +65,7 @@ function __poly_actor_map() {
 
 
 
-// Spawns single node from descriptor (v2: id/asset).
+// Spawns single node from descriptor (v1: id/asset).
 // Assets spawn inside a wrapper named after the id so editor imports
 // preserve identity; props are single nodes carrying the id.
 // Returns a placement struct { node, kind, asset, id, label, model } for

@@ -101,7 +101,6 @@ function __poly_cam_home(_ed, _smooth = false) {
     ) {
     return;
   }
-
   var _home = _ed.cam_home;
   var _to_pos = new GM3D_Vec3(_home.pos[0], _home.pos[1], _home.pos[2]);
   var _to_rot = __poly_quat_from_array(_home.rot);
