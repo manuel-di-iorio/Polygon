@@ -353,18 +353,23 @@ function __poly_scene_panel_open(_ed) {
   return _ed.imgui.win_scene.open == true;
 }
 
-// Effective AA mode: off, ssaa or fxaa (anything else falls back to ssaa).
+// Effective AA mode: off, fxaa, smaa or ssaa (anything else falls back to ssaa).
 function __poly_aa_mode(_ed) {
   var _m = _ed[$ "aa_mode"];
-  if (_m != "off" && _m != "ssaa" && _m != "fxaa") _m = "ssaa";
+  if (!__poly_aa_known(_m)) _m = "ssaa";
   return _m;
 }
 
 // Switches AA mode and forces a re-render.
 function __poly_aa_set(_ed, _mode) {
-  if (_mode != "off" && _mode != "ssaa" && _mode != "fxaa") return;
+  if (!__poly_aa_known(_mode)) return;
   _ed.aa_mode = _mode;
   _ed.view_dirty = true;
+}
+
+// Checks a mode string.
+function __poly_aa_known(_mode) {
+  return _mode == "off" || _mode == "ssaa" || _mode == "fxaa" || _mode == "smaa";
 }
 
 // Effective AA factor: always the setting (1, 1.5 or 2). No stillness
@@ -404,7 +409,7 @@ function __poly_hi_ready(_ed) {
 
   if (_mode == "ssaa" && __poly_pass_scale(_ed) > 1) {
     _need = __poly_pass_size(_ed);
-  } else if (_mode == "fxaa") {
+  } else if (_mode == "fxaa" || _mode == "smaa") {
     _need = [ max(1, round(_ed.scene_w)), max(1, round(_ed.scene_h)) ];
   }
 
@@ -468,9 +473,28 @@ function __poly_scene_panel_render(_ed) {
     return;
   }
 
-  if ((_mode == "ssaa" && _k > 1) || (_mode == "fxaa" && shader_is_compiled(shPolygonEditorFXAA))) {
+  if ((_mode == "ssaa" && _k > 1) || (_mode == "fxaa" && shader_is_compiled(shPolygonEditorFXAA)) || (_mode == "smaa" && shader_is_compiled(shPolygonEditorSMAAEdge))) {
     // Scratch not ready at the right size (mode switch/resize/memory):
     // direct 1x render now, and retry ("pending" forces next frame).
+    _ed.aa_used = "pending";
+  }
+
+  if (_mode == "smaa" && shader_is_compiled(shPolygonEditorSMAAEdge) && _ed.hi_ready) {
+    // Raw 1x 3D into the scratch surface, SMAA edge/blend/resolve onto
+    // scene_surf, then compose overlays on the resolved image (sharp).
+    surface_set_target(_ed.scene_hi);
+    draw_clear(c_black);
+    _ed.renderer.render(_ed.rt.scene);
+    surface_reset_target();
+
+    if (__poly_smaa_resolve(_ed, _ed.scene_hi, _w, _h)) {
+      surface_set_target(_ed.scene_surf);
+      __poly_compose_viewport(_ed);
+      surface_reset_target();
+      return;
+    }
+
+    // Resolve failed: direct 1x render now, retry next frame.
     _ed.aa_used = "pending";
   }
 
@@ -550,5 +574,177 @@ function __poly_fxaa_resolve(_ed, _src, _w, _h) {
   gpu_set_texfilter(_was_filter);
   gpu_set_blendenable(_was_blend);
   surface_reset_target();
+  return true;
+}
+
+// Lazily loads the official SMAA LUTs from datafiles, baked 1:1 into
+// surfaces. Area is 160x560 RG (linear), search is 64x16 R (point).
+// The source sprites stay alive for the session: deleting one right after
+// its blit destroys its texture while the copy may still be queued
+// (WebGPU validation error + black LUT). Surfaces are re-baked after
+// VRAM loss. False when the PNGs are missing or fail validation.
+function __poly_smaa_luts(_ed) {
+  if (!variable_struct_exists(_ed, "smaa_lut_sprs")) _ed.smaa_lut_sprs = [];
+
+  if (array_length(_ed.smaa_lut_sprs) != 2
+  || !sprite_exists(_ed.smaa_lut_sprs[0]) || sprite_get_width(_ed.smaa_lut_sprs[0]) != 160
+  || !sprite_exists(_ed.smaa_lut_sprs[1]) || sprite_get_width(_ed.smaa_lut_sprs[1]) != 64) {
+    for (var _i = 0, _n = array_length(_ed.smaa_lut_sprs); _i < _n; _i++) {
+      if (sprite_exists(_ed.smaa_lut_sprs[_i])) sprite_delete(_ed.smaa_lut_sprs[_i]);
+    }
+
+    _ed.smaa_lut_sprs = [];
+    var _dir = working_directory + "__PolygonEditor__/smaa/";
+
+    if (!file_exists(_dir + "smaa_area.png") || !file_exists(_dir + "smaa_search.png")) return false;
+    var _sa = sprite_add(_dir + "smaa_area.png", 1, false, false, false, 0, 0);
+    var _ss = sprite_add(_dir + "smaa_search.png", 1, false, false, false, 0, 0);
+
+    if (_sa < 0 || !sprite_exists(_sa) || sprite_get_width(_sa) != 160 || sprite_get_height(_sa) != 560 || sprite_get_number(_sa) != 1
+    || _ss < 0 || !sprite_exists(_ss) || sprite_get_width(_ss) != 64 || sprite_get_height(_ss) != 16 || sprite_get_number(_ss) != 1) {
+      if (_sa >= 0 && sprite_exists(_sa)) sprite_delete(_sa);
+      if (_ss >= 0 && sprite_exists(_ss)) sprite_delete(_ss);
+      return false;
+    }
+
+    _ed.smaa_lut_sprs = [ _sa, _ss ];
+  }
+
+  var _ok = true;
+
+  if (!surface_exists(_ed[$ "smaa_lut_area"])
+  && !__poly_smaa_lut_blit(_ed, "smaa_lut_area", _ed.smaa_lut_sprs[0], 160, 560)) _ok = false;
+  if (!surface_exists(_ed[$ "smaa_lut_search"])
+  && !__poly_smaa_lut_blit(_ed, "smaa_lut_search", _ed.smaa_lut_sprs[1], 64, 16)) _ok = false;
+  return _ok;
+}
+
+// Copies a LUT sprite 1:1 into its surface (unfiltered, exact texels).
+// The sprite itself is kept alive by the caller (see above).
+function __poly_smaa_lut_blit(_ed, _field, _spr, _w, _h) {
+  var _surf = surface_create(_w, _h);
+
+  if (!surface_exists(_surf)) return false;
+  var _was_blend = gpu_get_blendenable();
+  var _was_filter = gpu_get_texfilter();
+  gpu_set_blendenable(false);
+  gpu_set_texfilter(false);
+  surface_set_target(_surf);
+  draw_clear_alpha(c_black, 0);
+  draw_sprite(_spr, 0, 0, 0);
+  surface_reset_target();
+  gpu_set_texfilter(_was_filter);
+  gpu_set_blendenable(_was_blend);
+
+  if (!surface_exists(_surf) || surface_get_width(_surf) != _w || surface_get_height(_surf) != _h) return false;
+  _ed[$ _field] = _surf;
+  return true;
+}
+
+// Ensures one 1x SMAA scratch surface (edges/weights) at w,h.
+// Same resize-stable dance as the hi scratch: during active resizes the
+// old surface survives one frame and the caller falls back to direct.
+function __poly_smaa_scratch(_ed, _field, _stable, _w, _h) {
+  var _cur = _ed[$ _field];
+
+  if (surface_exists(_cur) && surface_get_width(_cur) == _w && surface_get_height(_cur) == _h) {
+    _ed[$ _stable] = { w: _w, h: _h };
+    return true;
+  }
+
+  var _st = _ed[$ _stable];
+  var _ok = is_struct(_st) && _st[$ "w"] == _w && _st[$ "h"] == _h;
+
+  if (!surface_exists(_cur) || _ok) {
+    if (surface_exists(_cur)) __poly_surf_retire(_ed, _cur);
+    _ed[$ _field] = surface_create(max(1, _w), max(1, _h));
+
+    if (!surface_exists(_ed[$ _field])) return false;
+    _ed[$ _stable] = { w: _w, h: _h };
+    return surface_get_width(_ed[$ _field]) == _w && surface_get_height(_ed[$ _field]) == _h;
+  }
+
+  _ed[$ _stable] = { w: _w, h: _h };
+  return false;
+}
+
+// SMAA-resolves _src (raw 1x 3D) onto scene_surf via edge, blend-weights
+// and neighborhood passes. False when unavailable (shaders, LUTs or
+// scratch surfaces), so the caller falls back to a direct render.
+function __poly_smaa_resolve(_ed, _src, _w, _h) {
+  static _u_e = -2;
+  static _u_b = -2;
+  static _u_r = -2;
+  static _s_area = -2;
+  static _s_search = -2;
+  static _s_blend = -2;
+  _ed.smaa_err = "shaders";
+
+  if (!shader_is_compiled(shPolygonEditorSMAAEdge)
+  || !shader_is_compiled(shPolygonEditorSMAABlend)
+  || !shader_is_compiled(shPolygonEditorSMAAResolve)) return false;
+  _ed.smaa_err = "luts";
+
+  if (!__poly_smaa_luts(_ed)) return false;
+  _ed.smaa_err = "scratch";
+
+  if (!surface_exists(_src) || !surface_exists(_ed.scene_surf)) return false;
+  if (!__poly_smaa_scratch(_ed, "scene_smaa_e", "smaa_e_stable", _w, _h)) return false;
+  if (!__poly_smaa_scratch(_ed, "scene_smaa_w", "smaa_w_stable", _w, _h)) return false;
+  _ed.smaa_err = "samplers";
+  if (_u_e == -2) _u_e = shader_get_uniform(shPolygonEditorSMAAEdge, "u_texel");
+  if (_u_b == -2) _u_b = shader_get_uniform(shPolygonEditorSMAABlend, "u_texel");
+  if (_u_r == -2) _u_r = shader_get_uniform(shPolygonEditorSMAAResolve, "u_texel");
+  if (_s_area == -2) _s_area = shader_get_sampler_index(shPolygonEditorSMAABlend, "u_areaTex");
+  if (_s_search == -2) _s_search = shader_get_sampler_index(shPolygonEditorSMAABlend, "u_searchTex");
+  if (_s_blend == -2) _s_blend = shader_get_sampler_index(shPolygonEditorSMAAResolve, "u_blendTex");
+
+  if (_u_e < 0 || _u_b < 0 || _u_r < 0 || _s_area < 0 || _s_search < 0 || _s_blend < 0) return false;
+  var _tx = 1.0 / max(_w, 1);
+  var _ty = 1.0 / max(_h, 1);
+  var _was_blend = gpu_get_blendenable();
+  var _was_filter = gpu_get_texfilter();
+  gpu_set_blendenable(false);
+  gpu_set_texfilter(true);
+
+  // Pass 1: edges of the raw render.
+  surface_set_target(_ed.scene_smaa_e);
+  draw_clear(c_black);
+  shader_set(shPolygonEditorSMAAEdge);
+  shader_set_uniform_f(_u_e, _tx, _ty);
+  draw_surface(_src, 0, 0);
+  shader_reset();
+  surface_reset_target();
+
+  // Pass 2: blend weights from edges + LUTs.
+  surface_set_target(_ed.scene_smaa_w);
+  draw_clear(c_black);
+  shader_set(shPolygonEditorSMAABlend);
+  shader_set_uniform_f(_u_b, _tx, _ty);
+  texture_set_stage(_s_area, surface_get_texture(_ed.smaa_lut_area));
+  texture_set_stage(_s_search, surface_get_texture(_ed.smaa_lut_search));
+  draw_surface(_ed.scene_smaa_e, 0, 0);
+  shader_reset();
+  surface_reset_target();
+
+  // Pass 3: blend the raw render with the weights onto scene_surf.
+  surface_set_target(_ed.scene_surf);
+  draw_clear(c_black);
+  shader_set(shPolygonEditorSMAAResolve);
+  shader_set_uniform_f(_u_r, _tx, _ty);
+  texture_set_stage(_s_blend, surface_get_texture(_ed.scene_smaa_w));
+  draw_surface(_src, 0, 0);
+  shader_reset();
+  surface_reset_target();
+
+  gpu_set_texfilter(_was_filter);
+  gpu_set_blendenable(_was_blend);
+
+  if (!surface_exists(_ed.scene_smaa_e) || !surface_exists(_ed.scene_smaa_w)) {
+    _ed.smaa_err = "output lost";
+    return false;
+  }
+
+  _ed.smaa_err = "ok";
   return true;
 }

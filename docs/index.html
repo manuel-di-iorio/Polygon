@@ -194,14 +194,17 @@ my_game_destroy();</code></pre>
               <td><code>poly_create(config)</code></td>
               <td>
                 Boot editor state from
-                <code>{ scene?, assets?, cam?, on_create?, on_close? }</code>:
+                <code>{ scene?, assets?, cam?, on_create?, on_close?, on_compose? }</code>:
                 <code>assets</code> is <code>{ key: { model, on_create? } }</code>;
                 owns its scene (empty at boot; the live
                 <code>scene</code> is mirrored as copies on every enable,
                 else camera/sun/env defaults spawn).
                 <code>on_create(node, assetId, model, id)</code> fires first,
                 then the per-model hook — walk the
-                subtree for model content
+                subtree for model content.
+                <code>on_compose(surf, w, h)</code> previews your
+                post-processing in the viewport (after the 3D render,
+                before overlays)
               </td>
             </tr>
             <tr>
@@ -341,6 +344,33 @@ _assets[$ "models/rock.glb"] = { model: my_load_model("models/rock.glb") };
 var _rep = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", _assets, my_on_create);
 // _rep = { placed: 9, failed: 0, companions: 2, warnings: [], placements: [...] }
 // After loading, assign Forward+Shadow shaders per spawned node (see Shadows above).</code></pre>
+        </div>
+        <h3>Viewport post-processing</h3>
+        <p class="sub">
+          Pass <code>on_compose(surf, w, h)</code> in the
+          <code>poly_create</code> config to preview your post-processing
+          inside the editor viewport: it runs after the 3D render
+          (post-AA) and before gizmo/outline overlays, so overlays stay
+          sharp. Copy <code>surf</code> to your own scratch (never sample
+          it while targeting it), grade back onto <code>surf</code>, and
+          leave the target on <code>surf</code>. It runs on re-render, not
+          every frame:
+        </p>
+        <div class="codeblock terminal">
+          <div class="term-bar">
+            <span></span><span></span><span></span
+            ><button class="copy" data-copy="fmt-compose">Copy</button>
+          </div>
+          <pre id="fmt-compose"><code class="lang-gml">on_compose: function(_surf, _w, _h) {
+  my_scratch = my_postfx_ensure(my_scratch, _w, _h);
+  surface_set_target(my_scratch);
+  draw_surface(_surf, 0, 0);
+  surface_reset_target();
+  surface_set_target(_surf);
+  shader_set(shMyGrade);
+  draw_surface(my_scratch, 0, 0);
+  shader_reset();
+}</code></pre>
         </div>
       </section>
 

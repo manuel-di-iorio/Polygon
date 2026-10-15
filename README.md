@@ -29,7 +29,7 @@ Polygon opens inside your running game (press **F1** in the demo), mirrors the l
 - Dockable windows: Hierarchy, Inspector, Models, Scene, Toolbar
 - Orientation **ViewCube**, infinite grid, procedural sky
 - Selection outline (GPU mask), GPU ID-buffer picking
-- Shaded / Unlit draw modes, antialiasing: Off, SSAA, FXAA
+- Shaded / Unlit draw modes, antialiasing: Off, FXAA, SMAA (default), SSAA
 
 **Workflow**
 - JSON scene files (versioned format) with save / load / delete dialog
@@ -66,6 +66,7 @@ var config = {
   cam: my_camera_node,      // your gameplay camera node (seeds the editor view)
   on_create: my_on_create,    // optional: called for every spawned node
   on_close: my_on_close,    // optional: called when the editor closes
+  on_compose: my_on_compose,  // optional: viewport post-processing hook
   assets,           // struct keyed by asset id: { model, on_create? }
 };
 
@@ -104,6 +105,7 @@ Close it from the editor with **File → Close Editor** (Ctrl+W).
 | `assets`   | Struct `{ assetKey: { model, on_create? } }`. The key is the stable asset id used in scene files (usually the load path); the file name (no path, no extension) is used as display text everywhere. `on_create` is an optional per-model hook, called after the global one. |
 | `on_create` | `function(node, assetId, model, id)`. Called for every spawned node: global hook first, then the per-model `on_create` from the library entry. `assetId` is the stable key (same string as in files); `model` is the resolved library model. Walk the subtree: the model root lives inside the wrapper. |
 | `on_close` | Called after the editor closes. |
+| `on_compose` | `function(surf, w, h)`. Optional viewport post-processing: called with the scene surface as target, after the 3D render (post-AA) and before overlays compose (they stay sharp). Copy `surf` to your own scratch, apply your shader back onto `surf`, and leave the target on `surf`. Runs on re-render, not every frame. |
 
 ---
 
@@ -169,6 +171,25 @@ The cursor wraps at window edges during camera and gizmo drags.
 ### Creating lights, cameras and environment
 
 Use the **Create** menu: Directional Light, Point Light (up to 8 lights), Perspective Camera, Ortho Camera, Environment (one per scene). The first enabled camera is the gameplay camera; otherwise the first one is used.
+
+### Viewport post-processing
+
+Pass `on_compose` in the config to preview your own post-processing inside the editor viewport. It runs after the 3D render (post-AA) and before gizmo/outline overlays, so overlays are never graded:
+
+```gml
+on_compose: function(_surf, _w, _h) {
+  my_scratch = my_postfx_ensure(my_scratch, _w, _h);
+  surface_set_target(my_scratch);
+  draw_surface(_surf, 0, 0); // snapshot (never sample _surf while targeting it)
+  surface_reset_target();
+  surface_set_target(_surf); // restore the editor target!
+  shader_set(shMyGrade);
+  shader_set_uniform_f(shader_get_uniform(shMyGrade, "u_texel"), 1 / _w, 1 / _h);
+  draw_surface(my_scratch, 0, 0);
+  shader_reset();
+  // leave the target on _surf and GPU state as you found it
+}
+```
 
 ---
 

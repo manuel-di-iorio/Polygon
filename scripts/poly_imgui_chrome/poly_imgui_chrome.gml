@@ -88,14 +88,15 @@ function __poly_imgui_toolbar(_ed) {
   ImGui.SameLine();
   ImGui.SetNextItemWidth(86);
   var _aa = __poly_aa_mode(_ed);
-  var _aa_label = _aa == "off" ? "AA Off" : _aa == "fxaa" ? "FXAA" : "SSAA";
+  var _aa_label = _aa == "off" ? "AA Off" : _aa == "fxaa" ? "FXAA" : _aa == "smaa" ? "SMAA" : "SSAA";
 
   if (!ImGui.BeginCombo("##aa_mode", _aa_label)) {
     if (ImGui.IsItemHovered()) ImGui.SetTooltip("Viewport antialiasing");
   } else {
     if (ImGui.Selectable("AA Off", _aa == "off", 0, 0, 0)) __poly_aa_set(_ed, "off");
-    if (ImGui.Selectable("SSAA", _aa == "ssaa", 0, 0, 0)) __poly_aa_set(_ed, "ssaa");
     if (ImGui.Selectable("FXAA", _aa == "fxaa", 0, 0, 0)) __poly_aa_set(_ed, "fxaa");
+    if (ImGui.Selectable("SMAA", _aa == "smaa", 0, 0, 0)) __poly_aa_set(_ed, "smaa");
+    if (ImGui.Selectable("SSAA", _aa == "ssaa", 0, 0, 0)) __poly_aa_set(_ed, "ssaa");
     ImGui.EndCombo();
   }
 

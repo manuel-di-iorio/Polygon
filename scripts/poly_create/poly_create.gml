@@ -2,7 +2,7 @@
 
 // Initializes editor state and restores view.
 // Takes only the runtime adapter ({ scene?, assets?, cam?, on_create?,
-// on_close? }): the editor owns its scene and never touches game
+// on_close?, on_compose? }): the editor owns its scene and never touches game
 // instances. Init is static only (library + empty scene); the live scene
 // is mirrored on every enable, when wrappers are detected by prefix and
 // bare roots get fresh ids. Contract: on_create receives the wrapper

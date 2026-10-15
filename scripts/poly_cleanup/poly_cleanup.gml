@@ -17,6 +17,25 @@ function poly_cleanup(_ed = undefined) {
   _ed.scene_surf = undefined;
   if (surface_exists(_ed[$ "scene_hi"])) surface_free(_ed.scene_hi);
   _ed.scene_hi = undefined;
+  if (surface_exists(_ed[$ "scene_smaa_e"])) surface_free(_ed.scene_smaa_e);
+  _ed.scene_smaa_e = undefined;
+  if (surface_exists(_ed[$ "scene_smaa_w"])) surface_free(_ed.scene_smaa_w);
+  _ed.scene_smaa_w = undefined;
+
+  if (surface_exists(_ed[$ "smaa_lut_area"])) surface_free(_ed.smaa_lut_area);
+  _ed.smaa_lut_area = -1;
+
+  if (surface_exists(_ed[$ "smaa_lut_search"])) surface_free(_ed.smaa_lut_search);
+  _ed.smaa_lut_search = -1;
+
+  if (variable_struct_exists(_ed, "smaa_lut_sprs") && is_array(_ed.smaa_lut_sprs)) {
+    for (var _i = 0, _n = array_length(_ed.smaa_lut_sprs); _i < _n; _i++) {
+      if (sprite_exists(_ed.smaa_lut_sprs[_i])) sprite_delete(_ed.smaa_lut_sprs[_i]);
+    }
+
+    _ed.smaa_lut_sprs = [];
+  }
+
   _ed.renderer = undefined;
   __poly_ui_save(_ed);
   __poly_drop_preview_clear(_ed);

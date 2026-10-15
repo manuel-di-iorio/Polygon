@@ -25,6 +25,7 @@ function __poly_create_rt(_src) {
 
   if (variable_struct_exists(_src, "on_create")) _rtc.on_create = _src.on_create;
   if (variable_struct_exists(_src, "on_close")) _rtc.on_close = _src.on_close;
+  if (variable_struct_exists(_src, "on_compose")) _rtc.on_compose = _src.on_compose;
   if (variable_struct_exists(_src, "cam")) _rtc.cam = _src.cam;
   if (variable_struct_exists(_src, "scene")) _rtc.live_scene = _src.scene;
   return _rtc;
@@ -205,8 +206,21 @@ function __poly_compose_speedtip(_ed, _vp) {
   draw_set_halign(fa_left);
 }
 
+// Runs the optional on_compose(surf, w, h) post-processing hook over the
+// scene surface (target already set, raw 3D image). Overlays compose
+// after, so they are never post-processed.
+function __poly_compose_hook(_ed) {
+  if (_ed == undefined || !is_struct(_ed.rt)) return;
+  if (!variable_struct_exists(_ed.rt, "on_compose") || !is_method(_ed.rt.on_compose)) return;
+  if (!surface_exists(_ed.scene_surf)) return;
+  _ed.rt.on_compose(_ed.scene_surf, surface_get_width(_ed.scene_surf), surface_get_height(_ed.scene_surf));
+}
+
 // Renders viewport overlays into scene surface (target already set).
+// Runs the optional on_compose hook first: custom post-processing over
+// the raw 3D image (post-AA resolve), before overlays stay sharp.
 function __poly_compose_viewport(_ed) {
+  __poly_compose_hook(_ed);
   var _vp = __poly_viewport_cached(_ed);
   var _was_blend = gpu_get_blendenable();
   var _was_mode = gpu_get_blendmode_ext_sepalpha();
@@ -592,7 +606,7 @@ function __poly_create_state(_rt) {
     viewpan_moved: false,
     scene_surf: undefined,
     scene_hi: undefined,
-    aa_mode: "ssaa",
+    aa_mode: "smaa",
     aa_k: 2,
     aa_used: 1,
     scene_stable_w: -1,
