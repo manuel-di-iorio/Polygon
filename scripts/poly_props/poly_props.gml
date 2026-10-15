@@ -612,7 +612,6 @@ function __poly_create_env(_ed) {
   var _data = __poly_env_defaults();
   __poly_env_apply(_node, _data);
   __poly_create_finish(_ed, _node, "environment", undefined, _data);
-  __poly_hidden_set(_ed, _node, true);
   _ed.sel = [ _node ];
   _ed.giz.drag = -1;
   __poly_history_commit(_ed, _before);

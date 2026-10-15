@@ -719,7 +719,6 @@ function __poly_track_adopt_finish(_ed, _new, _node, _kind, _data, _label = unde
   else  __poly_env_apply(_new, _data);
   _ed.rt.scene.update(0);
   __poly_kind_register(_ed, _new, _kind, "", _label, _data);
-  if (_kind != "light" || _data.type == "directional") __poly_hidden_set(_ed, _new, true);
   if (_kind == "camera") __poly_cameras_mute(_ed);
   return _new;
 }

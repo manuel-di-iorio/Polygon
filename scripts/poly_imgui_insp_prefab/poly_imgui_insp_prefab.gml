@@ -26,7 +26,7 @@ function __poly_over_diffs(_node, _en, _entry) {
       if (is_array(_euler) && array_length(_euler) >= 3) {
         var _deg = [ radtodeg(_euler[0]), radtodeg(_euler[1]), radtodeg(_euler[2]) ];
 
-        if (__poly_ang_diff(_deg[0], _spawn.rot[0]) > 0.5 || __poly_ang_diff(_deg[1], _spawn.rot[1]) > 0.5 || __poly_ang_diff(_deg[2], _spawn.rot[2]) > 0.5) {
+        if (__poly_ang_diff(_deg[0], _spawn.rot[0]) > 0.05 || __poly_ang_diff(_deg[1], _spawn.rot[1]) > 0.05 || __poly_ang_diff(_deg[2], _spawn.rot[2]) > 0.05) {
           array_push(_diffs, { kind: "rot", label: "Rotation" });
         }
       }

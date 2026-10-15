@@ -38,8 +38,9 @@ function __poly_destroy_subtree(_node) {
 // New and discard
 // ---------------------------------------------------------------------------
 
-// Clears scene to empty state.
+// Clears scene to empty state (abandons any running chunked load).
 function __poly_new_scene(_ed) {
+  _ed.load_job = undefined;
   __poly_drop_preview_clear(_ed);
   var _tracked = __poly_root_tracked(_ed);
 
@@ -118,16 +119,13 @@ function __poly_default_sun(_ed) {
 }
 
 // Drops session edits, restoring the last clean state.
+// File reload is chunked (load_job): the finish step resets selection,
+// history and dirty, same as a dialog load.
 function __poly_discard_changes(_ed) {
   var _path = __poly_scene_path(_ed);
 
   if (_path != "" && file_exists(_path)) {
-    if (__poly_load_scene(_ed)) {
-      __poly_sel_clear(_ed);
-      __poly_history_clear(_ed);
-    }
-
-    return;
+    if (__poly_load_scene_begin(_ed) == "") return;
   }
 
   if (variable_struct_exists(_ed, "open_snapshot") && is_array(_ed.open_snapshot)) {

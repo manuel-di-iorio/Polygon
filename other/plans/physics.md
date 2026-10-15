@@ -170,7 +170,7 @@ Validazione tollerante: `motion/shape` sconosciuti -> `None` + `report.warnings`
 
 ## 7. Runtime `poly_load`
 
-`poly_load(scene, path, assets, on_create)` deve:
+`poly_load(scene, path, assets, on_create?, on_finish?)` deve:
 
 1. `spawnInto` come ora.
 2. applicare `physics` dal descrittore via stesso `__poly_physics_apply` (codice condiviso editor/game, come `__poly_flags_apply_data`).

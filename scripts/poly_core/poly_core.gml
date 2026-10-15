@@ -358,6 +358,7 @@ function __poly_view_restore(_ed) {
 // Tears down editor chrome when closing.
 function __poly_deactivate(_ed) {
   __poly_drop_preview_clear(_ed);
+  _ed.load_job = undefined;
   __poly_view_restore(_ed);
   __poly_bg_restore(_ed);
   __poly_grid_remove(_ed);
@@ -381,6 +382,7 @@ function __poly_deactivate(_ed) {
 
 // Sets up editor chrome when opening (fresh mirror of the live scene).
 function __poly_activate(_ed) {
+  _ed.load_job = undefined;
   __poly_view_save(_ed);
   __poly_view_sync(_ed);
   __poly_import_live(_ed);

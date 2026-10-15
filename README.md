@@ -197,7 +197,8 @@ on_compose: function(_surf, _w, _h) {
 
 Scenes are saved from **File → Save / Save As** into `working_directory/__PolygonEditor__/scenes/<name>.json` or `<name>.bin`. The save dialog has a **JSON / Binary** radio (no extra modal): Binary is a compact buffer format (`PLYB` magic, `buffer_*` types, no JSON inside) with the same content as JSON v1. **File → Load** shows a search + file list with one row per file (`scene.json` and `scene.bin` listed separately); `poly_load` opens either one.
 
-Load a scene in your game, without the editor, with:
+Load a scene in your game, without the editor, with (always async: parse
+now, spawn chunked — pump every Step, callback on completion):
 
 ```gml
 // assets: same struct shape as the poly_create config
@@ -205,8 +206,13 @@ var assets = {};
 assets[$ "models/tree.glb"] = { model: my_model_a };
 assets[$ "models/rock.glb"] = { model: my_model_b, on_create: my_rock_setup };
 
-var report = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", assets, my_on_create);
-// works with .json and .bin (auto-detected): "__PolygonEditor__/scenes/level1.bin"
+var job = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", assets, my_on_create, function(_rep) {
+  show_debug_message("placed: " + string(_rep.placed) + " failed: " + string(_rep.failed));
+});
+// undefined = missing/invalid file. The scene must outlive the load.
+
+// oGame / Step
+poly_load_step(); // advances all pending loads (~48 nodes each frame), returns pending count
 // report = { placed, failed, companions, warnings, placements }
 // placements = [{ node, asset, id, label, model, instance }]
 ```

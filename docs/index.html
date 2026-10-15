@@ -259,14 +259,25 @@ my_game_destroy();</code></pre>
               </td>
             </tr>
             <tr>
-              <td><code>poly_load(scene, fname, assets, on_create?)</code></td>
+              <td><code>poly_load(scene, fname, assets, on_create?, on_finish?)</code></td>
               <td>
-                Load a saved scene into a live game scene (no editor);
+                Start loading a saved scene into a live game scene, always
+                async (no editor): parses now, spawns chunked via
+                <code>poly_load_step()</code>; returns the job (or
+                <code>undefined</code> when missing/invalid);
                 <code>assets</code> is <code>{ key: { model, on_create? } }</code>
                 (same shape as init config);
                 per instance calls global <code>on_create</code>, then the per-model
                 hook, then the companion spawn for Actor-bound models;
-                returns <code>{ placed, failed, companions, warnings, placements }</code>
+                <code>on_finish(report)</code> fires once with
+                <code>{ placed, failed, companions, warnings, placements }</code>
+              </td>
+            </tr>
+            <tr>
+              <td><code>poly_load_step(budget?)</code></td>
+              <td>
+                Advance all pending <code>poly_load</code> jobs (~48 nodes
+                each); call every Step; returns the pending job count
               </td>
             </tr>
           </tbody>
@@ -323,8 +334,9 @@ my_game_destroy();</code></pre>
         </p>
         <h3>In-game loading (no editor)</h3>
         <p class="sub">
-          <code>poly_load(scene, fname, assets, on_create?)</code> spawns a saved scene into
-          any live <code>GM3D_Scene</code>. Load and freeze each model once,
+          <code>poly_load(scene, fname, assets, on_create?, on_finish?)</code> starts loading a saved scene into
+          any live <code>GM3D_Scene</code>, always async: parses now, spawns chunked via
+          <code>poly_load_step()</code> (call every Step). Load and freeze each model once,
           then pass them as <code>{ key: { model, on_create? } }</code> — the
           key is the asset id (the relative load path, e.g. <code>"models/tree.glb"</code>).
           Per instance it calls the global <code>on_create(node, assetId, model, id)</code>,
@@ -341,8 +353,12 @@ my_game_destroy();</code></pre>
           <pre id="fmt-load"><code class="lang-gml">var _assets = {};
 _assets[$ "models/tree.glb"] = { model: my_load_model("models/tree.glb") };
 _assets[$ "models/rock.glb"] = { model: my_load_model("models/rock.glb") };
-var _rep = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", _assets, my_on_create);
-// _rep = { placed: 9, failed: 0, companions: 2, warnings: [], placements: [...] }
+var _job = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", _assets, my_on_create, function(_rep) {
+  show_debug_message("placed: " + string(_rep.placed));
+});
+// Step event:
+poly_load_step(); // ~48 nodes per job; returns pending count
+// _rep = { placed, failed, companions, warnings, placements: [...] }
 // After loading, assign Forward+Shadow shaders per spawned node (see Shadows above).</code></pre>
         </div>
         <h3>Viewport post-processing</h3>

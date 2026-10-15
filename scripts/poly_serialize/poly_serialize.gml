@@ -654,8 +654,6 @@ function __poly_rebuild_prop(_ed, _p, _kind) {
   });
 
   if (_node == undefined) return undefined;
-  if (_kind == "environment") __poly_hidden_set(_ed, _node, true);
-  if (_kind == "light" && is_struct(_data) && variable_struct_exists(_data, "type") && _data.type == "directional") __poly_hidden_set(_ed, _node, true);
   return _node;
 }
 
@@ -718,43 +716,6 @@ function __poly_save_scene(_ed) {
     if (!__poly_write_text_file(_path, _json)) return false;
   }
 
-  _ed.dirty = false;
-  return true;
-}
-
-// Loads a scene file (JSON v1 or PLYB binary) into the editor.
-function __poly_load_scene(_ed) {
-  var _path = __poly_scene_path(_ed);
-
-  if (_path == "" || !file_exists(_path)) {
-    var _alt = __poly_scene_path_as(_path, __poly_scene_fmt_of(_path) == "bin" ? "json" : "bin");
-
-    if (_alt == "" || !file_exists(_alt)) return false;
-    _ed.scene_file = __poly_scene_path_as(_ed.scene_file, __poly_scene_fmt_of(_alt));
-    _path = _alt;
-  }
-
-  var _file = __poly_load_data_file(_path);
-
-  if (_file == undefined) return false;
-  var _nodes = _file.nodes;
-
-  if (!__poly_validate_descs(_nodes)) return false;
-
-  if (is_real(_file[$ "seq"])) {
-    __poly_reg_ensure(_ed);
-    _ed.id_seq = max(_ed.id_seq, floor(_file.seq));
-  }
-
-  __poly_rebuild(_ed, _nodes);
-  _ed.asset_meta = __poly_file_assets(_file);
-  if (__poly_light_count(_ed) == 0) __poly_default_sun(_ed);
-  if (__poly_env_node(_ed) == undefined) __poly_create_env(_ed);
-  __poly_viewcam_seed(_ed);
-  _ed.sel = [];
-  _ed.giz.drag = -1;
-  _ed.giz.hover = -1;
-  __poly_history_clear(_ed);
   _ed.dirty = false;
   return true;
 }

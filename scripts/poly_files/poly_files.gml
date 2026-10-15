@@ -259,25 +259,6 @@ function __poly_save_named(_ed, _name, _fmt = "json") {
   return __poly_save_scene(_ed);
 }
 
-// Loads scene by name (tries requested format first, then the other).
-function __poly_load_named(_ed, _name, _fmt = "json") {
-  var _clean = __poly_sanitize_scene_name(_name);
-
-  if (_clean == "") return false;
-  if (_fmt != "bin") _fmt = "json";
-  var _old = _ed.scene_file;
-  var _alts = (_fmt == "bin") ? [ "bin", "json" ] : [ "json", "bin" ];
-
-  for (var _i = 0; _i < 2; _i++) {
-    _ed.scene_file = __poly_scene_file_for(_clean, _alts[_i]);
-
-    if (__poly_load_scene(_ed)) return true;
-  }
-
-  _ed.scene_file = _old;
-  return false;
-}
-
 // Starts a chunked load by name + format (progress dialog, no freeze).
 // Returns "" on start, else an error message for the dialog.
 function __poly_load_named_begin(_ed, _name, _fmt = "json") {
