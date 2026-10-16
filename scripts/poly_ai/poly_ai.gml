@@ -177,15 +177,8 @@ function __poly_ai_step(_ed) {
     var _msg = array_shift(_ai.inbox);
     var _res = undefined;
 
-    try {
-      if (is_struct(_msg) && variable_struct_exists(_msg, "op")) __poly_ai_log("op " + string(_msg.op) + " " + string(_msg.id));
-      _res = __poly_ai_exec(_ed, _msg);
-    } catch (_ex) {
-      __poly_ai_log("exec crashed: " + string(_ex));
-      _res = is_struct(_msg) && is_string(_msg.id)
-        ? __poly_ai_fail(_msg.id, "crashed", string(_ex))
-        : undefined;
-    }
+    if (is_struct(_msg) && variable_struct_exists(_msg, "op")) __poly_ai_log("op " + string(_msg.op) + " " + string(_msg.id));
+    _res = __poly_ai_exec(_ed, _msg);
 
     if (_res != undefined) {
       var _id = is_struct(_msg) && variable_struct_exists(_msg, "id") ? _msg.id : undefined;
@@ -1137,6 +1130,65 @@ function __poly_ai_capture_finish(_ed, _code = "", _message = "") {
   __poly_ai_send(_ed, _response);
 }
 
+// Renders one capture view. Returns { failure, camera, cameras, muted,
+// target_set }: failure is "" on success, otherwise the error message and
+// the caller still runs the shared cleanup below.
+function __poly_ai_capture_shot(_ed, _job) {
+  var _camera = undefined;
+  var _cameras = [];
+  var _muted = [];
+  var _target_set = false;
+  var _done = function(_failure) {
+    return { failure: _failure, camera: _camera, cameras: _cameras, muted: _muted, target_set: _target_set };
+  };
+  if (!surface_exists(_job.surface)) _job.surface = surface_create(clamp(round(_ed.scene_w), 160, 1920), clamp(round(_ed.scene_h), 90, 1080));
+  if (!surface_exists(_job.surface)) return _done("could not allocate capture surface");
+  _job.renderer = new GM3D_Renderer();
+  var _view = _job.views[_job.index];
+  var _pose = __poly_ai_capture_pose(_ed, _view);
+  if (variable_struct_exists(_pose, "error")) return _done(_pose.error_msg);
+  _camera = _job.scene.createNode("__capture_camera");
+  _camera.addComponent(new GM3D_CameraComponent());
+  var _settings = __poly_camera_read(_ed.rt.cam);
+  _settings.enabled = false;
+  __poly_camera_apply(_camera, _settings);
+  _camera.getCameraComponent().setScreenRect([ 0, 0, 1, 1 ]);
+  var _camera_context = { rt: { cam: _camera }, cam_anim: undefined };
+  var _camera_result = __poly_ai_op_camera(_camera_context, _pose);
+  if (variable_struct_exists(_camera_result, "error")) return _done(_camera_result.error_msg);
+  var _roots = __poly_tracked_nodes(_ed);
+  array_push(_roots, _ed.rt.cam);
+  for (var _root_index = 0; _root_index < array_length(_roots); _root_index++) {
+    __poly_walk_tree(_roots[_root_index], function(_node, _states) {
+      var _component = _node.getCameraComponent();
+      if (_component != undefined && _component.getEnabled()) {
+        array_push(_states, _component);
+        _component.setEnabled(false);
+      }
+    }, _cameras);
+  }
+  for (var _hide_index = 0; _hide_index < array_length(_job.hidden); _hide_index++) {
+    var _hide_node = __poly_ai_node(_ed, _job.hidden[_hide_index]);
+    if (_hide_node == undefined) return _done("hidden node removed during capture");
+    __poly_walk_tree(_hide_node, function(_node, _states) { __poly_walk_mute_node(_node, _states); }, _muted);
+  }
+  _camera.getCameraComponent().setEnabled(true);
+  _job.scene.update(0);
+  surface_set_target(_job.surface);
+  _target_set = true;
+  draw_clear(c_black);
+  _job.renderer.render(_job.scene);
+  surface_reset_target();
+  _target_set = false;
+  var _name = variable_struct_exists(_view, "name") ? _view.name : (_job.single ? "viewport" : "view_" + string(_job.index + 1));
+  var _path = temp_directory + "poly_capture_" + __poly_sanitize_scene_name(_job.id) + "_" + string(_job.index) + "_" + string_copy(__poly_sanitize_scene_name(_name), 1, 24) + ".png";
+  surface_save(_job.surface, _path);
+  if (!file_exists(_path)) return _done("could not write screenshot");
+  array_push(_job.shots, { name: _name, file: _path, width: surface_get_width(_job.surface), height: surface_get_height(_job.surface), editor_camera_unchanged: true });
+  _job.index++;
+  return _done("");
+}
+
 function __poly_ai_capture_draw(_ed) {
   if (!__poly_ai_capture_active(_ed)) return;
   var _job = _ed.ai.capture;
@@ -1144,60 +1196,12 @@ function __poly_ai_capture_draw(_ed) {
     __poly_ai_capture_finish(_ed, "cancelled", "scene changed during capture");
     return;
   }
-  var _camera = undefined;
-  var _cameras = [];
-  var _muted = [];
-  var _target_set = false;
-  var _failure = "";
-  try {
-    if (!surface_exists(_job.surface)) _job.surface = surface_create(clamp(round(_ed.scene_w), 160, 1920), clamp(round(_ed.scene_h), 90, 1080));
-    if (!surface_exists(_job.surface)) throw "could not allocate capture surface";
-    _job.renderer = new GM3D_Renderer();
-    var _view = _job.views[_job.index];
-    var _pose = __poly_ai_capture_pose(_ed, _view);
-    if (variable_struct_exists(_pose, "error")) throw _pose.error_msg;
-    _camera = _job.scene.createNode("__capture_camera");
-    _camera.addComponent(new GM3D_CameraComponent());
-    var _settings = __poly_camera_read(_ed.rt.cam);
-    _settings.enabled = false;
-    __poly_camera_apply(_camera, _settings);
-    _camera.getCameraComponent().setScreenRect([ 0, 0, 1, 1 ]);
-    var _camera_context = { rt: { cam: _camera }, cam_anim: undefined };
-    var _camera_result = __poly_ai_op_camera(_camera_context, _pose);
-    if (variable_struct_exists(_camera_result, "error")) throw _camera_result.error_msg;
-    var _roots = __poly_tracked_nodes(_ed);
-    array_push(_roots, _ed.rt.cam);
-    for (var _root_index = 0; _root_index < array_length(_roots); _root_index++) {
-      __poly_walk_tree(_roots[_root_index], function(_node, _states) {
-        var _component = _node.getCameraComponent();
-        if (_component != undefined && _component.getEnabled()) {
-          array_push(_states, _component);
-          _component.setEnabled(false);
-        }
-      }, _cameras);
-    }
-    for (var _hide_index = 0; _hide_index < array_length(_job.hidden); _hide_index++) {
-      var _hide_node = __poly_ai_node(_ed, _job.hidden[_hide_index]);
-      if (_hide_node == undefined) throw "hidden node removed during capture";
-      __poly_walk_tree(_hide_node, function(_node, _states) { __poly_walk_mute_node(_node, _states); }, _muted);
-    }
-    _camera.getCameraComponent().setEnabled(true);
-    _job.scene.update(0);
-    surface_set_target(_job.surface);
-    _target_set = true;
-    draw_clear(c_black);
-    _job.renderer.render(_job.scene);
-    surface_reset_target();
-    _target_set = false;
-    var _name = variable_struct_exists(_view, "name") ? _view.name : (_job.single ? "viewport" : "view_" + string(_job.index + 1));
-    var _path = temp_directory + "poly_capture_" + __poly_sanitize_scene_name(_job.id) + "_" + string(_job.index) + "_" + string_copy(__poly_sanitize_scene_name(_name), 1, 24) + ".png";
-    surface_save(_job.surface, _path);
-    if (!file_exists(_path)) throw "could not write screenshot";
-    array_push(_job.shots, { name: _name, file: _path, width: surface_get_width(_job.surface), height: surface_get_height(_job.surface), editor_camera_unchanged: true });
-    _job.index++;
-  } catch (_exception) {
-    _failure = string(_exception);
-  }
+  var _shot = __poly_ai_capture_shot(_ed, _job);
+  var _failure = _shot.failure;
+  var _camera = _shot.camera;
+  var _cameras = _shot.cameras;
+  var _muted = _shot.muted;
+  var _target_set = _shot.target_set;
   if (_target_set) surface_reset_target();
   if (_camera != undefined) __poly_destroy_subtree(_camera);
   __poly_walk_restore([], _muted);

@@ -50,6 +50,7 @@
     {"name":"poly_is_active","order":17,"path":"scripts/poly_is_active/poly_is_active.yy",},
     {"name":"poly_library","order":17,"path":"scripts/poly_library/poly_library.yy",},
     {"name":"poly_load_internal","order":20,"path":"scripts/poly_load_internal/poly_load_internal.yy",},
+    {"name":"poly_load_step","order":24,"path":"scripts/poly_load_step/poly_load_step.yy",},
     {"name":"poly_load","order":8,"path":"scripts/poly_load/poly_load.yy",},
     {"name":"poly_math","order":4,"path":"scripts/poly_math/poly_math.yy",},
     {"name":"poly_outline","order":14,"path":"scripts/poly_outline/poly_outline.yy",},

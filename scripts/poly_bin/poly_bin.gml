@@ -34,13 +34,9 @@ function __poly_bin_has_magic(_path) {
   if (_buf < 0) return false;
   var _ok = false;
 
-  try {
-    if (buffer_get_size(_buf) >= 4) {
-      _ok = buffer_peek(_buf, 0, buffer_u8) == 80 && buffer_peek(_buf, 1, buffer_u8) == 76
-        && buffer_peek(_buf, 2, buffer_u8) == 89 && buffer_peek(_buf, 3, buffer_u8) == 66;
-    }
-  } catch (_ex) {
-    _ok = false;
+  if (buffer_get_size(_buf) >= 4) {
+    _ok = buffer_peek(_buf, 0, buffer_u8) == 80 && buffer_peek(_buf, 1, buffer_u8) == 76
+      && buffer_peek(_buf, 2, buffer_u8) == 89 && buffer_peek(_buf, 3, buffer_u8) == 66;
   }
 
   buffer_delete(_buf);
@@ -97,7 +93,6 @@ function __poly_bin_save_descs(_path, _seq, _assets, _nodes) {
   if (!is_struct(_assets)) _assets = {};
   var _buf = buffer_create(1024, buffer_grow, 1);
 
-  try {
     buffer_write(_buf, buffer_u8, 80); // P
     buffer_write(_buf, buffer_u8, 76); // L
     buffer_write(_buf, buffer_u8, 89); // Y
@@ -214,10 +209,6 @@ function __poly_bin_save_descs(_path, _seq, _assets, _nodes) {
         buffer_write(_buf, buffer_u8, _e[$ "enabled"] != false ? 1 : 0);
       }
     }
-  } catch (_ex) {
-    buffer_delete(_buf);
-    return false;
-  }
 
   buffer_save(_buf, _path);
   buffer_delete(_buf);
@@ -237,12 +228,17 @@ function __poly_bin_load_data(_path) {
   if (_buf < 0) return undefined;
   var _out = undefined;
 
-  try {
     if (buffer_read(_buf, buffer_u8) != 80 || buffer_read(_buf, buffer_u8) != 76
-    || buffer_read(_buf, buffer_u8) != 89 || buffer_read(_buf, buffer_u8) != 66) throw "bad magic";
+    || buffer_read(_buf, buffer_u8) != 89 || buffer_read(_buf, buffer_u8) != 66) {
+      buffer_delete(_buf);
+      return undefined;
+    }
     var _ver = buffer_read(_buf, buffer_u16);
 
-    if (_ver != 1) throw "bad version";
+    if (_ver != 1) {
+      buffer_delete(_buf);
+      return undefined;
+    }
     var _seq = buffer_read(_buf, buffer_s32);
     var _assets = {};
     var _na = buffer_read(_buf, buffer_u16);
@@ -334,9 +330,6 @@ function __poly_bin_load_data(_path) {
     }
 
     _out = { seq: _seq, assets: _assets, nodes: _nodes };
-  } catch (_ex) {
-    _out = undefined;
-  }
 
   buffer_delete(_buf);
   return _out;

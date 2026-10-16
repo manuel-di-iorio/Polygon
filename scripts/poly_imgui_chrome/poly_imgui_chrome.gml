@@ -222,20 +222,31 @@ function __poly_imgui_grid_snap(_ed) {
 // UI persistence
 // ---------------------------------------------------------------------------
 
-// Returns UI settings file path.
-// Saves view cube offset to file.
+// UI settings file name.
+function __poly_ui_file() {
+  return "polygon_ui.json";
+}
+
+// Saves view cube offset and first-build flag to file.
 function __poly_ui_save(_ed) {
   if (_ed == undefined) return;
+  var _dock_init = (is_struct(_ed.imgui) && variable_struct_exists(_ed.imgui, "dock_init") && _ed.imgui.dock_init == true)
+    || (variable_struct_exists(_ed, "dock_init") && _ed.dock_init == true);
   __poly_write_text_file(
-    working_directory + "poly_ui.json",
-    json_stringify({ cube_off: _ed.cube_off }, true)
+    working_directory + __poly_ui_file(),
+    json_stringify({ cube_off: _ed.cube_off, dock_init: _dock_init }, true)
   );
 }
 
-// Loads view cube offset from file.
+// Loads view cube offset and first-build flag from file.
 function __poly_ui_load(_ed) {
   if (_ed == undefined) return;
-  var _path = working_directory + "poly_ui.json";
+  var _path = working_directory + __poly_ui_file();
+  // One-shot migration from the old file name.
+  if (!file_exists(_path)) {
+    var _legacy = working_directory + "poly_ui.json";
+    if (file_exists(_legacy)) _path = _legacy;
+  }
 
   if (!file_exists(_path)) return;
   var _json = __poly_read_text_file(_path);
@@ -243,7 +254,12 @@ function __poly_ui_load(_ed) {
   if (_json == "") return;
   var _data = json_parse(_json);
 
-  if (!is_struct(_data) || !variable_struct_exists(_data, "cube_off")) return;
+  if (!is_struct(_data)) return;
+  if (variable_struct_exists(_data, "dock_init") && _data.dock_init == true) {
+    _ed.dock_init = true;
+    if (is_struct(_ed.imgui)) _ed.imgui.dock_init = true;
+  }
+  if (!variable_struct_exists(_data, "cube_off")) return;
   var _off = _data.cube_off;
 
   if (!is_array(_off) || array_length(_off) < 2 || !is_real(_off[0]) || !is_real(_off[1])) return;

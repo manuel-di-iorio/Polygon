@@ -96,6 +96,7 @@
     {"id":{"name":"poly_is_active","path":"scripts/poly_is_active/poly_is_active.yy",},},
     {"id":{"name":"poly_library","path":"scripts/poly_library/poly_library.yy",},},
     {"id":{"name":"poly_load_internal","path":"scripts/poly_load_internal/poly_load_internal.yy",},},
+    {"id":{"name":"poly_load_step","path":"scripts/poly_load_step/poly_load_step.yy",},},
     {"id":{"name":"poly_load","path":"scripts/poly_load/poly_load.yy",},},
     {"id":{"name":"poly_math","path":"scripts/poly_math/poly_math.yy",},},
     {"id":{"name":"poly_outline","path":"scripts/poly_outline/poly_outline.yy",},},

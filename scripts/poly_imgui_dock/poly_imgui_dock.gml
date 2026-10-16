@@ -37,7 +37,20 @@ function __poly_imgui_dock_fresh(_ed) {
 }
 
 // Checks if the dock layout still needs (re)building.
+// ImGui alone owns the layout: the default dock is built on the very
+// first run and on Reset Layout only. Later sessions skip the build and
+// trust the runtime ini (reloaded explicitly on the first frame).
+// NOTE: never probe the ini file from GML — the sandbox forbids file
+// ops outside working_directory. Our own flag lives in polygon_ui.json.
 function __poly_dock_needs_build(_ed) {
+  var _rebuild = (variable_struct_exists(_ed.imgui, "dock_rebuild") && _ed.imgui.dock_rebuild == true)
+    || (variable_struct_exists(_ed.imgui, "reset_layout") && _ed.imgui.reset_layout == true);
+  if (!_rebuild) {
+    if (variable_struct_exists(_ed.imgui, "dock_init") && _ed.imgui.dock_init == true) {
+      _ed.imgui.dock_built = true;
+      return false;
+    }
+  }
   if (variable_struct_exists(_ed.imgui, "dock_built") && _ed.imgui.dock_built == true
   && !(variable_struct_exists(_ed.imgui, "dock_rebuild") && _ed.imgui.dock_rebuild == true)) {
     return false;
@@ -62,8 +75,8 @@ function __poly_dock_split(_node, _dir, _ratio) {
 // (full height), Inspector top-right, Models bottom spanning everything
 // except Hierarchy. Split order Left, Down, Right gives Models the full
 // bottom strip; windows dock in priority order Scene panel, then the panels.
-// Runs once per session and on Reset Layout. Undocked windows keep working
-// floating via their SetNextWindowPos/Size fallbacks.
+// Runs when no runtime ini exists yet and on Reset Layout. Undocked windows
+// keep working floating via their SetNextWindowPos/Size fallbacks.
 function __poly_imgui_dock_build(_ed, _root) {
   if (_root == undefined) return;
   if (!__poly_dock_needs_build(_ed)) return;
@@ -106,6 +119,12 @@ function __poly_imgui_dock_build(_ed, _root) {
   _ed.imgui.dock_built = true;
   _ed.imgui.dock_rebuild = false;
   _ed.imgui.dock_pos_skip = true;
+  // First default build done: remember it in our own file and flush the
+  // runtime ini (native side, no sandbox involved).
+  _ed.imgui.dock_init = true;
+  _ed.dock_init = true;
+  __poly_ui_save(_ed);
+  __poly_rt_ini_save();
 }
 
 // ---------------------------------------------------------------------------
@@ -209,4 +228,28 @@ function __poly_imgui_panel_save(_ed, _key) {
   }
 
   _ed.imgui._winrect[$ _key] = { x: _x, y: _y, w: _w, h: _h, t: _title_h };
+}
+
+// Returns the runtime imgui.ini path (next to the build exe).
+function __poly_rt_ini_path() {
+  var _dir = program_directory;
+  if (!is_string(_dir) || _dir == "") return "";
+  var _sep = "\\";
+  if (string_char_at(_dir, string_length(_dir)) == "\\" || string_char_at(_dir, string_length(_dir)) == "/") _sep = "";
+  return _dir + _sep + "imgui.ini";
+}
+
+// Reloads the runtime ini through the binding (native side, the GML
+// sandbox is not involved).
+function __poly_rt_ini_load() {
+  var _fn = ImGui[$ "LoadIniSettingsFromDisk"];
+  if (_fn == undefined) return;
+  method(ImGui, _fn)();
+}
+
+// Flushes the runtime ini through the binding.
+function __poly_rt_ini_save() {
+  var _fn = ImGui[$ "SaveIniSettingsToDisk"];
+  if (_fn == undefined) return;
+  method(ImGui, _fn)();
 }

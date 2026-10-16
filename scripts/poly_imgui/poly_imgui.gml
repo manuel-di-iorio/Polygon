@@ -3,6 +3,13 @@
 // Draws all editor ImGui windows and menus.
 function __poly_imgui_draw(_ed) {
   if (!_ed.active) return;
+  // First frame: reload the runtime ini through the binding (native side,
+  // sandbox-proof). Our own build is skipped on later sessions, so whatever
+  // the runtime restores is left untouched.
+  if (!variable_struct_exists(_ed.imgui, "rt_ini_tried")) {
+    _ed.imgui.rt_ini_tried = true;
+    if (variable_struct_exists(_ed.imgui, "dock_init") && _ed.imgui.dock_init == true) __poly_rt_ini_load();
+  }
   __poly_imgui_style_once(_ed);
   var _dock_id = ImGui.GetID("PolygonEditorDockspace");
   var _dock_root = ImGui.DockSpaceOverViewport(
@@ -10,6 +17,7 @@ function __poly_imgui_draw(_ed) {
     0,
     ImGuiDockNodeFlags.PassthruCentralNode
   );
+  // (Re)builds the default dock unless the runtime ini was just loaded.
   __poly_imgui_dock_build(_ed, _dock_root);
 
   if (!variable_struct_exists(_ed.imgui, "_pw")) {

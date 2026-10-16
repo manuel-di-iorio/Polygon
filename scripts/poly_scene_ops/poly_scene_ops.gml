@@ -374,12 +374,8 @@ function __poly_clipboard_paste(_ed) {
     var _d = json_parse(json_stringify(_cb.descs[_i]));
     _d.id = __poly_wrap_new(_ed);
 
-    try {
-      __poly_rebuild_place_one(_ed, _d, _rep);
-      array_push(_ids, _d.id);
-    } catch (_ex) {
-      _rep.failed++;
-    }
+    __poly_rebuild_place_one(_ed, _d, _rep);
+    array_push(_ids, _d.id);
   }
 
   if (array_length(_ids) == 0) return false;

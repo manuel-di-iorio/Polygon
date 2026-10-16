@@ -1,4 +1,35 @@
 ﻿
+// Queues a runtime load job.
+function __poly_load_jobs_push(_job) {
+  if (!variable_global_exists("__poly_load_jobs") || !is_array(global.__poly_load_jobs)) global.__poly_load_jobs = [];
+  array_push(global.__poly_load_jobs, _job);
+}
+
+// Places one descriptor of a job (hooks, companions and report included).
+function __poly_load_place(_job, _p) {
+  var _rep = _job.report;
+  var _pl = __poly_load_node(_job.scene, _job.assets, _p);
+
+  if (_pl == undefined) {
+    _rep.failed++;
+    return;
+  }
+
+  _rep.placed++;
+  if (!is_struct(_pl) || _pl.kind != "instance") return;
+  if (is_method(_job.on_create)) _job.on_create(_pl.node, _pl.asset, _pl.model, _pl.id);
+  var _entry = _job.assets[$ _pl.asset];
+  if (is_struct(_entry) && is_method(_entry[$ "on_create"])) _entry.on_create(_pl.node, _pl.asset, _pl.model, _pl.id);
+  var _inst = undefined;
+
+  if (__poly_load_actor(_job.actors, _pl, _rep)) {
+    _rep.companions++;
+    _inst = __poly_actor_of(_pl.id);
+  }
+
+  array_push(_rep.placements, { node: _pl.node, asset: _pl.asset, id: _pl.id, label: _pl.label, model: _pl.model, instance: _inst });
+}
+
 // Reads the tolerant per-model file map ("assets"). Unknown content is
 // ignored: only struct values are kept.
 function __poly_file_assets(_data) {

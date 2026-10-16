@@ -38,6 +38,7 @@ function poly_cleanup(_ed = undefined) {
 
   _ed.renderer = undefined;
   __poly_ui_save(_ed);
+  __poly_rt_ini_save();
   __poly_drop_preview_clear(_ed);
   __poly_view_restore(_ed);
   __poly_bg_restore(_ed);

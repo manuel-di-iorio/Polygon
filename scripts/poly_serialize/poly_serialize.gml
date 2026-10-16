@@ -384,10 +384,12 @@ function __poly_rebuild_clear(_ed) {
 
 // Places one asset descriptor, applying saved shadow flags.
 // The id is claimed before the wrapper is born (collisions get fresh).
+// Returns true on success, false when the model is unknown or placement
+// fails (the caller counts the failure in its report).
 function __poly_rebuild_place_asset(_ed, _p, _key) {
   var _model = __poly_asset_find(_ed, _key);
 
-  if (_model == undefined) throw "unknown model '" + string(_key) + "'";
+  if (_model == undefined) return false;
   var _flags = undefined;
 
   if (variable_struct_exists(_p, "shadows") && is_struct(_p.shadows)) {
@@ -406,7 +408,8 @@ function __poly_rebuild_place_asset(_ed, _p, _key) {
     data: _flags,
   });
 
-  if (_wrap == undefined) throw "place failed for '" + string(_key) + "'";
+  if (_wrap == undefined) return false;
+  return true;
 }
 
 // Restores hidden/locked states by id after rebuild.
@@ -428,7 +431,10 @@ function __poly_rebuild(_ed, _nodes) {
   var _report = { placed: 0, failed: 0, err: "" };
 
   if (!is_array(_nodes)) _nodes = [];
-  if (!__poly_validate_descs(_nodes)) throw "invalid descriptors";
+  if (!__poly_validate_descs(_nodes)) {
+    _report.err = "invalid descriptors";
+    return _report;
+  }
   __poly_drop_preview_clear(_ed);
   var _states = __poly_rebuild_clear(_ed);
   _ed.unlit_quiet = true;
@@ -454,13 +460,22 @@ function __poly_rebuild_place_one(_ed, _p, _report) {
   var _kind = _p.kind;
 
   if (_kind == "light" || _kind == "camera" || _kind == "environment") {
-    if (__poly_rebuild_prop(_ed, _p, _kind) == undefined) throw "place failed for '" + string(_p.id) + "'";
+    if (__poly_rebuild_prop(_ed, _p, _kind) == undefined) {
+      _report.failed++;
+      return;
+    }
     _report.placed++;
     return;
   }
 
-  if (_kind != "instance") throw "unknown kind '" + string(_kind) + "'";
-  __poly_rebuild_place_asset(_ed, _p, _p.assetId);
+  if (_kind != "instance") {
+    _report.failed++;
+    return;
+  }
+  if (!__poly_rebuild_place_asset(_ed, _p, _p.assetId)) {
+    _report.failed++;
+    return;
+  }
   _report.placed++;
 }
 
@@ -479,13 +494,7 @@ function __poly_load_data_file(_abs) {
   var _json = __poly_read_text_file(_abs);
 
   if (_json == "") return undefined;
-  var _data = undefined;
-
-  try {
-    _data = json_parse(_json);
-  } catch (_ex) {
-    return undefined;
-  }
+  var _data = json_parse(_json);
 
   var _ok = is_struct(_data) && _data.version == 1 && variable_struct_exists(_data, "nodes") && is_array(_data.nodes);
 
@@ -538,11 +547,7 @@ function __poly_load_scene_pump(_ed, _budget = 48) {
   var _stop = min(_n, _job.idx + max(1, _budget));
 
   while (_job.idx < _stop) {
-    try {
-      __poly_rebuild_place_one(_ed, _job.nodes[_job.idx], _job.report);
-    } catch (_ex) {
-      _job.report.failed++;
-    }
+    __poly_rebuild_place_one(_ed, _job.nodes[_job.idx], _job.report);
 
     _job.idx++;
   }

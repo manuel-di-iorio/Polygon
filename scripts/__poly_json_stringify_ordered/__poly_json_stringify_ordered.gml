@@ -8,13 +8,13 @@
 #macro __JSON_CH_RBRACK  93
 #macro __JSON_CH_ZERO    48
 
-/// @function json_stringify_ordered(value, [prettify], [compact])
+/// @function __poly_json_stringify_ordered(value, [prettify], [compact])
 /// @description Converts any value (struct, array, or primitive) to a JSON string with sorted keys.
 /// @param {any} value The value to convert to JSON
 /// @param {bool} [prettify=false] Whether to include pretty formatting
 /// @param {real} [compact=0] Threshold (in UTF-8 BYTES) below which arrays/structs stay on a single line. 0 = disabled.
 /// @return {string} The JSON string
-function json_stringify_ordered(value, prettify = false, compact = 0) {
+function __poly_json_stringify_ordered(value, prettify = false, compact = 0) {
   // Buffer reused across calls: no create/delete on every invocation,
   // and no leak if serialization throws midway.
   static buf = buffer_create(4096, buffer_grow, 1);
