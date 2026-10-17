@@ -308,10 +308,12 @@ function __poly_screen_poly_area(_pts) {
   return abs(_area) * 0.5;
 }
 
-// Checks shift screen-space move mode (not while flying camera).
+// Checks screen-space move mode (not while flying camera).
 function __poly_gizmo_shift_square(_ed) {
-  if (!keyboard_check(vk_shift)) return false;
-  if (mouse_check_button(mb_right) || mouse_check_button(mb_middle)) return false;
+  var _keys = _ed.cfg.keys;
+
+  if (!__poly_bind_key(_keys, "gizmo_screen")) return false;
+  if (__poly_bind_key(_keys, "cam_fly") || __poly_bind_key(_keys, "cam_pan")) return false;
   if (_ed.cam_fly == true || _ed.cam_orbit == true || _ed.cam_pan == true || _ed.cam_zoom == true) return false;
   return true;
 }
@@ -677,7 +679,7 @@ function __poly_gizmo_drag_translate(_ed, _g, _ray) {
     var _local = __poly_gizmo_world_delta_to_local(_ed.sel[_i], _delta);
     var _pos = _g.starts[_i].pos.clone();
     _pos.add(_local);
-    var _step = _ed.snap_on || keyboard_check(vk_control) ? __poly_snap_step(_ed) : 0;
+    var _step = _ed.snap_on || __poly_bind_key(_ed.cfg.keys, "snap_temp") ? __poly_snap_step(_ed) : 0;
 
     if (_step > 0) {
       if (!variable_struct_exists(_ed, "snap_x") || _ed.snap_x) _pos.x = __poly_snap(_pos.x, _step);
@@ -783,7 +785,7 @@ function __poly_gizmo_drag_ring(_ed, _g, _mx, _my) {
   var _step = (_dx * _g.rot_tx + _dy * _g.rot_ty) * 0.01;
   _g.total_ang += _step;
   var _deg = radtodeg(_g.total_ang);
-  var _snap = _ed.snap_on || keyboard_check(vk_control) ? _ed.snap_rot : 0;
+  var _snap = _ed.snap_on || __poly_bind_key(_ed.cfg.keys, "snap_temp") ? _ed.snap_rot : 0;
 
   if (_snap > 0) _deg = __poly_snap(_deg, _snap);
   _g.display_ang = degtorad(_deg);

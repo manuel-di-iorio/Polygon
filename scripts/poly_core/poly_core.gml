@@ -513,6 +513,76 @@ function __poly_state_view() {
   };
 }
 
+// Default shortcut bindings: name -> array of elements.
+// Each element is a struct { key, mouse?, modifier? }:
+//   key      the code (vk_* / ord("X") for keys, mb_* for mouse buttons)
+//   mouse    true when the code is a mouse button (else a keyboard key)
+//   modifier true when the element must be held (else it is a trigger)
+// Several triggers in one array are alternatives. Type and role are always
+// explicit, so a mouse button and a key can never be confused. A bare real is
+// accepted as a keyboard trigger (short form). Base keys shared by several
+// actions are told apart by their modifiers; double-use actions get distinct
+// names: focus vs focus_search, snap vs snap_grid, redo vs redo_shift.
+function __poly_keys_defaults() {
+  return {
+    tool_view: [ { key: ord("Q") } ],
+    tool_move: [ { key: ord("W") } ],
+    tool_rotate: [ { key: ord("E") } ],
+    tool_scale: [ { key: ord("R") } ],
+    del: [ { key: vk_delete } ],
+    deselect: [ { key: vk_shift, modifier: true }, { key: ord("D") } ],
+    focus: [ { key: ord("F") } ],
+    focus_search: [ { key: vk_control, modifier: true }, { key: ord("F") } ],
+    snap: [ { key: 92 }, { key: 220 } ],
+    snap_grid: [
+      { key: vk_control, modifier: true },
+      { key: 92 },
+      { key: 220 }
+    ],
+    pivot: [ { key: ord("Z") } ],
+    orient: [ { key: ord("X") } ],
+    rename: [ { key: vk_f2 } ],
+    save: [ { key: vk_control, modifier: true }, { key: ord("S") } ],
+    dupe: [ { key: vk_control, modifier: true }, { key: ord("D") } ],
+    copy: [ { key: vk_control, modifier: true }, { key: ord("C") } ],
+    cut: [ { key: vk_control, modifier: true }, { key: ord("X") } ],
+    paste: [ { key: vk_control, modifier: true }, { key: ord("V") } ],
+    invert: [ { key: vk_control, modifier: true }, { key: ord("I") } ],
+    select_all: [ { key: vk_control, modifier: true }, { key: ord("A") } ],
+    new_scene: [ { key: vk_control, modifier: true }, { key: ord("N") } ],
+    close: [ { key: vk_control, modifier: true }, { key: ord("W") } ],
+    load: [ { key: vk_control, modifier: true }, { key: ord("L") } ],
+    undo: [ { key: vk_control, modifier: true }, { key: ord("Z") } ],
+    redo: [ { key: vk_control, modifier: true }, { key: ord("Y") } ],
+    redo_shift: [
+      { key: vk_control, modifier: true },
+      { key: vk_shift, modifier: true },
+      { key: ord("Z") }
+    ],
+    cancel: [ { key: vk_escape } ],
+    nudge_left: [ { key: vk_left } ],
+    nudge_right: [ { key: vk_right } ],
+    nudge_up: [ { key: vk_up } ],
+    nudge_down: [ { key: vk_down } ],
+    select_add: [ { key: vk_shift } ],
+    cam_orbit: [ { key: vk_alt, modifier: true }, { key: mb_left, mouse: true } ],
+    cam_zoom: [ { key: vk_alt, modifier: true }, { key: mb_right, mouse: true } ],
+    cam_pan: [ { key: mb_middle, mouse: true } ],
+    cam_fly: [ { key: mb_right, mouse: true } ],
+    cam_boost: [ { key: vk_shift } ],
+    cam_forward: [ { key: ord("W") } ],
+    cam_back: [ { key: ord("S") } ],
+    cam_left: [ { key: ord("A") } ],
+    cam_right: [ { key: ord("D") } ],
+    cam_up: [ { key: ord("E") } ],
+    cam_down: [ { key: ord("Q") } ],
+    gizmo_screen: [ { key: vk_shift } ],
+    snap_temp: [ { key: vk_control } ],
+    select_range: [ { key: vk_control } ],
+    fps: [ { key: vk_f9 } ],
+  };
+}
+
 // Creates default editor state struct.
 function __poly_create_state(_rt) {
   var _giz = __poly_state_giz();
@@ -524,32 +594,7 @@ function __poly_create_state(_rt) {
     renderer: new GM3D_Renderer(),
     cfg: {
       ndc_yup: true,
-      keys: {
-        tool_view: ord("Q"),
-        tool_move: ord("W"),
-        tool_rotate: ord("E"),
-        tool_scale: ord("R"),
-        del: vk_delete,
-        deselect: ord("D"),
-        copy: ord("C"),
-        cut: ord("X"),
-        paste: ord("V"),
-        invert: ord("I"),
-        select_all: ord("A"),
-        save: ord("S"),
-        dupe: ord("D"),
-        close: ord("W"),
-        new_scene: ord("N"),
-        cancel: vk_escape,
-        focus: ord("F"),
-        undo: ord("Z"),
-        redo: ord("Y"),
-        rename: vk_f2,
-        load: ord("L"),
-        pivot: ord("Z"),
-        orient: ord("X"),
-        snap: 92,
-      },
+      keys: __poly_keys_defaults(),
       snap: { on: false, pos: 0.5, rot: 15 },
       gizmo_px: 90,
     },
@@ -687,7 +732,7 @@ function __poly_step(_ed, _dt) {
   var _keys = _ed.cfg.keys;
 
   if (!_ed.active) return;
-  if (keyboard_check_pressed(vk_f9)) _ed.show_fps = !_ed.show_fps;
+  if (__poly_bind_pressed(_keys, "fps")) _ed.show_fps = !_ed.show_fps;
   __poly_view_sync(_ed);
 
   if (_ed.open_snapshot == undefined && _ed.dirty != true) _ed.open_snapshot = __poly_serialize_scene(_ed);
@@ -704,7 +749,7 @@ function __poly_step(_ed, _dt) {
     // mid-load (the scene would be left half-built).
     var _loading = variable_struct_exists(_ed, "load_job") && is_struct(_ed.load_job);
 
-    if (!_loading && !_input.typing && keyboard_check_pressed(_keys.cancel)) {
+    if (!_loading && !_input.typing && __poly_bind_pressed(_keys, "cancel")) {
       _ed.confirm = undefined;
       _ed.about = undefined;
       _ed.scene_dlg = undefined;
@@ -714,10 +759,10 @@ function __poly_step(_ed, _dt) {
   }
 
   var _camera_owner_ok = _input.owner == undefined || __poly_input_owner_is_camera(_input.owner);
-  _input.camera_keys = (_input.typing == false || (keyboard_check(vk_alt) && !_input.text_input)) && _camera_owner_ok;
+  _input.camera_keys = (_input.typing == false || (__poly_bind_mods(_keys, "cam_orbit") && !_input.text_input)) && _camera_owner_ok;
   _input.camera_viewport = _input.vin && _camera_owner_ok;
 
-  if (!_input.camera_viewport && keyboard_check(vk_alt)) _input.camera_viewport = _camera_owner_ok && __poly_drag_in_viewport(_ed, _input.mx, _input.my);
+  if (!_input.camera_viewport && __poly_bind_mods(_keys, "cam_orbit")) _input.camera_viewport = _camera_owner_ok && __poly_drag_in_viewport(_ed, _input.mx, _input.my);
   _input.camera_zoom = _input.camera_viewport && _ed.drag_lib == undefined && _camera_owner_ok;
   __poly_cam_fly(_ed, _input, _dt);
   _input.owner = __poly_input_owner_sync(_ed);

@@ -54,7 +54,8 @@ Public API (`poly_create`, `poly_enable`, `poly_disable`,
 - `poly_create(config)` (`poly_create.gml`): wraps the adapter into `rt`
   (`__poly_create_rt` copies only `scene→live_scene`, `cam`, `assets`,
   `on_create/on_close/on_compose` — never instances), builds the `_ed`
-  state, registers library assets, seeds the view camera.
+  state, registers library assets, applies `keys` shortcut overrides
+  (`__poly_keys_apply`), seeds the view camera.
 - `poly_enable/disable` → `__poly_set_active` (`poly_core.gml`):
   flips `active`/`global.poly_active`.
   - Activate: save view sizes → `__poly_import_live` (destroy tracked
@@ -84,7 +85,8 @@ Public API (`poly_create`, `poly_enable`, `poly_disable`,
   background, cameras, unlit mode, grid/sky; clears globals.
 
 `_ed` (editor state, `__poly_create_state`) holds: `rt`, `renderer`,
-`cfg` (keys, snap, `gizmo_px`), `active/dirty`, `assets[]`, `sel[]`,
+`cfg` (`keys` binding table from `__poly_keys_defaults`, `snap`,
+`gizmo_px`), `active/dirty`, `assets[]`, `sel[]`,
 `clipboard`, `reg{}` + `id_seq`, `asset_meta{}`, undo/redo stacks,
 `giz{}`, cameras (`viewcam`, `cam_home/anim/orbit/...`), `scene_file`,
 `open_snapshot`, `load_job`, snap/grid/sky/show flags, surfaces
@@ -147,7 +149,8 @@ home). Tracked scene cameras stay muted while editing.
 
 - Transitions: `__poly_cam_animate` (smoothstep position + slerped
   rotation, default 0.4 s); any manual move cancels the anim.
-- Gestures (`__poly_cam_fly`, picked in `__poly_cam_gesture`): `Alt+LMB`
+- Gestures (`__poly_cam_fly`, picked in `__poly_cam_gesture` from the
+  `cam_*` bindings, priority orbit → zoom → fly → pan): `Alt+LMB`
   orbit (yaw about world up, then pitch; 0.18°/px), `Alt+RMB` zoom,
   `RMB` fly (`W/S` forward, `A/D` strafe, `E/Q` up, `Shift` ×2, wheel
   adjusts speed with on-screen notice; `Ctrl` reserves WASD for
@@ -420,10 +423,27 @@ toolbar → FPS → animation preview → modals.
   `Ctrl+C/X/V` copy/cut/paste, `Ctrl+I` invert, `Ctrl+A` select all,
   `Ctrl+F` find (panel search), `Ctrl+Z/Y` (+`Shift+Z`) undo/redo,
   `Ctrl+\`` push to grid.
+- All bindings come from `_ed.cfg.keys` (`__poly_keys_defaults`) and are
+  remappable via the `keys` field of the `poly_create` config. Each entry is
+  an array of element structs `{ key, mouse?, modifier? }`: `key` is the code
+  (`vk_*`/`ord("X")` for keys, `mb_*` for mouse), `mouse: true` marks it a
+  mouse button, `modifier: true` requires it held (else it is a trigger;
+  several triggers = alternatives). The type is explicit, so a mouse button is
+  never inferred by its value. `__poly_elem_key/_mouse/_mod` read the elements;
+  `__poly_bind_pressed` matches one-shot shortcuts exactly (undeclared
+  keyboard modifiers must be up) and `__poly_bind_key` ignores extra modifiers
+  for the held camera controls. A bare real is a keyboard-trigger shorthand.
+  Actions sharing a base key have distinct names
+  (`focus`/`focus_search`, `snap`/`snap_grid`, `redo`/`redo_shift`).
+  `__poly_bind_label` renders the same binding as a menu string (e.g.
+  `Ctrl+D`); the menu bar, the Hierarchy row context menu and the delete
+  confirmation use it so their hints always match the current bindings.
 - Mouse: click/shift-click/rect select (viewport), gizmo drag, library
   drag (4px threshold, ground-plane preview, single undo on drop),
-  Alt+orbit/zoom, wheel zoom, middle pan, infinite cursor wrap during
-  camera/gizmo drags.
+  camera orbit/zoom/fly/pan and nudge all driven by the `cam_*` /
+  `nudge_*` / `select_add` / `select_range` / `snap_temp` /
+  `gizmo_screen` bindings, wheel zoom, infinite cursor wrap
+  during camera/gizmo drags.
 
 ---
 

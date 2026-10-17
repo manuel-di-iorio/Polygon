@@ -283,13 +283,13 @@ function __poly_menu_file(_ed) {
   if (!ImGui.BeginMenu("File")) return _pending;
   ImGui.TextDisabled(_ed.scene_file != "" ? __poly_base_name(_ed.scene_file) : "(unsaved scene)");
 
-  if (ImGui.MenuItem("New", "Ctrl+N")) _pending.do_new = true;
-  if (ImGui.MenuItem("Save", "Ctrl+S")) __poly_save_or_ask(_ed);
+  if (ImGui.MenuItem("New", __poly_bind_label(_ed.cfg.keys, "new_scene"))) _pending.do_new = true;
+  if (ImGui.MenuItem("Save", __poly_bind_label(_ed.cfg.keys, "save"))) __poly_save_or_ask(_ed);
   if (ImGui.MenuItem("Save As...")) _pending.do_saveas = true;
-  if (ImGui.MenuItem("Load", "Ctrl+L")) _pending.do_load = true;
+  if (ImGui.MenuItem("Load", __poly_bind_label(_ed.cfg.keys, "load"))) _pending.do_load = true;
   ImGui.Separator();
 
-  if (ImGui.MenuItem("Close Editor", "Ctrl+W")) _pending.do_close = true;
+  if (ImGui.MenuItem("Close Editor", __poly_bind_label(_ed.cfg.keys, "close"))) _pending.do_close = true;
   ImGui.EndMenu();
   return _pending;
 }

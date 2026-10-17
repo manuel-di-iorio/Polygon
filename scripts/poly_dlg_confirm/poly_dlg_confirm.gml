@@ -65,7 +65,7 @@ function __poly_imgui_delete_confirm(_ed) {
 
   var _count = variable_struct_exists(_dlg, "count") && is_real(_dlg.count) ? _dlg.count : array_length(_ed.sel);
   ImGui.Text("Delete " + string(_count) + " selected objects?");
-  ImGui.TextDisabled("This can be undone (Ctrl+Z).");
+  ImGui.TextDisabled("This can be undone (" + __poly_bind_label(_ed.cfg.keys, "undo") + ").");
 
   if (ImGui.Button("Delete", 0, 0)) {
     _ed.delete_confirm = undefined;

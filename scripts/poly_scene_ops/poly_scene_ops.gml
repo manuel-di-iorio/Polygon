@@ -651,7 +651,7 @@ function __poly_hier_rect_commit(_ed, _y0, _y1) {
   var _rh = _ed.hier_row_h;
 
   if (!is_numeric(_rh) || _rh <= 0) return;
-  var _add = keyboard_check(vk_shift);
+  var _add = __poly_bind_key(_ed.cfg.keys, "select_add");
   var _picked = [];
   var _n = array_length(_ed.hier_rows);
 
@@ -686,8 +686,8 @@ function __poly_hier_rect_commit(_ed, _y0, _y1) {
 function __poly_scene_click(_ed, _nd, _row, _visible = undefined) {
   if (__poly_locked_get(_ed, _nd)) return;
   var _now = current_time;
-  var _ctrl = keyboard_check(vk_control);
-  var _shift = keyboard_check(vk_shift);
+  var _ctrl = __poly_bind_key(_ed.cfg.keys, "select_range");
+  var _shift = __poly_bind_key(_ed.cfg.keys, "select_add");
 
   if (!variable_struct_exists(_ed, "scene_anchor")) _ed.scene_anchor = undefined;
 

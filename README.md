@@ -105,6 +105,7 @@ Close it from the editor with **File → Close Editor** (Ctrl+W).
 | `assets`   | Struct `{ assetKey: { model, on_create? } }`. The key is the stable asset id used in scene files (usually the load path); the file name (no path, no extension) is used as display text everywhere. `on_create` is an optional per-model hook, called after the global one. |
 | `on_create` | `function(node, assetId, model, id)`. Called for every spawned node: global hook first, then the per-model `on_create` from the library entry. `assetId` is the stable key (same string as in files); `model` is the resolved library model. Walk the subtree: the model root lives inside the wrapper. |
 | `on_close` | Called after the editor closes. |
+| `keys`     | Optional struct that remaps editor shortcuts. Each entry is an array of element structs `{ key, mouse?, modifier? }`, e.g. `save: [ { key: vk_control, modifier: true }, { key: ord("S") } ]` and `cam_fly: [ { key: mb_right, mouse: true } ]`. Every shortcut and camera control is remappable, including nudging and the mouse-driven camera gestures. Unknown names are ignored. See "Remapping shortcuts". |
 | `on_compose` | `function(surf, w, h)`. Optional viewport post-processing: called with the scene surface as target, after the 3D render (post-AA) and before overlays compose (they stay sharp). Copy `surf` to your own scratch, apply your shader back onto `surf`, and leave the target on `surf`. Runs on re-render, not every frame. |
 
 ---
@@ -125,7 +126,7 @@ Close it from the editor with **File → Close Editor** (Ctrl+W).
 | Reset camera | Home button in the toolbar |
 | Snap to axis | Click a cone on the **ViewCube** |
 
-The cursor wraps at window edges during camera and gizmo drags.
+The cursor wraps at window edges during camera and gizmo drags. Every input above is remappable through the `keys` config — see "Remapping shortcuts".
 
 ### Tools and shortcuts
 
@@ -150,6 +151,83 @@ The cursor wraps at window edges during camera and gizmo drags.
 | `Ctrl+\` | Push selection to grid (undoable) |
 | `Ctrl+W` | Close editor |
 | `F9` | FPS overlay |
+
+### Remapping shortcuts
+
+Every editor shortcut **and camera control** is remappable through the `keys` field of the create config. Each entry is an **array of elements**, and every element is a struct that says exactly what it is — no value is ever guessed:
+
+```gml
+{ key: <code>, mouse: <bool>, modifier: <bool> }
+```
+
+- **`key`** — the code: `vk_*` constants for special keys, `ord("X")` for letters/digits, or `mb_left` / `mb_right` / `mb_middle` / `mb_side1` / `mb_side2` for mouse buttons.
+- **`mouse: true`** — marks `key` as a **mouse button**. Without it the code is a keyboard key. This is what keeps a mouse button and a key with the same numeric value from ever being confused.
+- **`modifier: true`** — this element must be **held**. Elements without it are **triggers**; several triggers in one array are **alternatives**. For one-shot shortcuts, any keyboard modifier you do *not* list must be **up** (exact match), so `Ctrl+S` and `Ctrl+Shift+S` stay distinct. (The GameMaker constant is `vk_control`, not `vk_ctrl`.)
+
+A bare real — or a single struct — is shorthand for one keyboard trigger: `pivot: ord("Z")` is the same as `pivot: [ { key: ord("Z") } ]`.
+
+```gml
+var config = {
+  // ...
+  keys: {
+    save:         [ { key: vk_control, modifier: true }, { key: ord("S") } ],  // Ctrl+S
+    load:         [ { key: vk_control, modifier: true }, { key: ord("L") } ],  // Ctrl+L
+    close:        [ { key: vk_control, modifier: true }, { key: ord("W") } ],  // Ctrl+W
+    focus:        [ { key: ord("F") } ],                                       // F   (focus selection)
+    focus_search: [ { key: vk_control, modifier: true }, { key: ord("F") } ],  // Ctrl+F (search panel)
+    deselect:     [ { key: vk_shift, modifier: true }, { key: ord("D") } ],    // Shift+D
+    del:          [ { key: vk_alt, modifier: true }, { key: vk_delete } ],     // Alt+Del
+    snap:         [ { key: 92 }, { key: 220 } ],                               // \ (either code), no modifier
+    pivot:        ord("Z"),                                                    // Z (short form)
+
+    // Mouse buttons are declared explicitly with mouse: true.
+    nudge_left:   [ { key: vk_left } ],                                        // Left arrow
+    select_add:   [ { key: vk_shift } ],                                       // Shift (Shift+click / rect add)
+    cam_fly:      [ { key: mb_right, mouse: true } ],                          // hold Right mouse to fly
+    cam_forward:  [ { key: ord("W") } ],                                       // W A S D while flying
+    cam_orbit:    [ { key: vk_alt, modifier: true }, { key: mb_left, mouse: true } ],  // Alt + Left mouse
+    cam_zoom:     [ { key: vk_alt, modifier: true }, { key: mb_right, mouse: true } ], // Alt + Right mouse
+    cam_pan:      [ { key: mb_middle, mouse: true } ],                         // Middle mouse
+    cam_boost:    [ { key: vk_shift } ],                                       // Shift = fly faster
+  },
+};
+```
+
+Binding names and their defaults (`mod` below means `{ modifier: true }`):
+
+| Name | Default | Name | Default |
+|------|---------|------|---------|
+| `tool_view` | `[Q]` | `save` | `[mod Ctrl, S]` |
+| `tool_move` | `[W]` | `dupe` | `[mod Ctrl, D]` |
+| `tool_rotate` | `[E]` | `copy` | `[mod Ctrl, C]` |
+| `tool_scale` | `[R]` | `cut` | `[mod Ctrl, X]` |
+| `del` | `[Del]` | `paste` | `[mod Ctrl, V]` |
+| `deselect` | `[mod Shift, D]` | `invert` | `[mod Ctrl, I]` |
+| `focus` | `[F]` | `select_all` | `[mod Ctrl, A]` |
+| `focus_search` | `[mod Ctrl, F]` | `new_scene` | `[mod Ctrl, N]` |
+| `snap` | `[92, 220]` | `close` | `[mod Ctrl, W]` |
+| `snap_grid` | `[mod Ctrl, 92, 220]` | `load` | `[mod Ctrl, L]` |
+| `pivot` | `[Z]` | `undo` | `[mod Ctrl, Z]` |
+| `orient` | `[X]` | `redo` | `[mod Ctrl, Y]` |
+| `rename` | `[F2]` | `redo_shift` | `[mod Ctrl, mod Shift, Z]` |
+| `cancel` | `[Esc]` | | |
+| `nudge_left` | `[Left]` | `nudge_right` | `[Right]` |
+| `nudge_up` | `[Up]` | `nudge_down` | `[Down]` |
+| `select_add` | `[Shift]` | `cam_boost` | `[Shift]` |
+| `cam_fly` | `[mb_right]` | `cam_pan` | `[mb_middle]` |
+| `cam_orbit` | `[mod Alt, mb_left]` | `cam_zoom` | `[mod Alt, mb_right]` |
+| `cam_forward` | `[W]` | `cam_back` | `[S]` |
+| `cam_left` | `[A]` | `cam_right` | `[D]` |
+| `cam_up` | `[E]` | `cam_down` | `[Q]` |
+| `gizmo_screen` | `[Shift]` | `snap_temp` | `[Ctrl]` |
+| `select_range` | `[Ctrl]` | `fps` | `[F9]` |
+
+Notes:
+
+- The actions that share a base key have **separate names**, so each combination is independent: `focus` vs `focus_search`, `snap` vs `snap_grid`, and `redo` vs `redo_shift`.
+- `nudge_*` move the selection on X/Z; `cam_*` drive the viewport camera. `select_add` is the held modifier for Shift+click / rectangle add, `select_range` the held modifier for Ctrl+click range select in the Hierarchy, `gizmo_screen` the Move-handle screen-space modifier, `snap_temp` the drag-time snap modifier, and `cam_boost` the fast-fly modifier.
+- Camera movement keys (`cam_forward` … `cam_down`) and the `cam_*` buttons are matched non-exactly, so `Shift` (`cam_boost`) can be held while flying without cancelling the movement keys.
+- The shortcut hints shown in the menu bar (`File`) and in the Hierarchy row context menu (`Focus`, `Rename`, `Duplicate`, `Copy`, `Cut`, `Paste`, `Delete`), plus the undo hint in the delete confirmation, are generated from these bindings, so they update automatically when you remap them.
 
 ### Selecting and transforming
 

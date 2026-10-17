@@ -222,10 +222,10 @@ function __poly_planar(_fwd) {
   return [ _fwd.x / _len, _fwd.z / _len ];
 }
 
-// Picks the active camera gesture from mouse state.
+// Picks the active camera gesture from the camera bindings.
 function __poly_cam_gesture(_ed, _allow_keys, _allow_zoom) {
+  var _keys = _ed.cfg.keys;
   var _owner = __poly_input_owner_sync(_ed);
-  var _alt = keyboard_check(vk_alt);
   var _can_start =
     _allow_keys &&
     _allow_zoom &&
@@ -234,20 +234,20 @@ function __poly_cam_gesture(_ed, _allow_keys, _allow_zoom) {
     !_ed.press_vp;
 
   if (_can_start) {
-    if (_alt && mouse_check_button(mb_left)) {
+    if (__poly_bind_key(_keys, "cam_orbit")) {
       _owner = "camera_orbit";
-    } else if (_alt && mouse_check_button(mb_right)) {
+    } else if (__poly_bind_key(_keys, "cam_zoom")) {
       _owner = "camera_zoom";
-    } else if (!_alt && mouse_check_button(mb_right)) {
+    } else if (__poly_bind_key(_keys, "cam_fly")) {
       _owner = "camera_fly";
-    } else if (mouse_check_button(mb_middle)) {
+    } else if (__poly_bind_key(_keys, "cam_pan")) {
       _owner = "camera_pan";
     }
 
     _ed.input_owner = _owner;
   }
 
-  return { owner: _owner, alt: _alt };
+  return { owner: _owner };
 }
 
 // Handles orbit, pan, zoom, and fly camera controls.
@@ -264,24 +264,21 @@ function __poly_cam_fly(_ed, _input, _dt) {
   var _pitch = radtodeg(arcsin(clamp(_fwd.y, -1.0, 1.0)));
   var _gesture = __poly_cam_gesture(_ed, _allow_keys, _allow_zoom);
   var _owner = _gesture.owner;
-  var _alt = _gesture.alt;
+  var _keys = _ed.cfg.keys;
   var _orbit =
     _allow_keys &&
     _owner == "camera_orbit" &&
-    _alt &&
-    mouse_check_button(mb_left);
+    __poly_bind_key(_keys, "cam_orbit");
   var _pan =
-    _allow_keys && _owner == "camera_pan" && mouse_check_button(mb_middle);
+    _allow_keys && _owner == "camera_pan" && __poly_bind_key(_keys, "cam_pan");
   var _zoom =
     _allow_keys &&
     _owner == "camera_zoom" &&
-    _alt &&
-    mouse_check_button(mb_right);
+    __poly_bind_key(_keys, "cam_zoom");
   var _fly =
     _allow_keys &&
     _owner == "camera_fly" &&
-    !_alt &&
-    mouse_check_button(mb_right);
+    __poly_bind_key(_keys, "cam_fly");
 
   if (_orbit && !_ed.cam_orbit) {
     var _origin = _node.getLocalPosition();
@@ -321,12 +318,12 @@ function __poly_cam_fly(_ed, _input, _dt) {
     _rotated = true;
   }
 
-  var _boost = keyboard_check(vk_shift) ? 2.0 : 1.0;
+  var _boost = __poly_bind_key(_keys, "cam_boost") ? 2.0 : 1.0;
   var _step = _dt * _ed.cam_fly_speed * _boost;
   var _move = _fly && !keyboard_check(vk_control);
-  var _fw = _move ? keyboard_check(ord("W")) - keyboard_check(ord("S")) : 0.0;
-  var _strafe = _move ? keyboard_check(ord("A")) - keyboard_check(ord("D")) : 0.0;
-  var _up = _move ? keyboard_check(ord("E")) - keyboard_check(ord("Q")) : 0.0;
+  var _fw = _move ? __poly_bind_key(_keys, "cam_forward") - __poly_bind_key(_keys, "cam_back") : 0.0;
+  var _strafe = _move ? __poly_bind_key(_keys, "cam_left") - __poly_bind_key(_keys, "cam_right") : 0.0;
+  var _up = _move ? __poly_bind_key(_keys, "cam_up") - __poly_bind_key(_keys, "cam_down") : 0.0;
   var _wheel = 0;
 
   if (_allow_zoom && _allow_keys) {

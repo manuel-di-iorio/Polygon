@@ -194,7 +194,7 @@ my_game_destroy();</code></pre>
               <td><code>poly_create(config)</code></td>
               <td>
                 Boot editor state from
-                <code>{ scene?, assets?, cam?, on_create?, on_close?, on_compose? }</code>:
+                <code>{ scene?, assets?, cam?, on_create?, on_close?, on_compose?, keys? }</code>:
                 <code>assets</code> is <code>{ key: { model, on_create? } }</code>;
                 owns its scene (empty at boot; the live
                 <code>scene</code> is mirrored as copies on every enable,
@@ -493,6 +493,106 @@ poly_load_step(); // ~48 nodes per job; returns pending count
             </tr>
           </tbody>
         </table>
+        <h3 id="remapping">Remapping shortcuts</h3>
+        <p class="sub">
+          Pass a <code>keys</code> field to the <code>poly_create</code> config
+          to remap any editor shortcut <strong>and camera control</strong>. Each
+          entry is an <strong>array of element structs</strong>
+          <code>{ key, mouse?, modifier? }</code>:
+        </p>
+        <ul class="sub">
+          <li>
+            <code>key</code> — the code: <code>vk_*</code> for special keys,
+            <code>ord("X")</code> for letters/digits, or
+            <code>mb_left</code>/<code>mb_right</code>/<code>mb_middle</code>/<code>mb_side1</code>/<code>mb_side2</code>
+            for mouse buttons.
+          </li>
+          <li>
+            <code>mouse: true</code> — marks <code>key</code> as a
+            <strong>mouse button</strong>; without it the code is a keyboard
+            key. This is what keeps a mouse button and a key with the same
+            numeric value from ever being confused.
+          </li>
+          <li>
+            <code>modifier: true</code> — the element must be
+            <strong>held</strong>; elements without it are
+            <strong>triggers</strong> (several triggers = alternatives). For
+            one-shot shortcuts, any keyboard modifier you do <em>not</em> list
+            must be <strong>up</strong> (exact match).
+          </li>
+        </ul>
+        <p class="sub">
+          A bare real (or a single struct) is shorthand for one keyboard
+          trigger, e.g. <code>pivot: ord("Z")</code>.
+        </p>
+        <div class="codeblock terminal">
+          <div class="term-bar">
+            <span></span><span></span><span></span
+            ><button class="copy" data-copy="keys-cfg">Copy</button>
+          </div>
+          <pre id="keys-cfg"><code class="lang-gml">poly_create({
+    scene: global.my_scene,
+    assets,
+    keys: {
+        save:         [ { key: vk_control, modifier: true }, { key: ord("S") } ], // Ctrl+S
+        focus:        [ { key: ord("F") } ],                                      // F   (focus selection)
+        focus_search: [ { key: vk_control, modifier: true }, { key: ord("F") } ], // Ctrl+F (search panel)
+        deselect:     [ { key: vk_shift, modifier: true }, { key: ord("D") } ],   // Shift+D
+        del:          [ { key: vk_alt, modifier: true }, { key: vk_delete } ],    // Alt+Del
+        snap:         [ { key: 92 }, { key: 220 } ],                              // \ (either code), no modifier
+        pivot:        ord("Z"),                                                   // Z (short form)
+
+        // Mouse buttons are declared explicitly with mouse: true.
+        nudge_left:   [ { key: vk_left } ],                                       // Left arrow
+        select_add:   [ { key: vk_shift } ],                                      // Shift (Shift+click / rect add)
+        cam_fly:      [ { key: mb_right, mouse: true } ],                         // hold Right mouse to fly
+        cam_forward:  [ { key: ord("W") } ],                                      // W A S D while flying
+        cam_orbit:    [ { key: vk_alt, modifier: true }, { key: mb_left, mouse: true } ],  // Alt + Left mouse
+        cam_zoom:     [ { key: vk_alt, modifier: true }, { key: mb_right, mouse: true } ], // Alt + Right mouse
+        cam_pan:      [ { key: mb_middle, mouse: true } ],                        // Middle mouse
+        cam_boost:    [ { key: vk_shift } ],                                      // Shift = fly faster
+    },
+});</code></pre>
+        </div>
+        <p class="sub">
+          Actions sharing a base key have separate names
+          (<code>focus</code>/<code>focus_search</code>,
+          <code>snap</code>/<code>snap_grid</code>,
+          <code>redo</code>/<code>redo_shift</code>). Names and defaults
+          (<code>mod</code> = <code>modifier: true</code>,
+          <code>mb</code> = a mouse button):
+          <code>tool_view [Q]</code>, <code>tool_move [W]</code>,
+          <code>tool_rotate [E]</code>, <code>tool_scale [R]</code>,
+          <code>del [Del]</code>, <code>deselect [mod Shift, D]</code>,
+          <code>focus [F]</code>, <code>focus_search [mod Ctrl, F]</code>,
+          <code>snap [92, 220]</code>, <code>snap_grid [mod Ctrl, 92, 220]</code>,
+          <code>pivot [Z]</code>, <code>orient [X]</code>,
+          <code>rename [F2]</code>, <code>save [mod Ctrl, S]</code>,
+          <code>dupe [mod Ctrl, D]</code>, <code>copy [mod Ctrl, C]</code>,
+          <code>cut [mod Ctrl, X]</code>, <code>paste [mod Ctrl, V]</code>,
+          <code>invert [mod Ctrl, I]</code>, <code>select_all [mod Ctrl, A]</code>,
+          <code>new_scene [mod Ctrl, N]</code>, <code>close [mod Ctrl, W]</code>,
+          <code>load [mod Ctrl, L]</code>, <code>undo [mod Ctrl, Z]</code>,
+          <code>redo [mod Ctrl, Y]</code>,
+          <code>redo_shift [mod Ctrl, mod Shift, Z]</code>,
+          <code>cancel [Esc]</code>, <code>nudge_left [Left]</code>,
+          <code>nudge_right [Right]</code>, <code>nudge_up [Up]</code>,
+          <code>nudge_down [Down]</code>, <code>select_add [Shift]</code>,
+          <code>cam_fly [mb_right]</code>, <code>cam_boost [Shift]</code>,
+          <code>cam_orbit [mod Alt, mb_left]</code>,
+          <code>cam_zoom [mod Alt, mb_right]</code>,
+          <code>cam_pan [mb_middle]</code>, <code>cam_forward [W]</code>,
+          <code>cam_back [S]</code>, <code>cam_left [A]</code>,
+          <code>cam_right [D]</code>, <code>cam_up [E]</code>,
+          <code>cam_down [Q]</code>, <code>gizmo_screen [Shift]</code>,
+          <code>snap_temp [Ctrl]</code>, <code>select_range [Ctrl]</code>,
+          <code>fps [F9]</code>.
+        </p>
+        <p class="sub">
+          The shortcut hints in the menu bar and in the Hierarchy row context
+          menu (plus the undo hint in the delete confirmation) are generated
+          from these bindings, so they update automatically when you remap them.
+        </p>
       </section>
 
       <section class="final reveal">

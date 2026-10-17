@@ -338,38 +338,38 @@ function __poly_scene_row_menu(_ed, _meta, _node, _idx, _pending) {
   if (!_meta.sel) __poly_scene_select(_ed, _node);
 
   if (array_length(_ed.sel) <= 1) {
-    if (ImGui.MenuItem("Focus", "F")) {
+    if (ImGui.MenuItem("Focus", __poly_bind_label(_ed.cfg.keys, "focus"))) {
       _pending.foc = _node;
       ImGui.CloseCurrentPopup();
     }
 
-    if (ImGui.MenuItem("Rename", "F2")) {
+    if (ImGui.MenuItem("Rename", __poly_bind_label(_ed.cfg.keys, "rename"))) {
       _pending.ren = _node;
       ImGui.CloseCurrentPopup();
     }
   }
 
-  if (ImGui.MenuItem("Duplicate", "Ctrl+D")) {
+  if (ImGui.MenuItem("Duplicate", __poly_bind_label(_ed.cfg.keys, "dupe"))) {
     _pending.dup = _node;
     ImGui.CloseCurrentPopup();
   }
 
-  if (ImGui.MenuItem("Copy", "Ctrl+C")) {
+  if (ImGui.MenuItem("Copy", __poly_bind_label(_ed.cfg.keys, "copy"))) {
     _pending.cop = true;
     ImGui.CloseCurrentPopup();
   }
 
-  if (ImGui.MenuItem("Cut", "Ctrl+X")) {
+  if (ImGui.MenuItem("Cut", __poly_bind_label(_ed.cfg.keys, "cut"))) {
     _pending.cut = true;
     ImGui.CloseCurrentPopup();
   }
 
-  if (ImGui.MenuItem("Paste", "Ctrl+V")) {
+  if (ImGui.MenuItem("Paste", __poly_bind_label(_ed.cfg.keys, "paste"))) {
     _pending.pas = true;
     ImGui.CloseCurrentPopup();
   }
 
-  if (ImGui.MenuItem("Delete", "Del")) {
+  if (ImGui.MenuItem("Delete", __poly_bind_label(_ed.cfg.keys, "del"))) {
     _pending.del = _node;
     ImGui.CloseCurrentPopup();
   }

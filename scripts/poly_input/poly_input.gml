@@ -117,9 +117,262 @@ function __poly_input_context(_ed, _keys) {
 // Hotkeys
 // ---------------------------------------------------------------------------
 
-// Checks an optional named hotkey (false when unbound).
-function __poly_key_pressed(_keys, _name) {
-  return variable_struct_exists(_keys, _name) && keyboard_check_pressed(_keys[$ _name]);
+// ---------------------------------------------------------------------------
+// Binding evaluation
+// ---------------------------------------------------------------------------
+
+// Binding element = struct { key, mouse?, modifier? }.
+//   key      the key code (vk_* / ord("X") for keys, mb_* for mouse)
+//   mouse    true when the code is a mouse button (else a keyboard key)
+//   modifier true when the entry must be held (else it is a trigger)
+// A bare real is accepted as a keyboard trigger. Several triggers in one array
+// are alternatives; the type is always explicit, never inferred from the code,
+// so mouse buttons and keys can never be confused.
+
+// Key code of a binding element, or undefined when malformed. Accepts a bare
+// real (keyboard) for the short form.
+function __poly_elem_key(_e) {
+  if (is_real(_e)) return _e;
+
+  if (is_struct(_e) && variable_struct_exists(_e, "key")) {
+    var _k = _e[$ "key"];
+
+    if (is_real(_k)) return _k;
+  }
+
+  return undefined;
+}
+
+// True when the element is an explicitly declared mouse button.
+function __poly_elem_mouse(_e) {
+  return is_struct(_e) && variable_struct_exists(_e, "mouse") && _e[$ "mouse"] == true;
+}
+
+// True when the element is a required hold rather than a trigger.
+function __poly_elem_mod(_e) {
+  return is_struct(_e) && variable_struct_exists(_e, "modifier") && _e[$ "modifier"] == true;
+}
+
+// Evaluates a binding. _press: trigger pressed this frame, else held.
+// _exact: keyboard modifiers not declared as holds must be up. Exact suits
+// one-shot shortcuts; camera movement passes false so extra modifiers
+// (e.g. the Shift boost) do not cancel the movement keys.
+function __poly_bind_run(_keys, _name, _press, _exact) {
+  if (!variable_struct_exists(_keys, _name)) return false;
+  var _b = _keys[$ _name];
+
+  if (is_real(_b) || is_struct(_b)) _b = [ _b ];
+  if (!is_array(_b) || array_length(_b) == 0) return false;
+  var _n = array_length(_b);
+  var _ctrl = false;
+  var _shift = false;
+  var _alt = false;
+  var _i;
+  var _e;
+  var _k;
+
+  // Required holds first, so an unmet hold short-circuits.
+  for (_i = 0; _i < _n; _i++) {
+    _e = _b[_i];
+
+    if (!__poly_elem_mod(_e)) continue;
+    _k = __poly_elem_key(_e);
+
+    if (_k == undefined) continue;
+
+    if (__poly_elem_mouse(_e)) {
+      if (!mouse_check_button(_k)) return false;
+    } else if (_k == vk_control) {
+      _ctrl = true;
+    } else if (_k == vk_shift) {
+      _shift = true;
+    } else if (_k == vk_alt) {
+      _alt = true;
+    } else if (!keyboard_check(_k)) {
+      return false;
+    }
+  }
+
+  if (_ctrl && !keyboard_check(vk_control)) return false;
+  if (_shift && !keyboard_check(vk_shift)) return false;
+  if (_alt && !keyboard_check(vk_alt)) return false;
+
+  if (_exact) {
+    if (!_ctrl && keyboard_check(vk_control)) return false;
+    if (!_shift && keyboard_check(vk_shift)) return false;
+    if (!_alt && keyboard_check(vk_alt)) return false;
+  }
+
+  // Any trigger fires; several are alternatives.
+  for (_i = 0; _i < _n; _i++) {
+    _e = _b[_i];
+
+    if (__poly_elem_mod(_e)) continue;
+    _k = __poly_elem_key(_e);
+
+    if (_k == undefined) continue;
+
+    if (__poly_elem_mouse(_e)) {
+      if (_press ? mouse_check_button_pressed(_k) : mouse_check_button(_k)) return true;
+    } else if (_press ? keyboard_check_pressed(_k) : keyboard_check(_k)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// One-shot shortcut: trigger pressed, keyboard modifiers exact.
+function __poly_bind_pressed(_keys, _name) {
+  return __poly_bind_run(_keys, _name, true, true);
+}
+
+// Continuous binding that ignores extra modifiers (camera movement, buttons).
+function __poly_bind_key(_keys, _name) {
+  return __poly_bind_run(_keys, _name, false, false);
+}
+
+// True when all keyboard-modifier holds of a binding are held. Used to gate
+// camera keys while a text field is focused: the camera gesture modifiers
+// (Alt by default) let the camera start.
+function __poly_bind_mods(_keys, _name) {
+  if (!variable_struct_exists(_keys, _name)) return false;
+  var _b = _keys[$ _name];
+
+  if (is_real(_b) || is_struct(_b)) _b = [ _b ];
+  if (!is_array(_b)) return false;
+  var _found = false;
+
+  for (var _i = 0; _i < array_length(_b); _i++) {
+    var _e = _b[_i];
+
+    if (!__poly_elem_mod(_e) || __poly_elem_mouse(_e)) continue;
+    var _k = __poly_elem_key(_e);
+
+    if (_k == undefined) continue;
+    if (!keyboard_check(_k)) return false;
+    _found = true;
+  }
+
+  return _found;
+}
+
+// Display name for a single code (used by the menu shortcut labels).
+function __poly_bind_key_name(_key, _mouse) {
+  if (_mouse) {
+    switch (_key) {
+      case mb_left: return "Mouse Left";
+      case mb_right: return "Mouse Right";
+      case mb_middle: return "Mouse Middle";
+      case mb_side1: return "Mouse 4";
+      case mb_side2: return "Mouse 5";
+    }
+
+    return "Mouse";
+  }
+
+  switch (_key) {
+    case vk_control: return "Ctrl";
+    case vk_shift: return "Shift";
+    case vk_alt: return "Alt";
+    case vk_left: return "Left";
+    case vk_right: return "Right";
+    case vk_up: return "Up";
+    case vk_down: return "Down";
+    case vk_enter: return "Enter";
+    case vk_escape: return "Esc";
+    case vk_space: return "Space";
+    case vk_backspace: return "Backspace";
+    case vk_tab: return "Tab";
+    case vk_delete: return "Del";
+    case vk_insert: return "Ins";
+    case vk_home: return "Home";
+    case vk_end: return "End";
+    case vk_pageup: return "PageUp";
+    case vk_pagedown: return "PageDown";
+    case vk_pause: return "Pause";
+    case vk_printscreen: return "PrtSc";
+    case vk_f1: return "F1";
+    case vk_f2: return "F2";
+    case vk_f3: return "F3";
+    case vk_f4: return "F4";
+    case vk_f5: return "F5";
+    case vk_f6: return "F6";
+    case vk_f7: return "F7";
+    case vk_f8: return "F8";
+    case vk_f9: return "F9";
+    case vk_f10: return "F10";
+    case vk_f11: return "F11";
+    case vk_f12: return "F12";
+    case vk_numpad0: return "Num0";
+    case vk_numpad1: return "Num1";
+    case vk_numpad2: return "Num2";
+    case vk_numpad3: return "Num3";
+    case vk_numpad4: return "Num4";
+    case vk_numpad5: return "Num5";
+    case vk_numpad6: return "Num6";
+    case vk_numpad7: return "Num7";
+    case vk_numpad8: return "Num8";
+    case vk_numpad9: return "Num9";
+    case vk_multiply: return "Num *";
+    case vk_divide: return "Num /";
+    case vk_add: return "Num +";
+    case vk_subtract: return "Num -";
+    case vk_decimal: return "Num .";
+  }
+
+  if (_key >= 32 && _key <= 126) return chr(_key);
+  return "Key " + string(_key);
+}
+
+// Human-readable shortcut label for a binding (e.g. "Ctrl+D"), for menus and
+// tooltips. Modifiers come first (Ctrl, Shift, Alt), then the first trigger.
+// Returns "" when the binding is unknown or empty.
+function __poly_bind_label(_keys, _name) {
+  if (!variable_struct_exists(_keys, _name)) return "";
+  var _b = _keys[$ _name];
+
+  if (is_real(_b) || is_struct(_b)) _b = [ _b ];
+  if (!is_array(_b)) return "";
+  var _ctrl = false;
+  var _shift = false;
+  var _alt = false;
+  var _main = "";
+
+  for (var _i = 0; _i < array_length(_b); _i++) {
+    var _e = _b[_i];
+    var _k = __poly_elem_key(_e);
+
+    if (_k == undefined) continue;
+    var _mouse = __poly_elem_mouse(_e);
+    var _hold = __poly_elem_mod(_e);
+
+    if (_hold && !_mouse) {
+      if (_k == vk_control) {
+        _ctrl = true;
+        continue;
+      }
+
+      if (_k == vk_shift) {
+        _shift = true;
+        continue;
+      }
+
+      if (_k == vk_alt) {
+        _alt = true;
+        continue;
+      }
+    }
+
+    if (_main == "") _main = __poly_bind_key_name(_k, _mouse);
+  }
+
+  var _s = "";
+
+  if (_ctrl) _s += "Ctrl+";
+  if (_shift) _s += "Shift+";
+  if (_alt) _s += "Alt+";
+  return _s + _main;
 }
 
 // Tool shortcuts table: [key name, tool].
@@ -133,10 +386,10 @@ function __poly_tool_hotkeys() {
   return _tools;
 }
 
-// Nudges selection with arrow keys.
-function __poly_step_nudge(_ed) {
-  var _nx = keyboard_check_pressed(vk_right) - keyboard_check_pressed(vk_left);
-  var _nz = keyboard_check_pressed(vk_down) - keyboard_check_pressed(vk_up);
+// Nudges selection with the nudge bindings (arrows by default).
+function __poly_step_nudge(_ed, _keys) {
+  var _nx = __poly_bind_pressed(_keys, "nudge_right") - __poly_bind_pressed(_keys, "nudge_left");
+  var _nz = __poly_bind_pressed(_keys, "nudge_down") - __poly_bind_pressed(_keys, "nudge_up");
 
   if ((_nx == 0 && _nz == 0) || array_length(_ed.sel) == 0) return;
   var _step = _ed.snap_on ? __poly_snap_step(_ed) : 0.25;
@@ -154,50 +407,44 @@ function __poly_step_nudge(_ed) {
 // Handles editor keyboard shortcuts and nudging.
 function __poly_step_hotkeys(_ed, _input) {
   var _keys = _input.keys;
-  var _typing = _input.typing;
+
+  if (_input.typing) return;
   var _gesture = _input.gesture_active;
 
-  if (_typing) return;
-  var _ctrl = keyboard_check(vk_control);
+  if (_gesture) return;
+  var _tools = __poly_tool_hotkeys();
+  // QWER double as fly keys: while the right button flies the camera,
+  // letters fly instead of switching tools.
+  // NB: _input.in_viewport is false while ImGui owns the mouse, so gate
+  // on the raw button + camera owner instead.
+  var _flying = __poly_bind_key(_keys, "cam_fly") && (_input.owner == undefined || __poly_input_owner_is_camera(_input.owner));
 
-  if (!_ctrl && !_gesture) {
-    var _tools = __poly_tool_hotkeys();
-    // QWER double as fly keys: while the right button flies the camera,
-    // letters fly instead of switching tools.
-    // NB: _input.in_viewport is false while ImGui owns the mouse, so gate
-    // on the raw button + camera owner instead.
-    var _flying = mouse_check_button(mb_right) && (_input.owner == undefined || __poly_input_owner_is_camera(_input.owner));
+  for (var _t = 0, _nt = array_length(_tools); _t < _nt; _t++) if (!_flying && __poly_bind_pressed(_keys, _tools[_t][0])) _ed.giz.tool = _tools[_t][1];
+  if (__poly_bind_pressed(_keys, "del")) __poly_delete_ask(_ed);
+  if (__poly_bind_pressed(_keys, "deselect")) __poly_sel_clear(_ed);
+  if (__poly_bind_pressed(_keys, "focus")) __poly_focus_selection(_ed);
+  if (__poly_bind_pressed(_keys, "snap")) _ed.snap_on = !_ed.snap_on;
+  if (__poly_bind_pressed(_keys, "pivot")) __poly_toggle_pivot(_ed);
+  if (__poly_bind_pressed(_keys, "orient")) __poly_toggle_orient(_ed);
+  if (__poly_bind_pressed(_keys, "rename") && array_length(_ed.sel) > 0) __poly_rename_begin(_ed, _ed.sel[0]);
+  __poly_step_nudge(_ed, _keys);
 
-    for (var _t = 0, _nt = array_length(_tools); _t < _nt; _t++) if (!_flying && __poly_key_pressed(_keys, _tools[_t][0])) _ed.giz.tool = _tools[_t][1];
-    if (keyboard_check_pressed(_keys.del)) __poly_delete_ask(_ed);
-    if (keyboard_check(vk_shift) && keyboard_check_pressed(_keys.deselect)) __poly_sel_clear(_ed);
-    if (!keyboard_check(vk_shift) && __poly_key_pressed(_keys, "focus")) __poly_focus_selection(_ed);
-    if (__poly_key_pressed(_keys, "snap") || keyboard_check_pressed(220)) _ed.snap_on = !_ed.snap_on;
-    if (__poly_key_pressed(_keys, "pivot")) __poly_toggle_pivot(_ed);
-    if (__poly_key_pressed(_keys, "orient")) __poly_toggle_orient(_ed);
-    if (__poly_key_pressed(_keys, "rename") && array_length(_ed.sel) > 0) __poly_rename_begin(_ed, _ed.sel[0]);
-    __poly_step_nudge(_ed);
-  }
+  if (__poly_bind_pressed(_keys, "save")) __poly_save_or_ask(_ed);
+  if (__poly_bind_pressed(_keys, "dupe")) __poly_duplicate_sel(_ed);
+  if (__poly_bind_pressed(_keys, "copy")) __poly_clipboard_copy(_ed);
+  if (__poly_bind_pressed(_keys, "cut")) __poly_clipboard_cut(_ed);
+  if (__poly_bind_pressed(_keys, "paste")) __poly_clipboard_paste(_ed);
+  if (__poly_bind_pressed(_keys, "invert")) __poly_invert_sel(_ed);
+  if (__poly_bind_pressed(_keys, "select_all")) __poly_select_all(_ed);
+  if (__poly_bind_pressed(_keys, "focus_search")) __poly_focus_search(_ed);
+  if (__poly_bind_pressed(_keys, "new_scene")) __poly_confirm_ask(_ed, "new");
+  if (__poly_bind_pressed(_keys, "close")) __poly_confirm_ask(_ed, "close");
+  if (__poly_bind_pressed(_keys, "load")) __poly_confirm_ask(_ed, "load");
+  if (__poly_bind_pressed(_keys, "snap_grid")) __poly_push_sel_to_grid(_ed);
 
-  if (_gesture || !_ctrl) return;
-  if (keyboard_check_pressed(_keys.save)) __poly_save_or_ask(_ed);
-  if (keyboard_check_pressed(_keys.dupe)) __poly_duplicate_sel(_ed);
-  if (__poly_key_pressed(_keys, "copy")) __poly_clipboard_copy(_ed);
-  if (__poly_key_pressed(_keys, "cut")) __poly_clipboard_cut(_ed);
-  if (__poly_key_pressed(_keys, "paste")) __poly_clipboard_paste(_ed);
-  if (__poly_key_pressed(_keys, "invert")) __poly_invert_sel(_ed);
-  if (__poly_key_pressed(_keys, "select_all")) __poly_select_all(_ed);
-  if (__poly_key_pressed(_keys, "focus")) __poly_focus_search(_ed);
-  if (keyboard_check_pressed(_keys.new_scene)) __poly_confirm_ask(_ed, "new");
-  if (keyboard_check_pressed(_keys.close)) __poly_confirm_ask(_ed, "close");
-  if (__poly_key_pressed(_keys, "load")) __poly_confirm_ask(_ed, "load");
-  if (__poly_key_pressed(_keys, "snap") || keyboard_check_pressed(220)) __poly_push_sel_to_grid(_ed);
-  var _has_undo = variable_struct_exists(_keys, "undo");
-  var _has_redo = variable_struct_exists(_keys, "redo");
-
-  if (_has_undo && !keyboard_check(vk_shift) && keyboard_check_pressed(_keys.undo)) {
+  if (__poly_bind_pressed(_keys, "undo")) {
     __poly_history_apply(_ed, _ed.undo, _ed.redo);
-  } else if ((_has_redo && keyboard_check_pressed(_keys.redo)) || (_has_undo && keyboard_check(vk_shift) && keyboard_check_pressed(_keys.undo))) {
+  } else if (__poly_bind_pressed(_keys, "redo") || __poly_bind_pressed(_keys, "redo_shift")) {
     __poly_history_apply(_ed, _ed.redo, _ed.undo);
   }
 }
@@ -234,7 +481,7 @@ function __poly_cancel_gizmo(_ed) {
 
 // Handles Escape cancellation of active operations.
 function __poly_step_cancel(_ed, _input) {
-  if (_input.typing || !keyboard_check_pressed(_input.keys.cancel)) return;
+  if (_input.typing || !__poly_bind_pressed(_input.keys, "cancel")) return;
 
   if (_ed.scene_dlg != undefined) {
     _ed.scene_dlg = undefined;
@@ -429,7 +676,7 @@ function __poly_step_rect(_ed, _input) {
         x1: _r.x1 - _ox,
         y1: _r.y1 - _oy,
       };
-      __poly_gpupick_request_rect(_ed, _local, keyboard_check(vk_shift));
+      __poly_gpupick_request_rect(_ed, _local, __poly_bind_key(_ed.cfg.keys, "select_add"));
     }
 
     _ed.rect = undefined;
@@ -452,7 +699,7 @@ function __poly_hover_press(_ed, _input, _vp, _vmx, _vmy) {
   var _mx = _input.mx;
   var _my = _input.my;
 
-  if (!(mouse_check_button_pressed(mb_left) && _input.vin && !_input.typing && !keyboard_check(vk_alt) && _input.owner == undefined)) return;
+  if (!(mouse_check_button_pressed(mb_left) && _input.vin && !_input.typing && !__poly_bind_key(_input.keys, "cam_orbit") && _input.owner == undefined)) return;
 
   if (_ed.cube_geom != undefined && __poly_viewcube_box_at(_ed.cube_geom, _vmx, _vmy)) {
     _ed.input_owner = "viewcube";
@@ -520,10 +767,10 @@ function __poly_step_hover(_ed, _input) {
   _ed.cube_geom = _ed.imgui.win_cube.open ? __poly_viewcube(_ed) : undefined;
   _ed.cube_hover = undefined;
 
-  if (_in_vp && !mouse_check_button(mb_right) && _ed.cube_geom != undefined) _ed.cube_hover = __poly_viewcube_cone_at(_ed.cube_geom, _vmx, _vmy);
+  if (_in_vp && !__poly_bind_key(_input.keys, "cam_fly") && _ed.cube_geom != undefined) _ed.cube_hover = __poly_viewcube_cone_at(_ed.cube_geom, _vmx, _vmy);
   _ed.giz.hover = -1;
 
-  if (_in_vp && !mouse_check_button(mb_right)) _ed.giz.hover = __poly_gizmo_hover(_ed, _vp, _vmx, _vmy);
+  if (_in_vp && !__poly_bind_key(_input.keys, "cam_fly")) _ed.giz.hover = __poly_gizmo_hover(_ed, _vp, _vmx, _vmy);
   if (_ed.cube_geom != undefined && __poly_viewcube_box_at(_ed.cube_geom, _vmx, _vmy)) _ed.giz.hover = -1;
   __poly_hover_press(_ed, _input, _vp, _vmx, _vmy);
 
@@ -550,7 +797,7 @@ function __poly_hover_release(_ed, _vmx, _vmy, _in_vp) {
   __poly_input_owner_clear(_ed, "viewpan");
 
   if (_was_view) {
-    if (!_view_drag && _in_vp) __poly_gpupick_request_click(_ed, _vmx, _vmy, keyboard_check(vk_shift));
+    if (!_view_drag && _in_vp) __poly_gpupick_request_click(_ed, _vmx, _vmy, __poly_bind_key(_ed.cfg.keys, "select_add"));
   } else if (_ed.cube_armed == true) {
     _ed.cube_armed = undefined;
     __poly_input_owner_clear(_ed, "viewcube");
@@ -574,7 +821,7 @@ function __poly_hover_release(_ed, _vmx, _vmy, _in_vp) {
 
     _ed.cube_face = undefined;
   } else if (_in_vp) {
-    __poly_gpupick_request_click(_ed, _vmx, _vmy, keyboard_check(vk_shift));
+    __poly_gpupick_request_click(_ed, _vmx, _vmy, __poly_bind_key(_ed.cfg.keys, "select_add"));
   }
 }
 
