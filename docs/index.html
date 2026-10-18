@@ -3,12 +3,17 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>POLYGON - 3D Editor for GameMaker</title>
+    <title>Polygon — 3D level editor for GameMaker</title>
     <meta
       name="description"
-      content="3D editor for GameMaker on the GMRT runtime. Edit your scenes and load them in your game."
+      content="Polygon is an in-game 3D editor for GameMaker on the GMRT runtime. Press F1, build your scene, save it as JSON and load it in your game."
     />
     <link rel="stylesheet" href="styles.css" />
+    <script>
+      // Only hide .reveal blocks when JS is running, so the page still
+      // renders fully with scripts disabled.
+      document.documentElement.classList.add("js");
+    </script>
   </head>
   <body>
     <div class="bg" aria-hidden="true">
@@ -19,15 +24,15 @@
     <nav class="nav">
       <div class="wrap nav-inner">
         <a class="brand" href="#top"
-          ><img src="iconMinimal.svg" alt="" width="64" height="auto" /><span
+          ><img src="iconMinimal.svg" alt="" width="34" height="auto" /><span
             >Polygon</span
           ></a
         >
         <div class="nav-links">
           <a href="#features">Features</a>
-          <a href="#quickstart">Quick start</a>
+          <a href="#workflow">Workflow</a>
           <a href="#api">API</a>
-          <a href="#controls">Controls</a>
+          <a href="#shortcuts">Shortcuts</a>
           <a
             class="btn small primary"
             href="https://github.com/manuel-di-iorio/Polygon"
@@ -38,6 +43,7 @@
     </nav>
 
     <header class="hero" id="top">
+      <canvas class="hero-gl" id="hero-gl" aria-hidden="true"></canvas>
       <div class="wrap hero-grid">
         <div class="hero-copy">
           <img
@@ -51,8 +57,8 @@
             Build worlds <span class="grad">inside your game.</span>
           </h1>
           <p class="tagline reveal">
-            A 3D editor for GameMaker. Plug it into your project
-            and build, edit, and save your scenes without leaving your game.
+            A 3D editor for GameMaker. Plug it into your project and build,
+            edit, and save your scenes without leaving your game.
           </p>
           <p class="cta reveal">
             <a
@@ -60,7 +66,7 @@
               href="https://github.com/manuel-di-iorio/Polygon"
               >Get it on GitHub</a
             >
-            <a class="btn big" href="#quickstart">Quick start</a>
+            <a class="btn big" href="#workflow">Quick start</a>
           </p>
         </div>
         <!-- Replace screenshot.png with your editor screenshot (put the file in docs/) -->
@@ -70,88 +76,152 @@
       </div>
     </header>
 
-    <main class="wrap">
-      <section id="features" class="reveal">
-        <h2>Everything you need to ship levels</h2>
-        <p class="sub">
-          No external tools. Press F1 and edit right inside the running game.
-        </p>
-        <ul class="grid">
-          <li>
-            <strong>In-game editing</strong><br />Toggle with F1; the gateway
-            steps the live world while closed.
-          </li>
-          <li>
-            <strong>TRS gizmo</strong><br />Translate, rotate and scale with
-            world or local axes and drag planes.
-          </li>
-          <li>
-            <strong>Outliner + Inspector</strong><br />Filter, rename (F2),
-            focus (F), per-axis transform rows.
-          </li>
-          <li>
-            <strong>Visibility menu</strong><br />Hidden objects, skybox
-            and selection outline toggles.
-          </li>
-          <li>
-            <strong>Undo / redo</strong><br />Snapshot history with selection
-            restore.
-          </li>
-          <li>
-            <strong>JSON scenes</strong><br />One descriptor per placement.
-            Save, load, new.
-          </li>
-          <li>
-            <strong>Actor companions</strong><br />Bind a model to a GameMaker
-            object; instances spawn companions that drive their scene node.
-          </li>
-          <li>
-            <strong>Directional shadows</strong><br />Per-light setup, preview
-            and global toggle.
-          </li>
-          <li>
-            <strong>Snap + nudge</strong><br />Position/rotation snap and
-            arrow-key nudge, all undoable.
-          </li>
-        </ul>
+    <main>
+      <!-- Features -->
+      <section class="wrap block" id="features">
+        <header class="shead reveal">
+          <p class="eyebrow">Features</p>
+          <h2>Everything you need to ship levels</h2>
+          <p class="sub">
+            No external tools. Press <kbd>F1</kbd> and edit right inside the
+            running game.
+          </p>
+        </header>
+
+        <div class="cards">
+          <article class="card reveal">
+            <span class="ico" aria-hidden="true"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="12.5" rx="2.5"/><path d="M9 20.5h6"/><path d="M13.2 9.2l4 1.6-1.7.8-.8 1.7z"/></svg></span
+            >
+            <h3>In-game editing</h3>
+            <p>
+              Toggle with <kbd>F1</kbd>. The gateway steps the live world while
+              the editor is closed.
+            </p>
+          </article>
+
+          <article class="card reveal">
+            <span class="ico" aria-hidden="true"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v17M3.5 12h17"/><path d="M12 3.5 9.6 6M12 3.5 14.4 6M12 20.5 9.6 18M12 20.5l2.4-2.5M3.5 12 6 9.6M3.5 12 6 14.4M20.5 12l-2.5-2.4M20.5 12l-2.5 2.4"/></svg></span
+            >
+            <h3>TRS gizmo</h3>
+            <p>
+              Translate, rotate and scale on world or local axes, with drag
+              planes.
+            </p>
+          </article>
+
+          <article class="card reveal">
+            <span class="ico" aria-hidden="true"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5h9M3.5 12h6M3.5 17.5h9"/><rect x="15" y="4.5" width="5.5" height="15" rx="1.6"/><path d="M17.2 8h1.1M17.2 11.5h1.1"/></svg></span
+            >
+            <h3>Outliner + Inspector</h3>
+            <p>
+              Filter and rename (<kbd>F2</kbd>), focus (<kbd>F</kbd>), per-axis
+              transform rows.
+            </p>
+          </article>
+
+          <article class="card reveal">
+            <span class="ico" aria-hidden="true"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 6.2 12 6.2 21.5 12 21.5 12 18 17.8 12 17.8 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg></span
+            >
+            <h3>Visibility menu</h3>
+            <p>Hidden objects, skybox and selection outline toggles.</p>
+          </article>
+
+          <article class="card reveal">
+            <span class="ico" aria-hidden="true"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h9.5a5 5 0 0 1 0 10H8"/><path d="M7.5 6 4 9.5 7.5 13"/></svg></span
+            >
+            <h3>Undo / redo</h3>
+            <p>Snapshot history that restores the selection too.</p>
+          </article>
+
+          <article class="card reveal">
+            <span class="ico" aria-hidden="true"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5c-2 0-2.6 1-2.6 2.6v2c0 1.6-.7 2.4-2.4 2.9 1.7.5 2.4 1.3 2.4 2.9v2c0 1.6.6 2.6 2.6 2.6"/><path d="M15 4.5c2 0 2.6 1 2.6 2.6v2c0 1.6.7 2.4 2.4 2.9-1.7.5-2.4 1.3-2.4 2.9v2c0 1.6-.6 2.6-2.6 2.6"/></svg></span
+            >
+            <h3>JSON scenes</h3>
+            <p>One descriptor per placement. Save, load, new.</p>
+          </article>
+
+          <article class="card reveal">
+            <span class="ico" aria-hidden="true"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.8 14.2l4.4-4.4"/><path d="M11.4 7.8 12.6 6.6a3.4 3.4 0 0 1 4.8 4.8l-1.2 1.2"/><path d="M12.6 16.2l-1.2 1.2a3.4 3.4 0 0 1-4.8-4.8l1.2-1.2"/></svg></span
+            >
+            <h3>Actor companions</h3>
+            <p>
+              Bind a model to a GameMaker object: instances spawn companions
+              that drive their node.
+            </p>
+          </article>
+
+          <article class="card reveal">
+            <span class="ico" aria-hidden="true"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="3.2"/><path d="M12 3.2v1.6M12 13.2v1.6M5.8 9H4.2M19.8 9h-1.6M7.6 4.6 6.5 3.5M16.4 4.6l1.1-1.1"/><path d="M3.5 19.5c2.6-1.5 14.4-1.5 17 0"/></svg></span
+            >
+            <h3>Directional shadows</h3>
+            <p>Per-light setup, coverage preview and a global toggle.</p>
+          </article>
+
+          <article class="card reveal">
+            <span class="ico" aria-hidden="true"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4.5v7.5a6 6 0 0 0 12 0V4.5h-4v7.5a2 2 0 1 1-4 0V4.5z"/><path d="M6 8h4M14 8h4"/></svg></span
+            >
+            <h3>Snap + nudge</h3>
+            <p>
+              Position and rotation snap, arrow-key nudge, all undoable.
+            </p>
+          </article>
+        </div>
       </section>
 
-      <section id="requirements" class="reveal">
-        <h2>Requirements</h2>
-        <ul class="checks">
-          <li>
-            GameMaker with <strong>GMRT 0.22.4</strong> (from the Package
-            Manager)
+      <!-- Workflow -->
+      <section class="wrap block" id="workflow">
+        <header class="shead reveal">
+          <p class="eyebrow">Workflow</p>
+          <h2>Three steps from clone to usable editor</h2>
+          <p class="sub">
+            Import the package, create one object, hand it your world. The
+            editor is editor-only: your game keeps shipping as it is.
+          </p>
+        </header>
+
+        <ol class="steps">
+          <li class="step reveal">
+            <span class="step-n">1</span>
+            <div class="step-body">
+              <h3>Import the editor package</h3>
+              <p>
+                Drag
+                <a
+                  href="https://github.com/manuel-di-iorio/Polygon/blob/main/editor.yymps"
+                  >editor.yymps</a
+                >
+                onto the GameMaker IDE to import the scripts. You also need
+                <strong>GMRT 0.22.4</strong> from the Package Manager, which
+                provides <code>GM3D_*</code> and <code>ImGui</code>.
+              </p>
+            </div>
           </li>
-        </ul>
-      </section>
 
-      <section id="quickstart" class="reveal">
-        <h2>Quick start</h2>
-
-        <p>
-          <strong>1. Import the editor package</strong> - drag
-          <a
-            href="https://github.com/manuel-di-iorio/Polygon/blob/main/editor.yymps"
-            >editor.yymps</a
-          >
-          onto the GameMaker IDE to import the scripts. You also need GMRT
-          0.22.4 (Package Manager), which provides <code>GM3D_*</code> and
-          <code>ImGui</code>.
-        </p>
-        <p>
-          <strong>2. Add the <code>oEditor</code> package object</strong> to your
-          game. It is editor-only: your game hands over a runtime adapter,
-          then creates it (full working example in
-          <code>objects/oGame</code>). Load each model once, register it
-          with a unique name:
-        </p>
-        <div class="codeblock terminal">
-          <div class="term-bar">
-            <span></span><span></span><span></span
-            ><button class="copy" data-copy="qs2">Copy</button>
-          </div>
-          <pre id="qs2"><code class="lang-gml">// Game Create
+          <li class="step reveal">
+            <span class="step-n">2</span>
+            <div class="step-body">
+              <h3>Boot the editor from your game</h3>
+              <p>
+                Add the editor-only <code>oEditor</code> package object and give
+                it a runtime adapter: your scene, your camera, the models you
+                loaded. A full working example ships in
+                <code>objects/oGame</code>.
+              </p>
+              <div class="codeblock terminal">
+                <div class="term-bar">
+                  <span></span><span></span><span></span
+                  ><button class="copy" data-copy="qs2">Copy</button>
+                </div>
+                <pre id="qs2"><code class="lang-gml">// Game Create
 var assets = {};
 assets[$ "tree.glb"] = { model: my_load_model("tree.glb") };
 assets[$ "rock.glb"] = { model: my_load_model("rock.glb") };
@@ -171,366 +241,537 @@ if (!poly_is_active()) my_game_render(); // editor shows its own viewport
 
 // Game Clean Up
 my_game_destroy();</code></pre>
-        </div>
-        <p class="sub">
-          While the editor is open it works on its own scene copy: what
-          you edit never touches the game world. Save to JSON and reload
-          deterministically with <code>poly_load</code> when the game wants
-          it.
-        </p>
+              </div>
+            </div>
+          </li>
+
+          <li class="step reveal">
+            <span class="step-n">3</span>
+            <div class="step-body">
+              <h3>Edit, save, ship</h3>
+              <p>
+                While the editor is open it works on its own scene copy: what
+                you edit never touches the game world. Save to JSON and reload
+                it deterministically with <code>poly_load</code> whenever the
+                game wants it.
+              </p>
+            </div>
+          </li>
+        </ol>
+
+        <ul class="strip reveal">
+          <li>
+            <strong>Owns its scene</strong
+            ><span
+              >Nothing you touch in the editor leaks into the live
+              world.</span
+            >
+          </li>
+          <li>
+            <strong>One object</strong
+            ><span
+              >Everything hangs off <code>poly_create</code> and three
+              per-frame calls.</span
+            >
+          </li>
+          <li>
+            <strong>Deterministic reload</strong
+            ><span
+              >Same JSON in, same level out, chunk-loaded in your Step.</span
+            >
+          </li>
+        </ul>
       </section>
 
-      <section id="api" class="reveal">
-        <h2>Public API</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Function</th>
-              <th>Purpose</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>poly_create(config)</code></td>
-              <td>
-                Boot editor state from
-                <code>{ scene?, assets?, cam?, on_create?, on_close?, on_compose?, keys? }</code>:
-                <code>assets</code> is <code>{ key: { model, on_create? } }</code>;
-                owns its scene (empty at boot; the live
-                <code>scene</code> is mirrored as copies on every enable,
-                else camera/sun/env defaults spawn).
-                <code>on_create(node, assetId, model, id)</code> fires first,
-                then the per-model hook — walk the
-                subtree for model content.
-                <code>on_compose(surf, w, h)</code> previews your
-                post-processing in the viewport (after the 3D render,
-                before overlays)
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <code>poly_step()</code> /
-                <code>poly_draw()</code> /
-                <code>poly_draw_ui()</code>
-              </td>
-              <td>
-                Per-frame update (Step) + scene render (Draw) + window
-                overlay (Draw GUI)
-              </td>
-            </tr>
-            <tr>
-              <td><code>poly_cleanup()</code></td>
-              <td>Autosave-if-dirty, destroy, cleanup</td>
-            </tr>
-            <tr>
-              <td><code>poly_ai_net()</code></td>
-              <td>AI bridge pump (Async Networking event, optional)</td>
-            </tr>
-            <tr>
-              <td>
-                <code>poly_enable / disable / is_active()</code>
-              </td>
-              <td>Open/close the editor</td>
-            </tr>
-            <tr>
-              <td>
-                <code>poly_asset_add(model, kind?, path?, on_create?)</code> /
-                <code>poly_asset_clear()</code>
-              </td>
-              <td>Library entry, identified by relative load
-              <code>path</code></td>
-            </tr>
-            <tr>
-              <td><code>poly_actor_destroy(ref)</code> / <code>poly_actor_of(node)</code></td>
-              <td>
-                Kill a companion and its scene node together (accepts the
-                instance id, the node, or the creation struct); look up the
-                live companion bound to a node
-              </td>
-            </tr>
-            <tr>
-              <td><code>poly_track(kind, assetId, node)</code></td>
-              <td>
+      <!-- API -->
+      <section class="wrap block" id="api">
+        <header class="shead reveal">
+          <p class="eyebrow">Reference</p>
+          <h2>Public API</h2>
+          <p class="sub">
+            Nine entry points, grouped the way you use them. Signatures are
+            GML; optional arguments are marked with <code>?</code>.
+          </p>
+        </header>
+
+        <div class="api">
+          <div class="panel reveal">
+            <h3 class="panel-title">Lifecycle</h3>
+
+            <div class="api-row">
+              <code class="fn">poly_create(config)</code>
+              <p>
+                Boot the editor state from
+                <code
+                  >{ scene?, assets?, cam?, on_create?, on_close?, on_compose?,
+                  keys? }</code
+                >: the live <code>scene</code> is mirrored as copies on every
+                enable, otherwise camera / sun / env defaults spawn.
+              </p>
+              <details>
+                <summary>Config in detail</summary>
+                <ul>
+                  <li>
+                    <code>assets</code> is
+                    <code>{ key: { model, on_create? } }</code>.
+                  </li>
+                  <li>
+                    <code>on_create(node, assetId, model, id)</code> fires first,
+                    then the per-model hook - walk the subtree for model
+                    content.
+                  </li>
+                  <li>
+                    <code>on_compose(surf, w, h)</code> previews your
+                    post-processing in the viewport, after the 3D render and
+                    before the overlays.
+                  </li>
+                </ul>
+              </details>
+            </div>
+
+            <div class="api-row">
+              <code class="fn">poly_step() / poly_draw() / poly_draw_ui()</code>
+              <p>
+                Per-frame update (Step), scene render (Draw) and window overlay
+                (Draw GUI).
+              </p>
+            </div>
+
+            <div class="api-row">
+              <code class="fn">poly_cleanup()</code>
+              <p>Autosave-if-dirty, destroy, cleanup.</p>
+            </div>
+
+            <div class="api-row">
+              <code class="fn">poly_ai_net()</code>
+              <p>AI bridge pump (Async Networking event, optional).</p>
+            </div>
+
+            <div class="api-row">
+              <code class="fn">poly_enable / disable / is_active()</code>
+              <p>Open and close the editor.</p>
+            </div>
+          </div>
+
+          <div class="panel reveal">
+            <h3 class="panel-title">Scenes &amp; assets</h3>
+
+            <div class="api-row">
+              <code class="fn"
+                >poly_load(scene, fname, assets, on_create?, on_finish?)</code
+              >
+              <p>
+                Load a saved scene into a live <code>GM3D_Scene</code> with no
+                editor involved. Always async: it parses now and spawns chunked
+                through <code>poly_load_step()</code>.
+              </p>
+              <details>
+                <summary>Return value and hooks</summary>
+                <ul>
+                  <li>
+                    Returns the job, or <code>undefined</code> when the file is
+                    missing or invalid.
+                  </li>
+                  <li>
+                    <code>assets</code> is
+                    <code>{ key: { model, on_create? } }</code> - the same shape
+                    as the init config.
+                  </li>
+                  <li>
+                    Per instance it calls the global
+                    <code>on_create(node, assetId, model, id)</code>, then the
+                    per-model hook, then the companion spawn for Actor-bound
+                    models.
+                  </li>
+                  <li>
+                    <code>on_finish(report)</code> fires once with
+                    <code
+                      >{ placed, failed, companions, warnings, placements }</code
+                    >.
+                  </li>
+                </ul>
+              </details>
+            </div>
+
+            <div class="api-row">
+              <code class="fn">poly_load_step(budget?)</code>
+              <p>
+                Advance every pending job (~48 nodes each). Call it every Step;
+                returns the pending job count.
+              </p>
+            </div>
+
+            <div class="api-row">
+              <code class="fn"
+                >poly_asset_add(model, kind?, path?, on_create?)</code
+              >
+              <span class="or">/</span>
+              <code class="fn">poly_asset_clear()</code>
+              <p>
+                Add a library entry, identified by its relative load
+                <code>path</code>, or drop the whole library.
+              </p>
+            </div>
+
+            <div class="api-row">
+              <code class="fn">poly_track(kind, assetId, node)</code>
+              <p>
                 Import one live game node into the editor scene as a copy
-                (<code>assetId</code> is the model key;
-                <code>kind</code> is <code>"instance"</code>,
-                <code>"light"</code>, <code>"camera"</code> or
-                <code>"environment"</code>); game world untouched
-              </td>
-            </tr>
-            <tr>
-              <td><code>poly_load(scene, fname, assets, on_create?, on_finish?)</code></td>
-              <td>
-                Start loading a saved scene into a live game scene, always
-                async (no editor): parses now, spawns chunked via
-                <code>poly_load_step()</code>; returns the job (or
-                <code>undefined</code> when missing/invalid);
-                <code>assets</code> is <code>{ key: { model, on_create? } }</code>
-                (same shape as init config);
-                per instance calls global <code>on_create</code>, then the per-model
-                hook, then the companion spawn for Actor-bound models;
-                <code>on_finish(report)</code> fires once with
-                <code>{ placed, failed, companions, warnings, placements }</code>
-              </td>
-            </tr>
-            <tr>
-              <td><code>poly_load_step(budget?)</code></td>
-              <td>
-                Advance all pending <code>poly_load</code> jobs (~48 nodes
-                each); call every Step; returns the pending job count
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                without touching the game world.
+              </p>
+              <details>
+                <summary>Arguments</summary>
+                <ul>
+                  <li>
+                    <code>assetId</code> is the model key,
+                    <code>kind</code> is <code>"instance"</code>,
+                    <code>"light"</code>, <code>"camera"</code> or
+                    <code>"environment"</code>.
+                  </li>
+                </ul>
+              </details>
+            </div>
+          </div>
+
+          <div class="panel reveal">
+            <h3 class="panel-title">Actors</h3>
+
+            <div class="api-row">
+              <code class="fn">poly_actor_destroy(ref)</code>
+              <span class="or">/</span>
+              <code class="fn">poly_actor_of(node)</code>
+              <p>
+                Kill a companion and its scene node together, or look up the
+                live companion bound to a node.
+              </p>
+              <details>
+                <summary>Arguments</summary>
+                <ul>
+                  <li>
+                    <code>poly_actor_destroy</code> accepts the instance id, the
+                    node, or the creation struct.
+                  </li>
+                </ul>
+              </details>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <section id="format" class="reveal">
-        <h2>Scene file format</h2>
-        <p class="sub">
-          <code>{ "version": 1, "seq": 14, "assets": {...}, "nodes": [...] }</code>, one
-          descriptor per node. <code>assets</code> holds per-model file metadata
-          (e.g. Actor bindings). Every descriptor has a
-          <code>id</code> and, for instances, an
-          <code>assetId</code> field linking the model. A descriptor may
-          carry an optional custom <code>label</code> (instance name,
-          set with F2):
-        </p>
-        <div class="codeblock terminal">
-          <div class="term-bar">
-            <span></span><span></span><span></span
-            ><button class="copy" data-copy="fmt">Copy</button>
-          </div>
-          <pre id="fmt"><code class="lang-json">{
-  "kind": "instance",
-  "id": "__PolygonEditor__7",
-  "label": "Tree 2",
-  "assetId": "models/tree.glb",
-  "transform": {
-    "position": [1.0, 0.0, 2.0],
-    "rotation": [0.0, 0.0, 0.0, 1.0],
-    "scale": [1.0, 1.0, 1.0]
-  },
-  "shadows": { "cast": true, "receive": true }
+      <!-- Scene format -->
+      <section class="wrap block" id="format">
+        <header class="shead reveal">
+          <p class="eyebrow">Data</p>
+          <h2>Scene files you can read</h2>
+          <p class="sub">
+            Plain JSON, one descriptor per node. Diffable, hand-editable, and
+            reloadable straight into a running game.
+          </p>
+        </header>
+
+        <div class="split reveal">
+          <div class="codeblock terminal">
+            <div class="term-bar">
+              <span></span><span></span><span></span
+              ><button class="copy" data-copy="fmt">Copy</button>
+            </div>
+            <pre id="fmt"><code class="lang-json">{
+  "version": 1,
+  "seq": 14,
+  "assets": { },
+  "nodes": [
+    {
+      "kind": "instance",
+      "id": "__PolygonEditor__7",
+      "label": "Tree 2",
+      "assetId": "models/tree.glb",
+      "transform": {
+        "position": [1.0, 0.0, 2.0],
+        "rotation": [0.0, 0.0, 0.0, 1.0],
+        "scale": [1.0, 1.0, 1.0]
+      },
+      "shadows": { "cast": true, "receive": true }
+    }
+  ]
 }</code></pre>
-        </div>
-        <p class="sub">
-          Lights, cameras and the environment carry a <code>light</code> /
-          <code>camera</code> / <code>environment</code> sub-struct (angles in
-          degrees, colors as <code>[r, g, b]</code> 0-255). Directional lights
-          can also carry
-          <code>shadow: { enabled, resolution, distance, normalOffset }</code>.
-        </p>
-        <h3>Shadows</h3>
-        <p class="sub">
-          Directional lights support shadow mapping, editable in the Inspector
-          under Shadows; selecting a shadowed light draws its coverage box, and
-          the toolbar Shadows button toggles preview without touching saved
-          values. Every material needs both a Forward and a Shadow shader,
-          assigned <strong>per live instance</strong> —
-          <code>spawnInto</code> clones do not inherit source assignments, so
-          assign them in your spawn hook. Use the <code>sStatic</code> /
-          <code>sAnimated</code> (+<code>Shadow</code>) shaders from this
-          project.
-        </p>
-        <h3>In-game loading (no editor)</h3>
-        <p class="sub">
-          <code>poly_load(scene, fname, assets, on_create?, on_finish?)</code> starts loading a saved scene into
-          any live <code>GM3D_Scene</code>, always async: parses now, spawns chunked via
-          <code>poly_load_step()</code> (call every Step). Load and freeze each model once,
-          then pass them as <code>{ key: { model, on_create? } }</code> — the
-          key is the asset id (the relative load path, e.g. <code>"models/tree.glb"</code>).
-          Per instance it calls the global <code>on_create(node, assetId, model, id)</code>,
-          then the per-model hook, then the companion spawn for Actor-bound
-          models (configured in the model Inspector, saved as top-level
-          <code>"assets"</code> in the file); the companion receives
-          <code>{ node, poly_id, poly_asset_id }</code>:
-        </p>
-        <div class="codeblock terminal">
-          <div class="term-bar">
-            <span></span><span></span><span></span
-            ><button class="copy" data-copy="fmt-load">Copy</button>
           </div>
-          <pre id="fmt-load"><code class="lang-gml">var _assets = {};
+
+          <ul class="ticks">
+            <li>
+              <strong>Header</strong> - <code>version</code> and
+              <code>seq</code> keep old files loadable;
+              <code>assets</code> holds per-model metadata such as Actor
+              bindings.
+            </li>
+            <li>
+              <strong>Every node</strong> carries an <code>id</code>, and
+              instances an <code>assetId</code> linking the model, plus an
+              optional custom <code>label</code> set with <kbd>F2</kbd>.
+            </li>
+            <li>
+              <strong>Transforms</strong> are position, quaternion rotation and
+              scale, with per-node <code>shadows</code> flags.
+            </li>
+            <li>
+              <strong>Lights, cameras, environment</strong> carry their own
+              sub-struct: angles in degrees, colours as <code>[r, g, b]</code>
+              0-255.
+            </li>
+          </ul>
+        </div>
+
+        <div class="panels">
+          <article class="panel reveal">
+            <h3>Shadows</h3>
+            <p>
+              Directional lights support shadow mapping
+              (<code
+                >shadow: { enabled, resolution, distance, normalOffset
+                }</code
+              >), editable in the Inspector under Shadows. Selecting a shadowed
+              light draws its coverage box, and the toolbar button toggles the
+              preview without touching saved values.
+            </p>
+            <p class="note">
+              Every material needs a <strong>Forward</strong> and a
+              <strong>Shadow</strong> shader, assigned per live instance:
+              <code>spawnInto</code> clones do not inherit source assignments,
+              so assign them in your spawn hook (<code>sStatic</code> /
+              <code>sAnimated</code> + <code>Shadow</code>).
+            </p>
+          </article>
+
+          <article class="panel reveal">
+            <h3>In-game loading, no editor</h3>
+            <p>
+              Load and freeze each model once, then pass them as
+              <code>{ key: { model, on_create? } }</code> - the key is the
+              relative load path, e.g. <code>"models/tree.glb"</code>.
+            </p>
+            <div class="codeblock terminal">
+              <div class="term-bar">
+                <span></span><span></span><span></span
+                ><button class="copy" data-copy="fmt-load">Copy</button>
+              </div>
+              <pre id="fmt-load"><code class="lang-gml">var _assets = {};
 _assets[$ "models/tree.glb"] = { model: my_load_model("models/tree.glb") };
 _assets[$ "models/rock.glb"] = { model: my_load_model("models/rock.glb") };
+
 var _job = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", _assets, my_on_create, function(_rep) {
   show_debug_message("placed: " + string(_rep.placed));
 });
-// Step event:
-poly_load_step(); // ~48 nodes per job; returns pending count
+
+// Step event
+poly_load_step(); // ~48 nodes per job; returns the pending count
+
 // _rep = { placed, failed, companions, warnings, placements: [...] }
-// After loading, assign Forward+Shadow shaders per spawned node (see Shadows above).</code></pre>
-        </div>
-        <h3>Viewport post-processing</h3>
-        <p class="sub">
-          Pass <code>on_compose(surf, w, h)</code> in the
-          <code>poly_create</code> config to preview your post-processing
-          inside the editor viewport: it runs after the 3D render
-          (post-AA) and before gizmo/outline overlays, so overlays stay
-          sharp. Copy <code>surf</code> to your own scratch (never sample
-          it while targeting it), grade back onto <code>surf</code>, and
-          leave the target on <code>surf</code>. It runs on re-render, not
-          every frame:
-        </p>
-        <div class="codeblock terminal">
-          <div class="term-bar">
-            <span></span><span></span><span></span
-            ><button class="copy" data-copy="fmt-compose">Copy</button>
-          </div>
-          <pre id="fmt-compose"><code class="lang-gml">on_compose: function(_surf, _w, _h) {
+// After loading, assign the Forward + Shadow shaders per spawned node.</code></pre>
+            </div>
+            <p class="note">
+              A companion spawned for an Actor-bound model receives
+              <code>{ node, poly_id, poly_asset_id }</code>.
+            </p>
+          </article>
+
+          <article class="panel reveal">
+            <h3>Viewport post-processing</h3>
+            <p>
+              Pass <code>on_compose(surf, w, h)</code> to preview your
+              post-processing inside the editor viewport: it runs after the 3D
+              render (post-AA) and before the gizmo and outline overlays, so
+              those stay sharp. It runs on re-render, not every frame.
+            </p>
+            <div class="codeblock terminal">
+              <div class="term-bar">
+                <span></span><span></span><span></span
+                ><button class="copy" data-copy="fmt-compose">Copy</button>
+              </div>
+              <pre id="fmt-compose"><code class="lang-gml">on_compose: function(_surf, _w, _h) {
   my_scratch = my_postfx_ensure(my_scratch, _w, _h);
   surface_set_target(my_scratch);
   draw_surface(_surf, 0, 0);
   surface_reset_target();
-  surface_set_target(_surf);
-  shader_set(shMyGrade);
+
+  surface_set_target(_surf);        // grade back onto surf
+  shader_set(shMyGrade);            // never sample a surface while targeting it
   draw_surface(my_scratch, 0, 0);
   shader_reset();
 }</code></pre>
+            </div>
+          </article>
         </div>
       </section>
 
-      <section id="controls" class="reveal">
-        <h2>Controls</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Input</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Ctrl + W</td>
-              <td>Close editor</td>
-            </tr>
-            <tr>
-              <td>Q / W / E / R</td>
-              <td>View / Move / Rotate / Scale tool (letters fly while right-dragging)</td>
-            </tr>
-            <tr>
-              <td>Left-drag model (Models panel)</td>
-              <td>Spawn into the scene</td>
-            </tr>
-            <tr>
-              <td>Left-click / drag</td>
-              <td>Select (additive rectangle with drag)</td>
-            </tr>
-            <tr>
-              <td>Alt + left-drag</td>
-              <td>Orbit around the current view point</td>
-            </tr>
-            <tr>
-              <td>
-                Right-drag + W/S forward/back, A/D left/right, Q/E down/up,
-                Shift
-              </td>
-              <td>Fly camera; wheel adjusts fly speed</td>
-            </tr>
-            <tr>
-              <td>Alt + right-drag / wheel</td>
-              <td>Zoom view</td>
-            </tr>
-            <tr>
-              <td>Middle-drag</td>
-              <td>Pan view in screen space (around the selection if any)</td>
-            </tr>
-            <tr>
-              <td>F (or double-click in Scene)</td>
-              <td>Focus selection</td>
-            </tr>
-            <tr>
-              <td>X</td>
-              <td>Toggle World / Local axes</td>
-            </tr>
-            <tr>
-              <td>Z</td>
-              <td>Toggle Pivot / Center handles</td>
-            </tr>
-            <tr>
-              <td>F2</td>
-              <td>Rename instance (custom name, saved to JSON)</td>
-            </tr>
-            <tr>
-              <td>Arrows</td>
-              <td>Nudge selection on the ground plane (undoable)</td>
-            </tr>
-            <tr>
-              <td>Ctrl (held while dragging)</td>
-              <td>Temporary snap</td>
-            </tr>
-            <tr>
-              <td>\</td>
-              <td>Toggle snap on/off</td>
-            </tr>
-            <tr>
-              <td>Ctrl+\</td>
-              <td>Push selection to grid (undoable)</td>
-            </tr>
-            <tr>
-              <td>Del</td>
-              <td>Delete selection</td>
-            </tr>
-            <tr>
-              <td>Ctrl+D</td>
-              <td>Duplicate</td>
-            </tr>
-            <tr>
-              <td>Ctrl+S / Ctrl+L / Ctrl+N</td>
-              <td>Save / Load / New scene</td>
-            </tr>
-            <tr>
-              <td>Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z)</td>
-              <td>Undo / Redo</td>
-            </tr>
-            <tr>
-              <td>Ctrl+F</td>
-              <td>Find object</td>
-            </tr>
-            <tr>
-              <td>Esc</td>
-              <td>Cancel gesture / rename / close dialog</td>
-            </tr>
-          </tbody>
-        </table>
-        <h3 id="remapping">Remapping shortcuts</h3>
-        <p class="sub">
-          Pass a <code>keys</code> field to the <code>poly_create</code> config
-          to remap any editor shortcut <strong>and camera control</strong>. Each
-          entry is an <strong>array of element structs</strong>
-          <code>{ key, mouse?, modifier? }</code>:
-        </p>
-        <ul class="sub">
-          <li>
-            <code>key</code> — the code: <code>vk_*</code> for special keys,
-            <code>ord("X")</code> for letters/digits, or
-            <code>mb_left</code>/<code>mb_right</code>/<code>mb_middle</code>/<code>mb_side1</code>/<code>mb_side2</code>
-            for mouse buttons.
-          </li>
-          <li>
-            <code>mouse: true</code> — marks <code>key</code> as a
-            <strong>mouse button</strong>; without it the code is a keyboard
-            key. This is what keeps a mouse button and a key with the same
-            numeric value from ever being confused.
-          </li>
-          <li>
-            <code>modifier: true</code> — the element must be
-            <strong>held</strong>; elements without it are
-            <strong>triggers</strong> (several triggers = alternatives). For
-            one-shot shortcuts, any keyboard modifier you do <em>not</em> list
-            must be <strong>up</strong> (exact match).
-          </li>
-        </ul>
-        <p class="sub">
-          A bare real (or a single struct) is shorthand for one keyboard
-          trigger, e.g. <code>pivot: ord("Z")</code>.
-        </p>
-        <div class="codeblock terminal">
-          <div class="term-bar">
-            <span></span><span></span><span></span
-            ><button class="copy" data-copy="keys-cfg">Copy</button>
+      <!-- Shortcuts -->
+      <section class="wrap block" id="shortcuts">
+        <header class="shead reveal">
+          <p class="eyebrow">Controls</p>
+          <h2>Every action on a key</h2>
+          <p class="sub">
+            Defaults only - remap any shortcut or camera control through the
+            <code>keys</code> config.
+          </p>
+        </header>
+
+        <div class="cards keys">
+          <article class="card reveal">
+            <h3>Camera</h3>
+            <p class="sc">
+              <span class="k"><kbd>Alt</kbd> + <kbd>drag</kbd></span
+              ><span class="what">Orbit around the current view point</span>
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>wheel</kbd></span
+              ><span class="what">Zoom (with <kbd>Alt</kbd> to keep orbiting)</span>
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>middle-drag</kbd></span
+              ><span class="what"
+                >Pan in screen space, around the selection if any</span
+              >
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>right-drag</kbd></span
+              ><span class="what"
+                >Fly: <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> +
+                <kbd>Q</kbd><kbd>E</kbd>, <kbd>Shift</kbd> to boost, wheel for
+                speed</span
+              >
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>F</kbd></span
+              ><span class="what"
+                >Focus selection (or double-click it in the Scene)</span
+              >
+            </p>
+          </article>
+
+          <article class="card reveal">
+            <h3>Tools</h3>
+            <p class="sc">
+              <span class="k"><kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd></span
+              ><span class="what">View / Move / Rotate / Scale</span>
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>X</kbd></span
+              ><span class="what">World or local axes</span>
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>Z</kbd></span
+              ><span class="what">Pivot or center handles</span>
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>\</kbd></span
+              ><span class="what"
+                >Snap on/off (<kbd>Ctrl</kbd> held while dragging snaps
+                temporarily)</span
+              >
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>Ctrl</kbd> + <kbd>\</kbd></span
+              ><span class="what">Push selection to the grid</span>
+            </p>
+          </article>
+
+          <article class="card reveal">
+            <h3>Selection</h3>
+            <p class="sc">
+              <span class="k"><kbd>click</kbd> / <kbd>drag</kbd></span
+              ><span class="what">Select, or add a rectangle</span>
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>Shift</kbd></span
+              ><span class="what">Add to the selection</span>
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>Ctrl</kbd></span
+              ><span class="what">Range select, and copy / paste / cut</span>
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>arrows</kbd></span
+              ><span class="what">Nudge on the ground plane</span>
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>Del</kbd><kbd>Ctrl+D</kbd></span
+              ><span class="what">Delete / duplicate</span>
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>F2</kbd><kbd>Esc</kbd></span
+              ><span class="what">Rename instance / cancel a gesture</span>
+            </p>
+          </article>
+
+          <article class="card reveal">
+            <h3>Files &amp; history</h3>
+            <p class="sc">
+              <span class="k"><kbd>Ctrl</kbd>+<kbd>S</kbd></span
+              ><span class="what">Save scene</span>
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>Ctrl</kbd>+<kbd>L</kbd></span
+              ><span class="what">Load scene</span>
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>Ctrl</kbd>+<kbd>N</kbd></span
+              ><span class="what">New scene</span>
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>Ctrl</kbd>+<kbd>Z</kbd></span
+              ><span class="what"
+                >Undo (<kbd>Ctrl</kbd>+<kbd>Y</kbd> or <kbd>Ctrl</kbd>+<kbd
+                  >Shift</kbd
+                >+<kbd>Z</kbd> redoes)</span
+              >
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>Ctrl</kbd>+<kbd>F</kbd></span
+              ><span class="what">Find object</span>
+            </p>
+            <p class="sc">
+              <span class="k"><kbd>Ctrl</kbd>+<kbd>W</kbd></span
+              ><span class="what">Close the editor</span>
+            </p>
+          </article>
+        </div>
+
+        <div class="split reveal" id="remapping">
+          <div class="panel">
+            <h3>Remapping shortcuts</h3>
+            <p>
+              Pass a <code>keys</code> field to the <code>poly_create</code>
+              config to remap any editor shortcut <strong>and camera control</strong>.
+              Each entry is an <strong>array of element structs</strong>
+              <code>{ key, mouse?, modifier? }</code>:
+            </p>
+            <ul class="ticks">
+              <li>
+                <strong>key</strong> - <code>vk_*</code> for special keys,
+                <code>ord("X")</code> for letters and digits, or
+                <code>mb_left</code> / <code>mb_right</code> /
+                <code>mb_middle</code> for mouse buttons.
+              </li>
+              <li>
+                <strong>mouse: true</strong> - marks the code as a mouse button
+                instead of a key, so the two can never be confused.
+              </li>
+              <li>
+                <strong>modifier: true</strong> - the element must be held.
+                Elements without it are triggers, several triggers are
+                alternatives.
+              </li>
+            </ul>
+            <p class="note">
+              A bare real or a single struct is shorthand for one keyboard
+              trigger, e.g. <code>pivot: ord("Z")</code>.
+            </p>
           </div>
-          <pre id="keys-cfg"><code class="lang-gml">poly_create({
+
+          <div class="codeblock terminal">
+            <div class="term-bar">
+              <span></span><span></span><span></span
+              ><button class="copy" data-copy="keys-cfg">Copy</button>
+            </div>
+            <pre id="keys-cfg"><code class="lang-gml">poly_create({
     scene: global.my_scene,
     assets,
     keys: {
@@ -553,76 +794,52 @@ poly_load_step(); // ~48 nodes per job; returns pending count
         cam_boost:    [ { key: vk_shift } ],                                      // Shift = fly faster
     },
 });</code></pre>
+          </div>
         </div>
-        <p class="sub">
-          Actions sharing a base key have separate names
-          (<code>focus</code>/<code>focus_search</code>,
-          <code>snap</code>/<code>snap_grid</code>,
-          <code>redo</code>/<code>redo_shift</code>). Names and defaults
-          (<code>mod</code> = <code>modifier: true</code>,
-          <code>mb</code> = a mouse button):
-          <code>tool_view [Q]</code>, <code>tool_move [W]</code>,
-          <code>tool_rotate [E]</code>, <code>tool_scale [R]</code>,
-          <code>del [Del]</code>, <code>deselect [mod Shift, D]</code>,
-          <code>focus [F]</code>, <code>focus_search [mod Ctrl, F]</code>,
-          <code>snap [92, 220]</code>, <code>snap_grid [mod Ctrl, 92, 220]</code>,
-          <code>pivot [Z]</code>, <code>orient [X]</code>,
-          <code>rename [F2]</code>, <code>save [mod Ctrl, S]</code>,
-          <code>dupe [mod Ctrl, D]</code>, <code>copy [mod Ctrl, C]</code>,
-          <code>cut [mod Ctrl, X]</code>, <code>paste [mod Ctrl, V]</code>,
-          <code>invert [mod Ctrl, I]</code>, <code>select_all [mod Ctrl, A]</code>,
-          <code>new_scene [mod Ctrl, N]</code>, <code>close [mod Ctrl, W]</code>,
-          <code>load [mod Ctrl, L]</code>, <code>undo [mod Ctrl, Z]</code>,
-          <code>redo [mod Ctrl, Y]</code>,
-          <code>redo_shift [mod Ctrl, mod Shift, Z]</code>,
-          <code>cancel [Esc]</code>, <code>nudge_left [Left]</code>,
-          <code>nudge_right [Right]</code>, <code>nudge_up [Up]</code>,
-          <code>nudge_down [Down]</code>, <code>select_add [Shift]</code>,
-          <code>cam_fly [mb_right]</code>, <code>cam_boost [Shift]</code>,
-          <code>cam_orbit [mod Alt, mb_left]</code>,
-          <code>cam_zoom [mod Alt, mb_right]</code>,
-          <code>cam_pan [mb_middle]</code>, <code>cam_forward [W]</code>,
-          <code>cam_back [S]</code>, <code>cam_left [A]</code>,
-          <code>cam_right [D]</code>, <code>cam_up [E]</code>,
-          <code>cam_down [Q]</code>, <code>gizmo_screen [Shift]</code>,
-          <code>snap_temp [Ctrl]</code>, <code>select_range [Ctrl]</code>,
-          <code>fps [F9]</code>.
-        </p>
-        <p class="sub">
-          The shortcut hints in the menu bar and in the Hierarchy row context
-          menu (plus the undo hint in the delete confirmation) are generated
-          from these bindings, so they update automatically when you remap them.
-        </p>
       </section>
 
-      <section class="final reveal">
-        <h2>Ready to build worlds?</h2>
-        <p class="sub">Grab the project, wire one object, press F1.</p>
-        <p class="cta">
-          <a
-            class="btn primary big"
-            href="https://github.com/manuel-di-iorio/Polygon"
-            >Get it on GitHub</a
-          >
-        </p>
-        <p class="sub small">
-          Demo models by <a href="https://kenney.nl">Kenney</a> (CC0). MIT
-          licensed - see
-          <a
-            href="https://github.com/manuel-di-iorio/Polygon/blob/main/LICENSE.md"
-            >LICENSE</a
-          >.
-        </p>
+      <!-- CTA -->
+      <section class="cta-band reveal">
+        <div class="wrap">
+          <h2>Ready to build worlds?</h2>
+          <p class="sub">Grab the project, wire one object, press F1.</p>
+          <p class="cta">
+            <a
+              class="btn primary big"
+              href="https://github.com/manuel-di-iorio/Polygon"
+              >Get it on GitHub</a
+            >
+            <a
+              class="btn big"
+              href="https://github.com/manuel-di-iorio/Polygon/blob/main/editor.yymps"
+              >Download editor.yymps</a
+            >
+          </p>
+        </div>
       </section>
     </main>
 
-    <footer>
-      <div class="wrap">
+    <footer class="site-footer">
+      <div class="wrap foot">
+        <div class="foot-brand">
+          <img src="iconMinimal.svg" alt="" width="40" height="auto" />
+          <div>
+            <strong>Polygon</strong>
+            <p>A 3D editor for GameMaker, on the GMRT runtime.</p>
+          </div>
+        </div>
+        <nav class="foot-links">
+          <a href="#features">Features</a>
+          <a href="#workflow">Quick start</a>
+          <a href="#api">API</a>
+          <a href="#shortcuts">Controls</a>
+          <a href="https://github.com/manuel-di-iorio/Polygon">GitHub</a>
+        </nav>
+      </div>
+      <div class="wrap foot-legal">
         <p>
-          Polygon ·
-          <a href="https://github.com/manuel-di-iorio/Polygon"
-            >GitHub</a
-          >
+          Demo models by <a href="https://kenney.nl">Kenney</a> (CC0). MIT
+          licensed.
         </p>
       </div>
     </footer>
@@ -722,21 +939,28 @@ poly_load_step(); // ~48 nodes per job; returns pending count
         });
       });
       // Scroll reveal
-      var io = new IntersectionObserver(
-        function (entries) {
-          entries.forEach(function (e) {
-            if (e.isIntersecting) {
-              e.target.classList.add("in");
-              io.unobserve(e.target);
-            }
-          });
-        },
-        { threshold: 0.12 }
-      );
-      document.querySelectorAll(".reveal").forEach(function (el, i) {
-        el.style.transitionDelay = Math.min((i % 6) * 60, 300) + "ms";
-        io.observe(el);
-      });
+      var revealEls = document.querySelectorAll(".reveal");
+      if ("IntersectionObserver" in window) {
+        var io = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (e) {
+              if (e.isIntersecting) {
+                e.target.classList.add("in");
+                io.unobserve(e.target);
+              }
+            });
+          },
+          { threshold: 0.12 }
+        );
+        revealEls.forEach(function (el, i) {
+          el.style.transitionDelay = Math.min((i % 6) * 60, 300) + "ms";
+          io.observe(el);
+        });
+      } else {
+        revealEls.forEach(function (el) {
+          el.classList.add("in");
+        });
+      }
       // Nav shadow on scroll
       var nav = document.querySelector(".nav");
       addEventListener(
@@ -746,6 +970,601 @@ poly_load_step(); // ~48 nodes per job; returns pending count
         },
         { passive: true }
       );
+      // Scroll spy: highlight the section the reader is in
+      var navLinks = [].slice.call(document.querySelectorAll('.nav-links a[href^="#"]'));
+      var spyTargets = navLinks
+        .map(function (a) {
+          var el = document.querySelector(a.getAttribute("href"));
+          return el ? { link: a, el: el } : null;
+        })
+        .filter(Boolean);
+      if (spyTargets.length && "IntersectionObserver" in window) {
+        var spy = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (e) {
+              var hit = spyTargets.filter(function (t) {
+                return t.el === e.target;
+              })[0];
+              if (!hit) return;
+              navLinks.forEach(function (a) {
+                a.classList.remove("active");
+              });
+              if (e.isIntersecting) hit.link.classList.add("active");
+            });
+          },
+          { rootMargin: "-45% 0px -50% 0px" }
+        );
+        spyTargets.forEach(function (t) {
+          spy.observe(t.el);
+        });
+      }
+    </script>
+    <script type="module">
+      /* Hero background: animated low-poly terrain (three.js, single self-contained
+         module build, loaded from a CDN with a mirror fallback).
+         The terrain is a jittered grid split into triangles (random diagonal per
+         cell). Every triangle is its own flat plate with its own normal, tint and
+         shine phase, while the height field underneath keeps moving, so the facets
+         tilt and breathe. The wireframe and the glowing dots share the jittered
+         grid vertex buffer; the pointer lifts the grid and washes it violet.
+         Falls back silently to the CSS background when WebGL or the CDN is
+         unavailable. */
+      (async () => {
+        const canvas = document.getElementById("hero-gl");
+        const hero = document.querySelector(".hero");
+        if (!canvas || !hero) return;
+
+        const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+        const rgb = (hex) =>
+          new THREE.Vector3(
+            ((hex >> 16) & 255) / 255,
+            ((hex >> 8) & 255) / 255,
+            (hex & 255) / 255
+          );
+        // seeded rng: the triangulation is stable across reloads
+        const mulberry32 = (a) => () => {
+          a = (a + 0x6d2b79f5) | 0;
+          let t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const rnd = mulberry32(20240613);
+
+        let THREE = null;
+        for (const url of [
+          "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+          "https://unpkg.com/three@0.170.0/build/three.module.js",
+        ]) {
+          try {
+            THREE = await import(url);
+            break;
+          } catch (err) {
+            /* mirror down: try the next one */
+          }
+        }
+        if (!THREE) return;
+
+        let renderer;
+        try {
+          renderer = new THREE.WebGLRenderer({
+            canvas,
+            antialias: true,
+            alpha: true,
+            powerPreference: "high-performance",
+          });
+        } catch (err) {
+          return; // no WebGL: the CSS background stays
+        }
+        renderer.setPixelRatio(
+          Math.min(window.devicePixelRatio || 1, innerWidth < 760 ? 1.5 : 1.8)
+        );
+
+        /* ----- colours (raw sRGB: this shader writes the final pixel) ----- */
+        const C = {
+          low: rgb(0x060d1e), // valleys: near black
+          mid: rgb(0x2a5ce0), // slopes: blue
+          high: rgb(0xff6a1e), // peaks: orange
+          accent: rgb(0x7c4dff), // violet that breathes in over time
+          ripple: rgb(0x9d6bff), // pointer: violet wave over the blue sea
+          rippleLine: rgb(0xd0b3ff), // the wireframe it lights up
+          hot: rgb(0xffd9a0), // specular glints
+          fog: rgb(0x0a0f1c),
+          lineLow: rgb(0x1e7fd8),
+          lineHigh: rgb(0xff9a3c),
+          dot: rgb(0xcfe3ff),
+        };
+
+        /* ----- scene / camera ----- */
+        const scene = new THREE.Scene();
+        const CAM_Y = 8.2;
+        const camera = new THREE.PerspectiveCamera(42, 1, 0.5, 300);
+        camera.position.set(0, CAM_Y, 25);
+        camera.lookAt(0, 0.8, -13);
+
+        /* ----- jittered grid ----- */
+        const CELL = 1.6;
+        const COLS = 56;
+        const ROWS = 42;
+        const Z_OFF = -18;
+        const NX = COLS + 1;
+        const NZ = ROWS + 1;
+        const COUNT = NX * NZ;
+
+        const gx = new Float32Array(COUNT);
+        const gz = new Float32Array(COUNT);
+        const gridPos = new Float32Array(COUNT * 3);
+        const gridRip = new Float32Array(COUNT);
+        const gridH = new Float32Array(COUNT);
+        for (let j = 0; j < NZ; j++) {
+          for (let i = 0; i < NX; i++) {
+            const k = j * NX + i;
+            const border = i === 0 || j === 0 || i === NX - 1 || j === NZ - 1;
+            const amp = (border ? 0.16 : 0.5) * CELL;
+            gx[k] = (i - COLS / 2) * CELL + (rnd() - 0.5) * amp;
+            gz[k] = Z_OFF + (j - ROWS / 2) * CELL + (rnd() - 0.5) * amp;
+            gridPos[k * 3] = gx[k];
+            gridPos[k * 3 + 2] = gz[k];
+          }
+        }
+
+        /* ----- triangles: every cell split on a random diagonal ----- */
+        const outlines = [];
+        for (let j = 0; j < ROWS; j++) {
+          for (let i = 0; i < COLS; i++) {
+            const a = j * NX + i;
+            const b = a + 1;
+            const c = a + NX;
+            const d = c + 1;
+            // alternate the diagonal so the facets never look stamped
+            if (rnd() < 0.5) outlines.push([a, b, d], [a, d, c]);
+            else outlines.push([a, b, c], [b, d, c]);
+          }
+        }
+
+        /* ----- plates: non-indexed triangles, one flat normal each ----- */
+        const fPos = [];
+        const fSrc = [];
+        const fRip = [];
+        const fPhase = [];
+        const fNorm = [];
+        for (let t = 0; t < outlines.length; t++) {
+          const out = outlines[t];
+          const phase = rnd();
+          for (let i = 0; i < 3; i++) {
+            const g = out[i];
+            fPos.push(gx[g], 0, gz[g]);
+            fSrc.push(g);
+            fRip.push(0);
+            fPhase.push(phase);
+            fNorm.push(0, 1, 0);
+          }
+        }
+        const NF = outlines.length * 3;
+        const NT = outlines.length;
+
+        const facePos = new Float32Array(fPos);
+        const faceRip = new Float32Array(fRip);
+        const faceNorm = new Float32Array(fNorm);
+        const faceSrc = new Int32Array(fSrc);
+
+        const lineA = [];
+        for (const out of outlines) {
+          for (let i = 0; i < out.length; i++) lineA.push(out[i], out[(i + 1) % out.length]);
+        }
+
+        /* ----- buffers ----- */
+        const setDyn = (attr) => attr.setUsage(THREE.DynamicDrawUsage);
+        const posAttr = setDyn(new THREE.BufferAttribute(gridPos, 3));
+        const gridRipAttr = setDyn(new THREE.BufferAttribute(gridRip, 1));
+        const facePosAttr = setDyn(new THREE.BufferAttribute(facePos, 3));
+        const faceRipAttr = setDyn(new THREE.BufferAttribute(faceRip, 1));
+        const faceNormAttr = setDyn(new THREE.BufferAttribute(faceNorm, 3));
+        const dotRnd = new Float32Array(COUNT);
+        for (let i = 0; i < COUNT; i++) dotRnd[i] = rnd();
+
+        const surfaceGeo = new THREE.BufferGeometry();
+        surfaceGeo.setAttribute("position", facePosAttr);
+        surfaceGeo.setAttribute("aRip", faceRipAttr);
+        surfaceGeo.setAttribute("aN", faceNormAttr);
+        surfaceGeo.setAttribute("aPhase", new THREE.BufferAttribute(new Float32Array(fPhase), 1));
+
+        const wireGeo = new THREE.BufferGeometry();
+        wireGeo.setAttribute("position", posAttr);
+        wireGeo.setAttribute("aRip", gridRipAttr);
+        wireGeo.setIndex(new THREE.BufferAttribute(new Uint16Array(lineA), 1));
+
+        const dotGeo = new THREE.BufferGeometry();
+        dotGeo.setAttribute("position", posAttr);
+        dotGeo.setAttribute("aRip", gridRipAttr);
+        dotGeo.setAttribute("aRnd", new THREE.BufferAttribute(dotRnd, 1));
+
+        /* ----- shaders ----- */
+        const VERT = [
+          "attribute float aRip;",
+          "varying vec3 vWorld;",
+          "varying float vH;",
+          "varying float vRip;",
+          "varying float vDist;",
+          "void main() {",
+          "  vH = position.y;",
+          "  vRip = aRip;",
+          "  vec4 wp = modelMatrix * vec4(position, 1.0);",
+          "  vWorld = wp.xyz;",
+          "  vDist = distance(cameraPosition, wp.xyz);",
+          "  gl_Position = projectionMatrix * viewMatrix * wp;",
+          "}",
+        ].join("\n");
+
+        // surface: one flat plate per triangle (its own normal, tint and shimmer)
+        const PLATE_VERT = [
+          "attribute float aRip;",
+          "attribute vec3 aN;",
+          "attribute float aPhase;",
+          "varying vec3 vWorld;",
+          "varying vec3 vN;",
+          "varying float vH;",
+          "varying float vRip;",
+          "varying float vDist;",
+          "varying float vPhase;",
+          "void main() {",
+          "  vH = position.y;",
+          "  vRip = aRip;",
+          "  vN = aN;",
+          "  vPhase = aPhase;",
+          "  vec4 wp = modelMatrix * vec4(position, 1.0);",
+          "  vWorld = wp.xyz;",
+          "  vDist = distance(cameraPosition, wp.xyz);",
+          "  gl_Position = projectionMatrix * viewMatrix * wp;",
+          "}",
+        ].join("\n");
+
+        const PLATE_FRAG = [
+          "uniform vec3 cLow, cMid, cHigh, cAccent, cRipple, cHot, uFog, uLight, uFocus;",
+          "uniform float uHMin, uHMax, uTime, uFogDensity, uFocusR;",
+          "varying vec3 vWorld;",
+          "varying vec3 vN;",
+          "varying float vH;",
+          "varying float vRip;",
+          "varying float vDist;",
+          "varying float vPhase;",
+          "void main() {",
+          "  vec3 n = normalize(vN);", // flat plate: uniform lighting per triangle
+          "  vec3 V = normalize(cameraPosition - vWorld);",
+          "  vec3 L = normalize(uLight);",
+          "  float diff = pow(max(dot(n, L), 0.0), 1.15);",
+          "  float sky = max(n.y, 0.0);",
+          "  float spec = pow(max(dot(reflect(-L, n), V), 0.0), 24.0);",
+          "  float hn = clamp((vH - uHMin) / (uHMax - uHMin), 0.0, 1.0);",
+          // the gradient stops drift, so the whole sea shifts hue over time
+          "  float w = 0.5 + 0.5 * sin(uTime * 0.16);",
+          "  float edge = mix(0.34, 0.66, w);",
+          "  vec3 base = mix(cLow, cMid, smoothstep(0.10, edge, hn));",
+          "  base = mix(base, cHigh, smoothstep(0.52 + 0.12 * w, 0.95, hn));",
+          "  base = mix(base, cAccent, 0.26 * (1.0 - hn) * (0.35 + 0.65 * w));",
+          // pointer: violet wash that fades into the blue around it
+          "  float infl = 1.0 - smoothstep(0.0, uFocusR, distance(vWorld.xz, uFocus.xz));",
+          "  base = mix(base, cRipple, infl * 0.55);",
+          // every plate breathes and is tinted a little on its own phase
+          "  base *= (1.0 + 0.16 * sin(uTime * 0.7 + vPhase * 6.2831)) * mix(0.82, 1.2, vPhase);",
+          "  vec3 col = base * (0.20 + 1.25 * diff + 0.08 * sky) + cHot * spec * 0.30;",
+          "  col += cHigh * smoothstep(0.72, 1.0, hn) * 0.4 * diff;", // glowing ridges
+          "  col += base * pow(1.0 - max(dot(n, V), 0.0), 3.0) * 0.45;", // rim
+          "  col += cRipple * vRip * (0.55 + 0.35 * sin(uTime * 3.0 - vDist * 0.25));",
+          "  float fog = 1.0 - exp(-pow(vDist * uFogDensity, 2.0));",
+          "  col = mix(col, uFog, clamp(fog, 0.0, 1.0));",
+          "  gl_FragColor = vec4(col, 1.0);",
+          "}",
+        ].join("\n");
+
+        const LINE_FRAG = [
+          "uniform vec3 cLineLow, cLineHigh, cRippleLine;",
+          "uniform float uHMin, uHMax, uFogDensity, uLineAlpha;",
+          "varying vec3 vWorld;",
+          "varying float vH;",
+          "varying float vRip;",
+          "varying float vDist;",
+          "void main() {",
+          "  float hn = clamp((vH - uHMin) / (uHMax - uHMin), 0.0, 1.0);",
+          "  vec3 c = mix(cLineLow, cLineHigh, smoothstep(0.05, 0.95, hn));",
+          "  c = mix(c, cRippleLine, clamp(vRip * 1.3, 0.0, 1.0));",
+          "  float fog = 1.0 - exp(-pow(vDist * uFogDensity, 2.0));",
+          "  float a = uLineAlpha * (0.30 + 0.70 * hn) + vRip * 0.35;",
+          "  gl_FragColor = vec4(c, clamp(a * (1.0 - fog), 0.0, 1.0));",
+          "}",
+        ].join("\n");
+
+        const DOT_VERT = [
+          "attribute float aRip;",
+          "attribute float aRnd;",
+          "uniform float uSize, uPix, uThresh;",
+          "varying float vH;",
+          "varying float vRip;",
+          "varying float vDist;",
+          "varying float vVis;",
+          "void main() {",
+          "  vH = position.y;",
+          "  vRip = aRip;",
+          // only a scattered subset twinkles, but every dot lights up at the pointer
+          "  vVis = max(step(uThresh, aRnd), step(0.04, aRip));",
+          "  vec4 mv = viewMatrix * modelMatrix * vec4(position, 1.0);",
+          "  vDist = -mv.z;",
+          "  gl_PointSize = uSize * uPix * (1.0 + vRip * 2.2) / max(vDist, 1.0);",
+          "  gl_Position = projectionMatrix * mv;",
+          "}",
+        ].join("\n");
+
+        const DOT_FRAG = [
+          "uniform vec3 cDot, cRipple;",
+          "uniform float uDotAlpha, uHMin, uHMax, uFogDensity;",
+          "varying float vH;",
+          "varying float vRip;",
+          "varying float vDist;",
+          "varying float vVis;",
+          "void main() {",
+          "  if (vVis < 0.5) discard;",
+          "  float r = length(gl_PointCoord - 0.5);",
+          "  if (r > 0.5) discard;",
+          "  float hn = clamp((vH - uHMin) / (uHMax - uHMin), 0.0, 1.0);",
+          "  float fog = 1.0 - exp(-pow(vDist * uFogDensity, 2.0));",
+          "  float a = smoothstep(0.5, 0.0, r);",
+          "  a *= a * uDotAlpha * (0.45 + 0.55 * hn) * (1.0 - fog);",
+          "  a += smoothstep(0.5, 0.0, r) * vRip * 0.65 * (1.0 - fog);",
+          "  vec3 c = mix(cDot, cRipple, clamp(vRip * 1.4, 0.0, 1.0));",
+          "  gl_FragColor = vec4(c * (0.75 + vRip * 1.5), clamp(a, 0.0, 1.0));",
+          "}",
+        ].join("\n");
+
+        /* ----- materials/objects ----- */
+        const common = {
+          uTime: { value: 0 },
+          uFogDensity: { value: 0.026 },
+          uHMin: { value: -2.9 },
+          uHMax: { value: 3.8 },
+          uFocus: { value: new THREE.Vector3(0, 0, -8) },
+          uFocusR: { value: 12 },
+        };
+        const withCommon = (extra) => Object.assign({}, common, extra);
+
+        const surface = new THREE.Mesh(
+          surfaceGeo,
+          new THREE.ShaderMaterial({
+            uniforms: withCommon({
+              cLow: { value: C.low },
+              cMid: { value: C.mid },
+              cHigh: { value: C.high },
+              cAccent: { value: C.accent },
+              cRipple: { value: C.ripple },
+              cHot: { value: C.hot },
+              uFog: { value: C.fog },
+              uLight: { value: new THREE.Vector3(-0.45, 0.58, 0.68).normalize() },
+            }),
+            vertexShader: PLATE_VERT,
+            fragmentShader: PLATE_FRAG,
+            side: THREE.DoubleSide, // plates are lit by their own up-facing normal
+            polygonOffset: true, // keep the wireframe on top of its own surface
+            polygonOffsetFactor: 1.2,
+            polygonOffsetUnits: 1.2,
+          })
+        );
+
+        const wire = new THREE.LineSegments(
+          wireGeo,
+          new THREE.ShaderMaterial({
+            uniforms: withCommon({
+              cLineLow: { value: C.lineLow },
+              cLineHigh: { value: C.lineHigh },
+              cRippleLine: { value: C.rippleLine },
+              uLineAlpha: { value: 0.42 },
+            }),
+            vertexShader: VERT,
+            fragmentShader: LINE_FRAG,
+            transparent: true,
+            depthWrite: false,
+          })
+        );
+
+        const dots = new THREE.Points(
+          dotGeo,
+          new THREE.ShaderMaterial({
+            uniforms: withCommon({
+              cDot: { value: C.dot },
+              cRipple: { value: C.ripple },
+              uDotAlpha: { value: 0.72 },
+              uSize: { value: 52 },
+              uPix: { value: renderer.getPixelRatio() },
+              uThresh: { value: 0.66 },
+            }),
+            vertexShader: DOT_VERT,
+            fragmentShader: DOT_FRAG,
+            transparent: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+          })
+        );
+
+        [surface, wire, dots].forEach((o) => {
+          o.frustumCulled = false;
+          scene.add(o);
+        });
+
+        /* ----- terrain ----- */
+        const RIPPLE_R = 11;
+        const RIPPLE_H2 = RIPPLE_R * RIPPLE_R;
+        const RIPPLE_AMP = 2.3;
+
+        function wave(x, z, t) {
+          let v =
+            Math.sin(x * 0.145 + z * 0.06 + t * 0.5) * 1.5 +
+            Math.sin(z * 0.185 - t * 0.42) * 1.15 +
+            Math.sin(x * 0.072 - z * 0.115 + t * 0.3) * 1.7 +
+            Math.sin((x + z * 0.6) * 0.33 - t * 0.7) * 0.58 +
+            Math.sin(x * 0.48 - z * 0.3 + t * 0.9) * 0.4;
+          // ridged term: crests instead of plain ripples
+          v += (1 - Math.abs(Math.sin(x * 0.2 + z * 0.15 + t * 0.4))) * 1.35;
+          const m = 0.55 + 0.45 * Math.sin(x * 0.028 + z * 0.024 + t * 0.12);
+          return v * (0.5 + 0.55 * m) * 0.84 - 0.95;
+        }
+
+        /* ----- pointer ----- */
+        const aim = { x: 0.5, y: 0.42 };
+        const target = { x: aim.x, y: aim.y };
+        const focus = new THREE.Vector3(0, 0, -8);
+        const ndc = new THREE.Vector3();
+        const ray = new THREE.Vector3();
+        let pointerAt = -1e9;
+        let power = 0.7;
+
+        addEventListener(
+          "pointermove",
+          (e) => {
+            const r = hero.getBoundingClientRect();
+            if (!r.width || !r.height) return;
+            target.x = clamp((e.clientX - r.left) / r.width, 0, 1);
+            target.y = clamp((e.clientY - r.top) / r.height, 0, 1);
+            pointerAt = performance.now();
+          },
+          { passive: true }
+        );
+
+        function pointerToWorld(out) {
+          ndc.set(aim.x * 2 - 1, -(aim.y * 2 - 1), 0.5).unproject(camera);
+          ray.copy(ndc).sub(camera.position).normalize();
+          const t = (1.4 - camera.position.y) / (ray.y || -0.001);
+          out.copy(camera.position).addScaledVector(ray, Math.max(t, 0.5));
+          out.x = clamp(out.x, -46, 46);
+          out.z = clamp(out.z, -46, 14);
+          return out;
+        }
+
+        const ease = (cur, to, k) => cur + (to - cur) * k;
+
+        let time = reduced ? 4.5 : 0;
+        function step(dt) {
+          const idle = performance.now() - pointerAt > 2600;
+          const k = Math.min(1, dt * 3.2);
+          aim.x = ease(aim.x, idle ? 0.5 + 0.3 * Math.sin(time * 0.21) : target.x, k);
+          aim.y = ease(aim.y, idle ? 0.6 + 0.14 * Math.cos(time * 0.29) : target.y, k);
+          power = ease(power, idle ? 0.6 : 1, Math.min(1, dt * 2));
+
+          const camK = Math.min(1, dt * 2.2);
+          camera.position.x = ease(camera.position.x, (aim.x - 0.5) * 6, camK);
+          camera.position.y = ease(camera.position.y, CAM_Y - (aim.y - 0.5) * 1.6, camK);
+          camera.lookAt(0, 0.8, -13);
+
+          pointerToWorld(focus);
+          common.uFocus.value.copy(focus);
+          common.uTime.value = time;
+          // twinkling dot field
+          dots.material.uniforms.uThresh.value = 0.6 + 0.09 * Math.sin(time * 1.7);
+
+          // grid heights + pointer ripple, shared by wireframe and dots
+          for (let i = 0; i < COUNT; i++) {
+            const x = gx[i];
+            const z = gz[i];
+            const dx = x - focus.x;
+            const dz = z - focus.z;
+            const d2 = dx * dx + dz * dz;
+            let r = 0;
+            let h = wave(x, z, time);
+            if (d2 < RIPPLE_H2) {
+              const d = Math.sqrt(d2);
+              const f = 1 - d / RIPPLE_R;
+              r = f * f * (3 - 2 * f) * power;
+              h += r * RIPPLE_AMP * (0.55 + 0.45 * Math.sin(time * 3.1 - d * 0.5));
+            }
+            gridRip[i] = r;
+            gridH[i] = h;
+            gridPos[i * 3 + 1] = h;
+          }
+          posAttr.needsUpdate = true;
+          gridRipAttr.needsUpdate = true;
+
+          // plates: copies of the grid heights
+          for (let i = 0; i < NF; i++) {
+            const s = faceSrc[i];
+            faceRip[i] = gridRip[s];
+            facePos[i * 3 + 1] = gridH[s];
+          }
+          // one flat normal per triangle
+          for (let t = 0; t < NT; t++) {
+            const o = t * 9;
+            const ax = facePos[o];
+            const ay = facePos[o + 1];
+            const az = facePos[o + 2];
+            const ux = facePos[o + 3] - ax;
+            const uy = facePos[o + 4] - ay;
+            const uz = facePos[o + 5] - az;
+            const vx = facePos[o + 6] - ax;
+            const vy = facePos[o + 7] - ay;
+            const vz = facePos[o + 8] - az;
+            let nx = uy * vz - uz * vy;
+            let ny = uz * vx - ux * vz;
+            let nz = ux * vy - uy * vx;
+            const len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+            nx /= len;
+            ny /= len;
+            nz /= len;
+            if (ny < 0) {
+              nx = -nx;
+              ny = -ny;
+              nz = -nz;
+            }
+            for (let i = 0; i < 3; i++) {
+              const k = o + i * 3;
+              faceNorm[k] = nx;
+              faceNorm[k + 1] = ny;
+              faceNorm[k + 2] = nz;
+            }
+          }
+          facePosAttr.needsUpdate = true;
+          faceRipAttr.needsUpdate = true;
+          faceNormAttr.needsUpdate = true;
+        }
+
+        /* ----- sizing / loop ----- */
+        function resize() {
+          const w = Math.max(hero.clientWidth, 1);
+          const h = Math.max(hero.clientHeight, 1);
+          renderer.setSize(w, h, false);
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          dots.material.uniforms.uPix.value = renderer.getPixelRatio();
+        }
+        resize();
+        new ResizeObserver(resize).observe(hero);
+
+        let raf = 0;
+        let visible = true;
+        let last = performance.now();
+        function frame(now) {
+          raf = 0;
+          const dt = Math.min((now - last) / 1000, 0.05);
+          last = now;
+          if (!reduced) time += dt;
+          step(reduced ? 0 : dt);
+          renderer.render(scene, camera);
+          if (!reduced) schedule();
+        }
+        function schedule() {
+          if (!raf && visible) raf = requestAnimationFrame(frame);
+        }
+
+        new IntersectionObserver(
+          (entries) => {
+            visible = entries[0].isIntersecting;
+            if (visible) {
+              last = performance.now();
+              schedule();
+            }
+          },
+          { threshold: 0 }
+        ).observe(hero);
+
+        step(0);
+        renderer.render(scene, camera);
+        schedule();
+      })();
     </script>
   </body>
 </html>
