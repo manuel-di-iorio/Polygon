@@ -493,3 +493,19 @@ Optional local link so an AI client can drive the editor
   `variable_struct_exists` first (GM throws `ReferenceError`).
 - Runtime LUT/sprite textures must outlive their queued submits —
   keep decoded sprites alive, never delete right after blitting.
+
+---
+
+## 18. Packaging (editor.yymps)
+
+`editor.yymps` is the importable Local Asset Package, built by GameMaker's
+`ProjectTool` (`other/tools/pack_yymps.ps1`) and wired to `pre-push` through
+the checked-in `.githooks/` folder, enabled by `npm install` (root
+`package.json` → `prepare`). The package contains the whole **Polygon
+Editor** folder (scripts, sprites, shaders) plus the Included Files under
+`datafiles/__PolygonEditor__`; the demo datafiles are removed with
+`POSTREMOVALS`. Because the `.yymps` zip embeds timestamps, a fresh export
+almost always differs byte-for-byte, so freshness is decided by comparing the
+entries (name + MD5) — never by file hash or `git status`. The hook never
+blocks a push: a rebuild that is stale lands in its own commit for the next
+push.

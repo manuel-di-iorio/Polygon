@@ -1,0 +1,10 @@
+{
+  "name": "polygon",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Polygon - a 3D scene editor for GameMaker. Installing dependencies also enables the Git hooks that keep editor.yymps up to date.",
+  "scripts": {
+    "prepare": "node other/tools/install-hooks.mjs",
+    "pack": "powershell -NoProfile -ExecutionPolicy Bypass -File other/tools/pack_yymps.ps1"
+  }
+}

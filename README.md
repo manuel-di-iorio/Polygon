@@ -378,6 +378,20 @@ Details in [`other/mcp-relay/README.md`](other/mcp-relay/README.md).
 
 ---
 
+## Rebuilding the asset package (maintainers)
+
+`editor.yymps` is the importable Local Asset Package. It is generated with GameMaker's **ProjectTool** (the same tool the IDE uses behind **Tools → Create Local Package**) and contains every resource of the **Polygon Editor** folder — scripts, sprites, shaders — plus the Included Files under `datafiles/__PolygonEditor__`. The demo datafiles are stripped from the package.
+
+```sh
+# one-time: enable the checked-in hooks (runs on any npm install)
+npm install
+
+# rebuild on demand
+npm run pack
+```
+
+The `pre-push` hook rebuilds the package automatically and **never blocks the push**: if GameMaker (or PowerShell) is unavailable it just pushes the previous package. When the package **content** changes it commits `editor.yymps` in its own commit so the next push ships it — a re-export always differs byte-for-byte because the zip stores timestamps, so the script compares the entries (name + MD5) rather than trusting `git status`. Skip the rebuild with `POLYGON_SKIP_PACK=1 git push`, or set `POLYGON_PROJECTTOOL` when ProjectTool is not in its default location.
+
 ## Contributing
 
 Bug reports and feature requests: [GitHub Issues](https://github.com/manuel-di-iorio/Polygon/issues) (also reachable from **Help → Report a Bug/Feature Request**).

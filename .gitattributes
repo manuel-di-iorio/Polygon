@@ -1,0 +1,3 @@
+# Git hooks are executed through sh (Git for Windows, macOS, Linux): keep LF
+# even on Windows checkouts, otherwise the shebang breaks.
+.githooks/* text eol=lf

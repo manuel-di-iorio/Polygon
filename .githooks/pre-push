@@ -1,0 +1,55 @@
+#!/bin/sh
+#
+# Rebuild editor.yymps before every push. This hook NEVER blocks the push: if
+# the package cannot be rebuilt (no GameMaker, no PowerShell, export error) the
+# push simply goes through with the previous package.
+#
+# See other/tools/pack_yymps.ps1 for the rebuild itself.
+#
+# Skip with:            POLYGON_SKIP_PACK=1 git push
+# Bypass all hooks with: git push --no-verify
+
+root=$(git rev-parse --show-toplevel) || exit 0
+script="$root/other/tools/pack_yymps.ps1"
+
+[ -z "$POLYGON_SKIP_PACK" ] || exit 0
+[ -f "$script" ] || exit 0
+
+if command -v pwsh >/dev/null 2>&1; then
+  ps=pwsh
+elif command -v powershell >/dev/null 2>&1; then
+  ps=powershell
+else
+  echo "pre-push: PowerShell non trovato, editor.yymps non rigenerato" >&2
+  exit 0
+fi
+
+"$ps" -NoProfile -ExecutionPolicy Bypass -File "$script"
+code=$?
+
+# pack_yymps.ps1: 0 = up to date, 2 = rewritten, 3 = skipped, 1 = error.
+case "$code" in
+  0|2)
+    # The package on disk is fresh. If it differs from the committed one, save
+    # it in its own commit: this push already goes through, the next one ships
+    # it. We never block.
+    if [ -n "$(git status --porcelain -- editor.yymps)" ]; then
+      if [ -d "$root/.git/rebase-merge" ] || [ -d "$root/.git/rebase-apply" ] || \
+         [ -n "$(git rev-parse -q --verify MERGE_HEAD 2>/dev/null)" ]; then
+        echo "pre-push: editor.yymps aggiornato, ma un merge/rebase e in corso: committalo a mano." >&2
+      elif git commit -m "chore: rebuild editor.yymps" -- editor.yymps >/dev/null 2>&1; then
+        echo "pre-push: editor.yymps era obsoleto -> commit 'chore: rebuild editor.yymps' (partira col prossimo push)." >&2
+      else
+        echo "pre-push: editor.yymps aggiornato ma non committato (git add editor.yymps)." >&2
+      fi
+    fi
+    ;;
+  3)
+    echo "pre-push: rebuild di editor.yymps saltato (ProjectTool/PowerShell non disponibili)." >&2
+    ;;
+  *)
+    echo "pre-push: pack_yymps ha restituito un errore (exit $code), editor.yymps non aggiornato." >&2
+    ;;
+esac
+
+exit 0
