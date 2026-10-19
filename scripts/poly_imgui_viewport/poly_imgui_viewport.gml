@@ -587,12 +587,9 @@ function __poly_smaa_luts(_ed) {
   if (!variable_struct_exists(_ed, "smaa_lut_sprs")) _ed.smaa_lut_sprs = [];
 
   if (array_length(_ed.smaa_lut_sprs) != 2
-  || !sprite_exists(_ed.smaa_lut_sprs[0]) || sprite_get_width(_ed.smaa_lut_sprs[0]) != 160
+    || !sprite_exists(_ed.smaa_lut_sprs[0]) || sprite_get_width(_ed.smaa_lut_sprs[0]) != 160
   || !sprite_exists(_ed.smaa_lut_sprs[1]) || sprite_get_width(_ed.smaa_lut_sprs[1]) != 64) {
-    for (var _i = 0, _n = array_length(_ed.smaa_lut_sprs); _i < _n; _i++) {
-      if (sprite_exists(_ed.smaa_lut_sprs[_i])) sprite_delete(_ed.smaa_lut_sprs[_i]);
-    }
-
+    for (var _i = 0, _n = array_length(_ed.smaa_lut_sprs); _i < _n; _i++) if (sprite_exists(_ed.smaa_lut_sprs[_i])) sprite_delete(_ed.smaa_lut_sprs[_i]);
     _ed.smaa_lut_sprs = [];
     var _dir = working_directory + "__PolygonEditor__/smaa/";
 
@@ -613,9 +610,9 @@ function __poly_smaa_luts(_ed) {
   var _ok = true;
 
   if (!surface_exists(_ed[$ "smaa_lut_area"])
-  && !__poly_smaa_lut_blit(_ed, "smaa_lut_area", _ed.smaa_lut_sprs[0], 160, 560)) _ok = false;
+    && !__poly_smaa_lut_blit(_ed, "smaa_lut_area", _ed.smaa_lut_sprs[0], 160, 560)) _ok = false;
   if (!surface_exists(_ed[$ "smaa_lut_search"])
-  && !__poly_smaa_lut_blit(_ed, "smaa_lut_search", _ed.smaa_lut_sprs[1], 64, 16)) _ok = false;
+    && !__poly_smaa_lut_blit(_ed, "smaa_lut_search", _ed.smaa_lut_sprs[1], 64, 16)) _ok = false;
   return _ok;
 }
 
@@ -681,8 +678,8 @@ function __poly_smaa_resolve(_ed, _src, _w, _h) {
   _ed.smaa_err = "shaders";
 
   if (!shader_is_compiled(shPolygonEditorSMAAEdge)
-  || !shader_is_compiled(shPolygonEditorSMAABlend)
-  || !shader_is_compiled(shPolygonEditorSMAAResolve)) return false;
+    || !shader_is_compiled(shPolygonEditorSMAABlend)
+    || !shader_is_compiled(shPolygonEditorSMAAResolve)) return false;
   _ed.smaa_err = "luts";
 
   if (!__poly_smaa_luts(_ed)) return false;

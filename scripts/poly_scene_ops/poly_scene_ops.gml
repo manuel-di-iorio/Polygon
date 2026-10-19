@@ -124,9 +124,7 @@ function __poly_default_sun(_ed) {
 function __poly_discard_changes(_ed) {
   var _path = __poly_scene_path(_ed);
 
-  if (_path != "" && file_exists(_path)) {
-    if (__poly_load_scene_begin(_ed) == "") return;
-  }
+  if (_path != "" && file_exists(_path)) if (__poly_load_scene_begin(_ed) == "") return;
 
   if (variable_struct_exists(_ed, "open_snapshot") && is_array(_ed.open_snapshot)) {
     __poly_rebuild(_ed, _ed.open_snapshot);

@@ -161,9 +161,7 @@ function __poly_outline_process_node(_node, _entry, _excluded, _sel_epoch, _o, _
   var _comps = [];
   __poly_walk_collect_comps(_node, _comps);
 
-  for (var _i = 0, _n = array_length(_comps); _i < _n; _i++) {
-    __poly_outline_swap_comp(_comps[_i].comp, _comps[_i].skinned, _o, _swapped);
-  }
+  for (var _i = 0, _n = array_length(_comps); _i < _n; _i++) __poly_outline_swap_comp(_comps[_i].comp, _comps[_i].skinned, _o, _swapped);
 }
 
 // Applies the mask state to one subtree node (walk visitor).

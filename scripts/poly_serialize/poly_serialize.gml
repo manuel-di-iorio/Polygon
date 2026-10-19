@@ -431,18 +431,17 @@ function __poly_rebuild(_ed, _nodes) {
   var _report = { placed: 0, failed: 0, err: "" };
 
   if (!is_array(_nodes)) _nodes = [];
+
   if (!__poly_validate_descs(_nodes)) {
     _report.err = "invalid descriptors";
     return _report;
   }
+
   __poly_drop_preview_clear(_ed);
   var _states = __poly_rebuild_clear(_ed);
   _ed.unlit_quiet = true;
 
-  for (var _i = 0, _n = array_length(_nodes); _i < _n; _i++) {
-    __poly_rebuild_place_one(_ed, _nodes[_i], _report);
-  }
-
+  for (var _i = 0, _n = array_length(_nodes); _i < _n; _i++) __poly_rebuild_place_one(_ed, _nodes[_i], _report);
   _ed.unlit_quiet = false;
   _ed.rt.scene.update(0);
   __poly_seq_reseed(_ed);
@@ -464,6 +463,7 @@ function __poly_rebuild_place_one(_ed, _p, _report) {
       _report.failed++;
       return;
     }
+
     _report.placed++;
     return;
   }
@@ -472,10 +472,12 @@ function __poly_rebuild_place_one(_ed, _p, _report) {
     _report.failed++;
     return;
   }
+
   if (!__poly_rebuild_place_asset(_ed, _p, _p.assetId)) {
     _report.failed++;
     return;
   }
+
   _report.placed++;
 }
 

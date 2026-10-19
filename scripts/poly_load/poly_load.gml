@@ -23,9 +23,7 @@ function poly_load(_scene, _fname, _assets, _on_create = undefined, _on_finish =
   if (!file_exists(_fname)) return undefined;
   var _data = undefined;
 
-  if (__poly_bin_is_path(_fname) || __poly_bin_has_magic(_fname)) {
-    _data = __poly_bin_load_data(_fname);
-  }
+  if (__poly_bin_is_path(_fname) || __poly_bin_has_magic(_fname)) _data = __poly_bin_load_data(_fname);
 
   if (_data == undefined) {
     var _json = "";

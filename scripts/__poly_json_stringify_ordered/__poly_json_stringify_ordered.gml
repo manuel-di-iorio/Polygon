@@ -53,8 +53,10 @@ function __json_write_value(v, buf, indent, pretty, compact) {
     var kl = array_length(keys);
 
     buffer_write(buf, buffer_u8, __JSON_CH_LBRACE);
+
     if (pretty) {
       var nl_in = __json_nl_pad(indent + 1);
+
       for (var i = 0; i < kl; i++) {
         var k = keys[i];
         buffer_write(buf, buffer_text, nl_in);
@@ -63,6 +65,7 @@ function __json_write_value(v, buf, indent, pretty, compact) {
         __json_write_value(v[$ k], buf, indent + 1, true, compact);
         if (i < kl - 1) buffer_write(buf, buffer_u8, __JSON_CH_COMMA);
       }
+
       buffer_write(buf, buffer_text, __json_nl_pad(indent));
     } else {
       for (var i = 0; i < kl; i++) {
@@ -73,6 +76,7 @@ function __json_write_value(v, buf, indent, pretty, compact) {
         if (i < kl - 1) buffer_write(buf, buffer_u8, __JSON_CH_COMMA);
       }
     }
+
     buffer_write(buf, buffer_u8, __JSON_CH_RBRACE);
   }
   else if (is_array(v)) {
@@ -85,13 +89,16 @@ function __json_write_value(v, buf, indent, pretty, compact) {
     var al = array_length(v);
 
     buffer_write(buf, buffer_u8, __JSON_CH_LBRACK);
+
     if (pretty) {
       var nl_in = __json_nl_pad(indent + 1);
+
       for (var i = 0; i < al; i++) {
         buffer_write(buf, buffer_text, nl_in);
         __json_write_value(v[i], buf, indent + 1, true, compact);
         if (i < al - 1) buffer_write(buf, buffer_u8, __JSON_CH_COMMA);
       }
+
       buffer_write(buf, buffer_text, __json_nl_pad(indent));
     } else {
       for (var i = 0; i < al; i++) {
@@ -99,6 +106,7 @@ function __json_write_value(v, buf, indent, pretty, compact) {
         if (i < al - 1) buffer_write(buf, buffer_u8, __JSON_CH_COMMA);
       }
     }
+
     buffer_write(buf, buffer_u8, __JSON_CH_RBRACK);
   }
   else {
@@ -117,10 +125,12 @@ function __json_write_value(v, buf, indent, pretty, compact) {
 function __json_write_inline(v, buf, limit) {
   if (is_struct(v)) {
     var n = variable_struct_names_count(v);
+
     if (n == 0) {
       buffer_write(buf, buffer_text, "{}");
       return buffer_tell(buf) < limit;
     }
+
     // Each member takes at least 6 bytes: if it can't possibly fit, skip get_names + sort
     if (buffer_tell(buf) + n * 6 >= limit) return false;
 
@@ -128,6 +138,7 @@ function __json_write_inline(v, buf, limit) {
     array_sort(keys, true);
 
     buffer_write(buf, buffer_text, "{ ");
+
     for (var i = 0; i < n; i++) {
       var k = keys[i];
       buffer_write(buf, buffer_text, __json_key(k));
@@ -136,25 +147,30 @@ function __json_write_inline(v, buf, limit) {
       if (i < n - 1) buffer_write(buf, buffer_text, ", ");
       if (buffer_tell(buf) >= limit) return false;
     }
+
     buffer_write(buf, buffer_text, " }");
     return buffer_tell(buf) < limit;
   }
 
   if (is_array(v)) {
     var al = array_length(v);
+
     if (al == 0) {
       buffer_write(buf, buffer_text, "[]");
       return buffer_tell(buf) < limit;
     }
+
     // Each element takes at least 2 bytes (value + separator)
     if (buffer_tell(buf) + al * 2 >= limit) return false;
 
     buffer_write(buf, buffer_text, "[ ");
+
     for (var i = 0; i < al; i++) {
       if (!__json_write_inline(v[i], buf, limit)) return false;
       if (i < al - 1) buffer_write(buf, buffer_text, ", ");
       if (buffer_tell(buf) >= limit) return false;
     }
+
     buffer_write(buf, buffer_text, " ]");
     return buffer_tell(buf) < limit;
   }
@@ -218,12 +234,14 @@ function __json_write_primitive(v, buf) {
 /// @return {string}
 /// @private
 function __json_nl_pad(n) {
-  static pads = ["\n"];
+  static pads = [ "\n" ];
   var l = array_length(pads);
+
   while (l <= n) {
     array_push(pads, pads[l - 1] + "  ");
     l++;
   }
+
   return pads[n];
 }
 
@@ -239,10 +257,12 @@ function __json_key(k) {
   var q = cache[$ k];
   if (q != undefined) return q;
   q = "\"" + __json_escape_string(k) + "\"";
+
   if (count < 4096) { // cap so dynamic keys can't make the cache grow unbounded
     cache[$ k] = q;
     count++;
   }
+
   return q;
 }
 
@@ -271,12 +291,15 @@ function __json_escape_string(str) {
 /// @param {id.buffer} buf The target buffer
 /// @private
 function __json_write_int64_hex(v, buf) {
-  static codes = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102]; // '0'-'9', 'a'-'f'
+  static codes = [ 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102 ]; // '0'-'9', 'a'-'f'
+
   if (v == 0) {
     buffer_write(buf, buffer_u8, __JSON_CH_ZERO);
     return;
   }
+
   var started = false;
+
   for (var i = 60; i >= 0; i -= 4) {
     var d = (v >> i) & 15;
     if (d != 0) started = true;

@@ -45,12 +45,14 @@ function __poly_imgui_dock_fresh(_ed) {
 function __poly_dock_needs_build(_ed) {
   var _rebuild = (variable_struct_exists(_ed.imgui, "dock_rebuild") && _ed.imgui.dock_rebuild == true)
     || (variable_struct_exists(_ed.imgui, "reset_layout") && _ed.imgui.reset_layout == true);
+
   if (!_rebuild) {
     if (variable_struct_exists(_ed.imgui, "dock_init") && _ed.imgui.dock_init == true) {
       _ed.imgui.dock_built = true;
       return false;
     }
   }
+
   if (variable_struct_exists(_ed.imgui, "dock_built") && _ed.imgui.dock_built == true
   && !(variable_struct_exists(_ed.imgui, "dock_rebuild") && _ed.imgui.dock_rebuild == true)) {
     return false;

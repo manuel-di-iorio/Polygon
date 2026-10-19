@@ -255,10 +255,12 @@ function __poly_ui_load(_ed) {
   var _data = json_parse(_json);
 
   if (!is_struct(_data)) return;
+
   if (variable_struct_exists(_data, "dock_init") && _data.dock_init == true) {
     _ed.dock_init = true;
     if (is_struct(_ed.imgui)) _ed.imgui.dock_init = true;
   }
+
   if (!variable_struct_exists(_data, "cube_off")) return;
   var _off = _data.cube_off;
 

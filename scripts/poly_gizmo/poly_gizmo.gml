@@ -56,10 +56,7 @@ function __poly_gizmo_center(_sel) {
 // Resolves the active gizmo pivot: bounds center in Center mode,
 // average node position in Pivot mode.
 function __poly_gizmo_pivot_ex(_ed, _sel) {
-  if (_ed != undefined && variable_struct_exists(_ed, "giz") && is_struct(_ed.giz) && _ed.giz.pivot_mode == 1) {
-    return __poly_gizmo_center(_sel);
-  }
-
+  if (_ed != undefined && variable_struct_exists(_ed, "giz") && is_struct(_ed.giz) && _ed.giz.pivot_mode == 1) return __poly_gizmo_center(_sel);
   return __poly_gizmo_pivot(_sel);
 }
 
@@ -422,10 +419,7 @@ function __poly_gizmo_hover_rotate(_vp, _pivot, _look, _ws, _mx, _my, _ps, _best
     if (_d2 > _rr) _rr = _d2;
   }
 
-  if (_rr > 1) {
-    if (_md2 <= _rr) return 7;
-  }
-
+  if (_rr > 1) if (_md2 <= _rr) return 7;
   return -1;
 }
 

@@ -10,6 +10,7 @@ function __poly_imgui_draw(_ed) {
     _ed.imgui.rt_ini_tried = true;
     if (variable_struct_exists(_ed.imgui, "dock_init") && _ed.imgui.dock_init == true) __poly_rt_ini_load();
   }
+
   __poly_imgui_style_once(_ed);
   var _dock_id = ImGui.GetID("PolygonEditorDockspace");
   var _dock_root = ImGui.DockSpaceOverViewport(

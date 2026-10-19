@@ -29,10 +29,7 @@ function poly_cleanup(_ed = undefined) {
   _ed.smaa_lut_search = -1;
 
   if (variable_struct_exists(_ed, "smaa_lut_sprs") && is_array(_ed.smaa_lut_sprs)) {
-    for (var _i = 0, _n = array_length(_ed.smaa_lut_sprs); _i < _n; _i++) {
-      if (sprite_exists(_ed.smaa_lut_sprs[_i])) sprite_delete(_ed.smaa_lut_sprs[_i]);
-    }
-
+    for (var _i = 0, _n = array_length(_ed.smaa_lut_sprs); _i < _n; _i++) if (sprite_exists(_ed.smaa_lut_sprs[_i])) sprite_delete(_ed.smaa_lut_sprs[_i]);
     _ed.smaa_lut_sprs = [];
   }
 

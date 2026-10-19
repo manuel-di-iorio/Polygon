@@ -166,10 +166,12 @@ function __poly_ai_step(_ed) {
   }
 
   if (!_ai.ready) return;
+
   if (is_struct(_ai.capture)) {
     if (current_time > _ai.capture.deadline) __poly_ai_capture_finish(_ed, "timeout", "viewport did not render all requested views");
     return;
   }
+
   var _budget = 8;
 
   while (array_length(_ai.inbox) > 0 && _budget > 0) {
@@ -195,6 +197,7 @@ function __poly_ai_step(_ed) {
 
       if (!__poly_ai_send(_ed, _res)) break;
     }
+
     if (is_struct(_ai.capture)) break;
   }
 }
@@ -1070,6 +1073,7 @@ function __poly_ai_capture_pose(_ed, _view) {
     _distance /= max(0.1, sin(degtorad(_settings.fov * 0.5)));
     return { position: variable_struct_exists(_view, "position") ? _view.position : [ _center[0] + _distance * 0.6, _center[1] + _distance * 0.4, _center[2] + _distance * 0.6 ], target: _center };
   }
+
   if (variable_struct_exists(_view, "position") || variable_struct_exists(_view, "target") || variable_struct_exists(_view, "rotation")) return _view;
   var _position = _ed.rt.cam.getLocalPosition();
   return { position: [ _position.x, _position.y, _position.z ], rotation: __poly_ai_transform_of(_ed.rt.cam).rotation_euler_deg };
@@ -1081,6 +1085,7 @@ function __poly_ai_capture_begin(_ed, _id, _p, _single) {
   if (variable_struct_exists(_ed, "load_job") && is_struct(_ed.load_job)) return __poly_ai_err("busy", "scene load in progress");
   var _views = _single ? [ _p ] : (variable_struct_exists(_p, "views") ? _p.views : undefined);
   if (!is_array(_views) || array_length(_views) < 1 || array_length(_views) > 32) return __poly_ai_err("bad_params", "views must contain 1 to 32 cameras");
+
   for (var _view_index = 0; _view_index < array_length(_views); _view_index++) {
     var _view = _views[_view_index];
     if (!is_struct(_view)) return __poly_ai_err("bad_params", "each view must be a camera struct");
@@ -1091,9 +1096,11 @@ function __poly_ai_capture_begin(_ed, _id, _p, _single) {
     if (variable_struct_exists(_pose, "target") && point_distance_3d(_pose.position[0], _pose.position[1], _pose.position[2], _pose.target[0], _pose.target[1], _pose.target[2]) < 0.000001) return __poly_ai_err("bad_params", "target too close to position");
     if (variable_struct_exists(_view, "name") && !is_string(_view.name)) return __poly_ai_err("bad_params", "view name must be a string");
   }
+
   var _hide_ids = variable_struct_exists(_p, "hide_ids") ? _p.hide_ids : [];
   if (!is_array(_hide_ids)) return __poly_ai_err("bad_params", "hide_ids must be an array");
   var _hidden = [];
+
   for (var _hide_index = 0; _hide_index < array_length(_hide_ids); _hide_index++) {
     if (!is_string(_hide_ids[_hide_index])) return __poly_ai_err("bad_params", "hide_ids must contain strings");
     var _hide_node = __poly_ai_node(_ed, _hide_ids[_hide_index]);
@@ -1101,6 +1108,7 @@ function __poly_ai_capture_begin(_ed, _id, _p, _single) {
     if (__poly_locked_get(_ed, _hide_node)) return __poly_ai_err("locked", "node is locked: " + _hide_ids[_hide_index]);
     array_push(_hidden, _hide_ids[_hide_index]);
   }
+
   var _ai = __poly_ai_state(_ed);
   _ai.capture = {
     id: _id, single: _single, views: _views, index: 0, shots: [], hidden: _hidden,
@@ -1118,12 +1126,14 @@ function __poly_ai_capture_finish(_ed, _code = "", _message = "") {
   if (surface_exists(_job.surface)) __poly_surf_retire(_ed, _job.surface);
   _job.renderer = undefined;
   var _response = undefined;
+
   if (_code != "") {
     for (var _cleanup_index = 0; _cleanup_index < array_length(_job.shots); _cleanup_index++) file_delete(_job.shots[_cleanup_index].file);
     _response = __poly_ai_fail(_job.id, _code, _message);
   } else {
     _response = { id: _job.id, ok: true, result: _job.single ? _job.shots[0] : { views: _job.shots, restored: true, editor_camera_unchanged: true } };
   }
+
   _ai.seen[$ _job.id] = _response;
   array_push(_ai.seen_order, _job.id);
   while (array_length(_ai.seen_order) > 128) variable_struct_remove(_ai.seen, array_shift(_ai.seen_order));
@@ -1158,20 +1168,24 @@ function __poly_ai_capture_shot(_ed, _job) {
   if (variable_struct_exists(_camera_result, "error")) return _done(_camera_result.error_msg);
   var _roots = __poly_tracked_nodes(_ed);
   array_push(_roots, _ed.rt.cam);
+
   for (var _root_index = 0; _root_index < array_length(_roots); _root_index++) {
     __poly_walk_tree(_roots[_root_index], function(_node, _states) {
       var _component = _node.getCameraComponent();
-      if (_component != undefined && _component.getEnabled()) {
+
+    if (_component != undefined && _component.getEnabled()) {
         array_push(_states, _component);
         _component.setEnabled(false);
       }
     }, _cameras);
   }
+
   for (var _hide_index = 0; _hide_index < array_length(_job.hidden); _hide_index++) {
     var _hide_node = __poly_ai_node(_ed, _job.hidden[_hide_index]);
     if (_hide_node == undefined) return _done("hidden node removed during capture");
     __poly_walk_tree(_hide_node, function(_node, _states) { __poly_walk_mute_node(_node, _states); }, _muted);
   }
+
   _camera.getCameraComponent().setEnabled(true);
   _job.scene.update(0);
   surface_set_target(_job.surface);
@@ -1192,10 +1206,12 @@ function __poly_ai_capture_shot(_ed, _job) {
 function __poly_ai_capture_draw(_ed) {
   if (!__poly_ai_capture_active(_ed)) return;
   var _job = _ed.ai.capture;
+
   if (!_ed.active || _ed.rt == undefined || _ed.rt.scene != _job.scene) {
     __poly_ai_capture_finish(_ed, "cancelled", "scene changed during capture");
     return;
   }
+
   var _shot = __poly_ai_capture_shot(_ed, _job);
   var _failure = _shot.failure;
   var _camera = _shot.camera;
