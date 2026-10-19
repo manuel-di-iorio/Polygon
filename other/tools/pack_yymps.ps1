@@ -111,14 +111,14 @@ function Test-SameContent($Current, $Fresh) {
 }
 
 if (-not (Test-Path -LiteralPath $yyp)) {
-    Write-Host "pack_yymps: progetto non trovato: $yyp" -ForegroundColor Red
+    Write-Host "pack_yymps: project not found: $yyp" -ForegroundColor Red
     if ($Strict) { exit 1 }
     exit 3
 }
 
 $tool = Get-ProjectTool
 if (-not $tool) {
-    Write-Host 'pack_yymps: ProjectTool non trovato. Imposta POLYGON_PROJECTTOOL o installa GameMaker.' -ForegroundColor Yellow
+    Write-Host 'pack_yymps: ProjectTool not found. Set POLYGON_PROJECTTOOL or install GameMaker.' -ForegroundColor Yellow
     if ($Strict) { exit 1 }
     exit 3
 }
@@ -176,13 +176,13 @@ function Publish-Package {
 
 if ($Force) {
     Publish-Package
-    Write-Host 'pack_yymps: editor.yymps riscritto (-Force).' -ForegroundColor Green
+    Write-Host 'pack_yymps: editor.yymps rewritten (-Force).' -ForegroundColor Green
     exit 2
 }
 
 if (-not (Test-Path -LiteralPath $dest)) {
     Publish-Package
-    Write-Host 'pack_yymps: editor.yymps creato.' -ForegroundColor Green
+    Write-Host 'pack_yymps: editor.yymps created.' -ForegroundColor Green
     exit 2
 }
 

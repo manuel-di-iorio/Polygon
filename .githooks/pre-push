@@ -20,7 +20,7 @@ if command -v pwsh >/dev/null 2>&1; then
 elif command -v powershell >/dev/null 2>&1; then
   ps=powershell
 else
-  echo "pre-push: PowerShell non trovato, editor.yymps non rigenerato" >&2
+  echo "pre-push: PowerShell not found, editor.yymps not rebuilt" >&2
   exit 0
 fi
 
@@ -36,19 +36,19 @@ case "$code" in
     if [ -n "$(git status --porcelain -- editor.yymps)" ]; then
       if [ -d "$root/.git/rebase-merge" ] || [ -d "$root/.git/rebase-apply" ] || \
          [ -n "$(git rev-parse -q --verify MERGE_HEAD 2>/dev/null)" ]; then
-        echo "pre-push: editor.yymps aggiornato, ma un merge/rebase e in corso: committalo a mano." >&2
+        echo "pre-push: editor.yymps updated, but a merge/rebase is in progress: commit it manually." >&2
       elif git commit -m "chore: rebuild editor.yymps" -- editor.yymps >/dev/null 2>&1; then
-        echo "pre-push: editor.yymps era obsoleto -> commit 'chore: rebuild editor.yymps' (partira col prossimo push)." >&2
+        echo "pre-push: editor.yymps was obsolete -> commit 'chore: rebuild editor.yymps' (will be included in the next push)." >&2
       else
-        echo "pre-push: editor.yymps aggiornato ma non committato (git add editor.yymps)." >&2
+        echo "pre-push: editor.yymps updated but not committed (git add editor.yymps)." >&2
       fi
     fi
     ;;
   3)
-    echo "pre-push: rebuild di editor.yymps saltato (ProjectTool/PowerShell non disponibili)." >&2
+    echo "pre-push: rebuild of editor.yymps skipped (ProjectTool/PowerShell not available)." >&2
     ;;
   *)
-    echo "pre-push: pack_yymps ha restituito un errore (exit $code), editor.yymps non aggiornato." >&2
+    echo "pre-push: pack_yymps returned an error (exit $code), editor.yymps not updated." >&2
     ;;
 esac
 
