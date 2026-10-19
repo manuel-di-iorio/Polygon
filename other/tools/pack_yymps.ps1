@@ -157,13 +157,13 @@ $ptArgs = @(
 if ($includeResources) { $ptArgs += "INCLUDERESOURCES=$includeResources" }
 if ($postRemovals)     { $ptArgs += "POSTREMOVALS=$postRemovals" }
 
-Write-Host "pack_yymps: export in corso ($tool) ..."
+Write-Host "pack_yymps: export in progress ($tool) ..."
 $output = & $tool @ptArgs 2>&1
 $failed = ($LASTEXITCODE -ne 0) -or (-not (Test-Path -LiteralPath $temp)) -or ($output -match 'ProjectTool failed')
 
 if ($failed) {
     if (Test-Path -LiteralPath $temp) { Remove-Item -LiteralPath $temp -Force }
-    Write-Host 'pack_yymps: export fallito.' -ForegroundColor Red
+    Write-Host 'pack_yymps: export failed.' -ForegroundColor Red
     $output | Select-Object -Last 15 | ForEach-Object { Write-Host "  $_" }
     if ($Strict) { exit 1 }
     exit 3
@@ -191,10 +191,10 @@ $fresh   = Get-ZipContentMap $temp
 
 if (Test-SameContent -Current $current -Fresh $fresh) {
     Remove-Item -LiteralPath $temp -Force
-    Write-Host 'pack_yymps: editor.yymps gia aggiornato (contenuto identico).'
+    Write-Host 'pack_yymps: editor.yymps already up to date (content identical).'
     exit 0
 }
 
 Publish-Package
-Write-Host 'pack_yymps: contenuto cambiato, editor.yymps aggiornato.' -ForegroundColor Green
+Write-Host 'pack_yymps: content changed, editor.yymps updated.' -ForegroundColor Green
 exit 2

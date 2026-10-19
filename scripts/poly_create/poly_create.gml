@@ -38,7 +38,7 @@ function __poly_keys_apply(_ed, _src) {
 // touches game instances. Init is static only (library + empty scene); the
 // live scene is mirrored on every enable, when wrappers are detected by
 // prefix and bare roots get fresh ids. Contract: on_create receives the
-// wrapper node (walk the subtree for model content). keys remaps the editor
+// wrapper node (walk the subtree for model content). Keys remaps the editor
 // shortcuts (see __poly_keys_apply for the accepted names).
 function poly_create(_rt) {
   var _src = is_struct(_rt) ? _rt : {};

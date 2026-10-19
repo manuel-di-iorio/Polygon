@@ -17,7 +17,7 @@ const hook = join(repoRoot, '.githooks', 'pre-push');
 try {
   execFileSync('git', ['-C', repoRoot, 'config', 'core.hooksPath', '.githooks'], { stdio: 'inherit' });
 } catch {
-  console.warn('install-hooks: git non disponibile o non e un repository: hooks non attivati.');
+  console.warn('install-hooks: git not available or not a repository: hooks not enabled.');
   process.exit(0);
 }
 
@@ -30,5 +30,5 @@ if (existsSync(hook)) {
   }
 }
 
-console.log('install-hooks: hook attivi (core.hooksPath = .githooks).');
-console.log('              pre-push rigenera editor.yymps. Disattivare: git config --unset core.hooksPath');
+console.log('install-hooks: hooks enabled (core.hooksPath = .githooks).');
+console.log('              pre-push rebuilds editor.yymps. Disable with: git config --unset core.hooksPath');
