@@ -43,50 +43,105 @@ function __poly_overlay_seg(_vp, _a, _b, _wd, _col) {
 // Icons
 // ---------------------------------------------------------------------------
 
-// Draws cached overlay sprite tinted.
-function __poly_overlay_sprite(_sp, _sprname, _tint) {
-  static _cache = {};
+// Draws a flat local-space polyline as a screen-space stroke.
+function __poly_overlay_icon_stroke(_pts, _x, _y, _s, _wd, _col, _closed = false) {
+  var _n = array_length(_pts) div 2;
 
-  if (!variable_struct_exists(_cache, _sprname)) {
-    var _idx = asset_get_index(_sprname);
+  if (_n < 2) return;
+  var _x0 = _x + _pts[0] * _s;
+  var _y0 = _y + _pts[1] * _s;
+  var _px = _x0;
+  var _py = _y0;
 
-    if (_idx == -1) {
-      _cache[$ _sprname] = { spr: -1, w: 0, h: 0, ox: 0, oy: 0 };
-    } else {
-      _cache[$ _sprname] = { spr: _idx, w: sprite_get_width(_idx), h: sprite_get_height(_idx), ox: sprite_get_xoffset(_idx), oy: sprite_get_yoffset(_idx) };
+  for (var _i = 1; _i < _n; _i++) {
+    var _nx = _x + _pts[_i * 2] * _s;
+    var _ny = _y + _pts[_i * 2 + 1] * _s;
+    draw_line_width_color(_px, _py, _nx, _ny, _wd, _col, _col);
+    _px = _nx;
+    _py = _ny;
+  }
+
+  if (_closed) draw_line_width_color(_px, _py, _x0, _y0, _wd, _col, _col);
+}
+
+// Builds ellipse outline points around a local center.
+function __poly_overlay_icon_ellipse(_cx, _cy, _rx, _ry, _seg = 24) {
+  var _pts = [];
+
+  for (var _i = 0; _i <= _seg; _i++) {
+    var _t = (_i / _seg) * pi * 2;
+    array_push(_pts, _cx + cos(_t) * _rx, _cy + sin(_t) * _ry);
+  }
+
+  return _pts;
+}
+
+// Builds rounded-rectangle outline points around a local center.
+function __poly_overlay_icon_roundrect(_cx, _cy, _hw, _hh, _r, _seg = 5) {
+  var _pts = [];
+  var _corners = [
+    [ _cx + _hw - _r, _cy - _hh + _r, -pi * 0.5 ],
+    [ _cx + _hw - _r, _cy + _hh - _r, 0 ],
+    [ _cx - _hw + _r, _cy + _hh - _r, pi * 0.5 ],
+    [ _cx - _hw + _r, _cy - _hh + _r, pi ],
+  ];
+
+  for (var _c = 0; _c < 4; _c++) {
+    var _qx = _corners[_c][0];
+    var _qy = _corners[_c][1];
+    var _a0 = _corners[_c][2];
+
+    for (var _i = 0; _i <= _seg; _i++) {
+      var _a = _a0 + (_i / _seg) * pi * 0.5;
+      array_push(_pts, _qx + cos(_a) * _r, _qy + sin(_a) * _r);
     }
   }
 
-  var _e = _cache[$ _sprname];
-
-  if (_e.spr == -1) return false;
-  var _scale = 2.5;
-  draw_sprite_ext(_e.spr, 0, _sp[0] + _scale * (_e.ox - _e.w * 0.5), _sp[1] + _scale * (_e.oy - _e.h * 0.5), _scale, _scale, 0, _tint, 1);
-  return true;
+  return _pts;
 }
 
-// Draws object icon or diamond marker.
-function __poly_overlay_icon(_sp, _col, _sel, _sprname) {
+// Draws the camera outline: body and lens block.
+function __poly_overlay_icon_camera(_x, _y, _s, _wd, _col) {
+  __poly_overlay_icon_stroke(__poly_overlay_icon_roundrect(-2.5, 0, 5, 4.8, 1.7), _x, _y, _s, _wd, _col, true);
+  __poly_overlay_icon_stroke(__poly_overlay_icon_roundrect(5, 0, 2.5, 3.0, 1.0), _x, _y, _s, _wd, _col, true);
+}
+
+// Draws the sun outline: center ring plus eight rays.
+function __poly_overlay_icon_sun(_x, _y, _s, _wd, _col) {
+  __poly_overlay_icon_stroke(__poly_overlay_icon_ellipse(0, 0, 2.7, 2.7, 20), _x, _y, _s, _wd, _col);
+
+  for (var _i = 0; _i < 8; _i++) {
+    var _a = (_i / 8) * pi * 2;
+    var _c = cos(_a);
+    var _sn = sin(_a);
+    __poly_overlay_icon_stroke([ _c * 4.4, _sn * 4.4, _c * 7.0, _sn * 7.0 ], _x, _y, _s, _wd, _col);
+  }
+}
+
+// Draws the spotlight cone outline: base ellipse and two sides.
+function __poly_overlay_icon_cone(_x, _y, _s, _wd, _col) {
+  var _rx = 4.8;
+  var _cy = 4.0;
+  __poly_overlay_icon_stroke(__poly_overlay_icon_ellipse(0, _cy, _rx, 2.5, 24), _x, _y, _s, _wd, _col);
+  __poly_overlay_icon_stroke([ 0, -7.5, -_rx, _cy ], _x, _y, _s, _wd, _col);
+  __poly_overlay_icon_stroke([ 0, -7.5, _rx, _cy ], _x, _y, _s, _wd, _col);
+  // Round the apex where both sides meet.
+  draw_circle_colour(_x, _y - 7.5 * _s, _wd * 0.5, _col, _col, false);
+}
+
+// Draws a crisp vector icon ("camera", "sun" or "cone") centered on _sp.
+// _scale resizes the icon (stroke width follows automatically).
+function __poly_overlay_icon(_sp, _col, _sel, _kind, _scale = 2.4) {
   var _tint = _sel ? make_colour_rgb(255, 220, 80) : _col;
-  var _r = 9;
-  var _spr_drawn = false;
+  var _s = _scale;
+  var _wd = max(1, _s * 0.9);
 
-  if (_sprname != "") _spr_drawn = __poly_overlay_sprite(_sp, _sprname, _tint);
-
-  if (!_spr_drawn) {
-    if (_sel) {
-      draw_primitive_begin(pr_trianglefan);
-      draw_vertex_colour(_sp[0], _sp[1] - _r, _tint, 0.85);
-      draw_vertex_colour(_sp[0] + _r, _sp[1], _tint, 0.85);
-      draw_vertex_colour(_sp[0], _sp[1] + _r, _tint, 0.85);
-      draw_vertex_colour(_sp[0] - _r, _sp[1], _tint, 0.85);
-      draw_primitive_end();
-    }
-
-    draw_line_width_color(_sp[0], _sp[1] - _r, _sp[0] + _r, _sp[1], 2, _tint, _tint);
-    draw_line_width_color(_sp[0] + _r, _sp[1], _sp[0], _sp[1] + _r, 2, _tint, _tint);
-    draw_line_width_color(_sp[0], _sp[1] + _r, _sp[0] - _r, _sp[1], 2, _tint, _tint);
-    draw_line_width_color(_sp[0] - _r, _sp[1], _sp[0], _sp[1] - _r, 2, _tint, _tint);
+  if (_kind == "camera") {
+    __poly_overlay_icon_camera(_sp[0], _sp[1], _s, _wd, _tint);
+  } else if (_kind == "sun") {
+    __poly_overlay_icon_sun(_sp[0], _sp[1], _s, _wd, _tint);
+  } else {
+    __poly_overlay_icon_cone(_sp[0], _sp[1], _s, _wd, _tint);
   }
 }
 
@@ -282,8 +337,8 @@ function __poly_overlay_light(_vp, _nd, _en, _wp, _sp, _sel) {
   }
 
   if (_sp != undefined) {
-    var _spr = _d.type == "directional" ? "sprPolygonEditorIconDirectionalLight" : "sprPolygonEditorIconPointLight";
-    __poly_overlay_icon(_sp, _col, _sel, _spr);
+    var _icon = _d.type == "directional" ? "cone" : "sun";
+    __poly_overlay_icon(_sp, _col, _sel, _icon);
   }
 }
 
@@ -297,7 +352,7 @@ function __poly_overlay_camera(_vp, _nd, _en, _wp, _sp, _sel) {
   var _d = (_en != undefined && is_struct(_en.data)) ? _en.data : __poly_camera_defaults();
 
   if (!_sel) {
-    if (_sp != undefined) __poly_overlay_icon(_sp, _col, _sel, "sprPolygonEditorIconCamera");
+    if (_sp != undefined) __poly_overlay_icon(_sp, _col, _sel, "camera");
     return;
   }
 
@@ -352,7 +407,7 @@ function __poly_overlay_camera(_vp, _nd, _en, _wp, _sp, _sel) {
   __poly_overlay_box(_vp, _corners, 1.5, _col);
   __poly_overlay_seg(_vp, _wp, _cn, 1.5, _col);
 
-  if (_sp != undefined) __poly_overlay_icon(_sp, _col, _sel, "sprPolygonEditorIconCamera");
+  if (_sp != undefined) __poly_overlay_icon(_sp, _col, _sel, "camera");
 }
 
 // Draws environment volume box and icon.
@@ -379,5 +434,5 @@ function __poly_overlay_env(_vp, _en, _wp, _sp, _sel) {
     draw_set_alpha(1);
   }
 
-  if (_sp != undefined) __poly_overlay_icon(_sp, _col, _sel, "sprPolygonEditorIconPointLight");
+  if (_sp != undefined) __poly_overlay_icon(_sp, _col, _sel, "sun");
 }
