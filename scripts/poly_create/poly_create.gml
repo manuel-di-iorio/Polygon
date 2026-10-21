@@ -49,7 +49,7 @@ function poly_create(_rt) {
   __poly_create_assets(_src);
   __poly_keys_apply(_ed, _src);
 
-  __poly_viewcam_seed_from(_ed, _rtc.cam);
+  __poly_viewcam_seed_from(_ed, _rtc.cam, true);
   __poly_cam_remember(_ed);
   __poly_ui_load(_ed);
   __poly_view_save(_ed);

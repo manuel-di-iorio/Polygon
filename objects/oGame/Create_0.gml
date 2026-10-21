@@ -3,8 +3,11 @@ demo_create();
 var config = {
   scene: demo_scene,
   cam: demo_cam,
+  editor_camera_z_offset: 8.1,
+  editor_camera_yaw_offset: 180.0,
   on_create: demo_on_create,
   assets: demo_load_models([
+    "demo/terrain.glb",
     "kenney_platformer-kit/platform.glb",
     "kenney_platformer-kit/tree.glb",
     "kenney_platformer-kit/tree-pine.glb",

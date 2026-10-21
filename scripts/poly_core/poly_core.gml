@@ -27,6 +27,8 @@ function __poly_create_rt(_src) {
   if (variable_struct_exists(_src, "on_close")) _rtc.on_close = _src.on_close;
   if (variable_struct_exists(_src, "on_compose")) _rtc.on_compose = _src.on_compose;
   if (variable_struct_exists(_src, "cam")) _rtc.cam = _src.cam;
+  if (variable_struct_exists(_src, "editor_camera_z_offset")) _rtc.editor_camera_z_offset = _src.editor_camera_z_offset;
+  if (variable_struct_exists(_src, "editor_camera_yaw_offset")) _rtc.editor_camera_yaw_offset = _src.editor_camera_yaw_offset;
   if (variable_struct_exists(_src, "scene")) _rtc.live_scene = _src.scene;
   return _rtc;
 }
@@ -60,7 +62,15 @@ function __poly_import_live(_ed) {
 
   if (variable_struct_exists(_ed.rt, "live_scene") && _ed.rt.live_scene != undefined) _nodes = _ed.rt.live_scene.getNodes();
 
-  if (_nodes != undefined) for (var _i = 0, _n = array_length(_nodes); _i < _n; _i++) __poly_track_adopt_auto(_ed, _nodes[_i]);
+  if (_nodes != undefined) {
+    for (var _i = 0, _n = array_length(_nodes); _i < _n; _i++) {
+      var _src_node = _nodes[_i];
+      var _adopted = __poly_track_adopt_auto(_ed, _src_node);
+      if (_adopted == undefined || _src_node == undefined || _src_node.name != "MainCamera") continue;
+      if (__poly_comp_kind(_src_node) != "camera") continue;
+      __poly_editor_camera_adjust(_ed, _adopted);
+    }
+  }
 
   _ed.rt.scene.update(0);
 

@@ -32,6 +32,8 @@
     {"$GMIncludedFile":"","%Name":"triangle.glb","CopyToMask":-1,"filePath":"datafiles/__PolygonEditor__/models","name":"triangle.glb","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"smaa_area.png","CopyToMask":-1,"filePath":"datafiles/__PolygonEditor__/smaa","name":"smaa_area.png","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"smaa_search.png","CopyToMask":-1,"filePath":"datafiles/__PolygonEditor__/smaa","name":"smaa_search.png","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
+    {"$GMIncludedFile":"","%Name":"terrain_grass.png","CopyToMask":-1,"filePath":"datafiles/demo","name":"terrain_grass.png","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
+    {"$GMIncludedFile":"","%Name":"terrain.glb","CopyToMask":-1,"filePath":"datafiles/demo","name":"terrain.glb","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"animal-fox.glb","CopyToMask":-1,"filePath":"datafiles/kenney_cube-pets_1.0","name":"animal-fox.glb","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"colormap.png","CopyToMask":-1,"filePath":"datafiles/kenney_cube-pets_1.0/Textures","name":"colormap.png","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"character-female-b.glb","CopyToMask":-1,"filePath":"datafiles/kenney_mini-characters","name":"character-female-b.glb","resourceType":"GMIncludedFile","resourceVersion":"2.0",},

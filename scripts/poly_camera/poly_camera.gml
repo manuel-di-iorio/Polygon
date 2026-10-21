@@ -139,16 +139,48 @@ function __poly_viewcam_ensure(_ed) {
 }
 
 // Seeds editor camera from given gameplay camera pose and settings.
-function __poly_viewcam_seed_from(_ed, _src) {
+function __poly_editor_camera_adjust(_ed, _cam) {
+  if (_ed == undefined || _cam == undefined || _ed.rt == undefined) return;
+  var _offset_z = variable_struct_exists(_ed.rt, "editor_camera_z_offset")
+    ? _ed.rt.editor_camera_z_offset
+    : 0.0;
+  var _yaw_offset = variable_struct_exists(_ed.rt, "editor_camera_yaw_offset")
+    ? _ed.rt.editor_camera_yaw_offset
+    : 0.0;
+  var _pos = _cam.getLocalPosition();
+  _cam.setLocalPosition(new GM3D_Vec3(_pos.x, _pos.y, _pos.z + _offset_z));
+  if (_yaw_offset != 0.0) {
+    var _rot = _cam.getLocalRotation().clone();
+    var _yaw = GM3D_Quaternion.fromAxisAngle(GM3D_Vec3.up(), degtorad(_yaw_offset));
+    _yaw.multiply(_rot);
+    _cam.setLocalRotation(_yaw.normalizeSafe(0.000001));
+  }
+}
+
+function __poly_viewcam_seed_from(_ed, _src, _apply_editor_pose = false) {
   if (_ed == undefined) return false;
   __poly_viewcam_ensure(_ed);
   var _cam = _ed.viewcam;
 
   if (_cam == undefined || _src == undefined) return false;
-  var _pos = _src.getLocalPosition();
-  var _rot = _src.getLocalRotation();
+  var _pos = _src.getLocalPosition().clone();
+  var _rot = _src.getLocalRotation().clone();
+  if (_apply_editor_pose) {
+    var _offset_z = variable_struct_exists(_ed.rt, "editor_camera_z_offset")
+      ? _ed.rt.editor_camera_z_offset
+      : 0.0;
+    var _yaw_offset = variable_struct_exists(_ed.rt, "editor_camera_yaw_offset")
+      ? _ed.rt.editor_camera_yaw_offset
+      : 0.0;
+    _pos.z += _offset_z;
+    if (_yaw_offset != 0.0) {
+      var _yaw = GM3D_Quaternion.fromAxisAngle(GM3D_Vec3.up(), degtorad(_yaw_offset));
+      _yaw.multiply(_rot);
+      _rot = _yaw.normalizeSafe(0.000001);
+    }
+  }
   _cam.setLocalPosition(new GM3D_Vec3(_pos.x, _pos.y, _pos.z));
-  _cam.setLocalRotation(_rot.clone());
+  _cam.setLocalRotation(_rot);
   __poly_camera_apply(_cam, __poly_camera_read(_src));
   var _comp = _cam.getCameraComponent();
 

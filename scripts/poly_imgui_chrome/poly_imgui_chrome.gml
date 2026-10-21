@@ -439,7 +439,7 @@ function __poly_menu_ai(_ed) {
 
   ImGui.SameLine(max(0, _w - 60));
 
-  if (__poly_imgui_tool_btn("AI bridge: connect/disconnect the MCP relay", "AI", _ai.on, 0, 0)) __poly_ai_enable(!_ai.on);
+  if (__poly_imgui_tool_btn("MCP bridge: connect/disconnect the relay", "MCP", _ai.on, 0, 0)) __poly_ai_enable(!_ai.on);
 }
 
 // Draws main menu bar with actions.
