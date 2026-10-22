@@ -52,7 +52,8 @@ function poly_load(_scene, _fname, _assets, _on_create = undefined, _on_finish =
     actors: __poly_file_assets(_data),
     on_create: _on_create,
     on_finish: _on_finish,
-    report: { placed: 0, failed: 0, companions: 0, warnings: [], placements: [] },
+    world: __poly_world_data(_data[$ "world"]),
+    report: { placed: 0, failed: 0, companions: 0, warnings: [], placements: [], world: __poly_world_data(_data[$ "world"]) },
   };
   __poly_load_jobs_push(_job);
   return _job;

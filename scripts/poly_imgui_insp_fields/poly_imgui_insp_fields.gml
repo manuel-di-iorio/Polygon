@@ -95,6 +95,7 @@ function __poly_axis_release(_ed, _fkey, _nv, _shown, _was, _mode, _ax) {
   if (_was) {
     if (is_real(_nv) && _nv != _shown) __poly_apply_axis(_ed, _mode, _ax, _nv);
     if (_before != undefined) __poly_history_commit(_ed, _before);
+    __poly_physics_debug_rebuild(_ed);
   }
 }
 

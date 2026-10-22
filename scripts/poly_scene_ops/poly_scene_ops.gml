@@ -126,7 +126,7 @@ function __poly_discard_changes(_ed) {
 
   if (_path != "" && file_exists(_path)) if (__poly_load_scene_begin(_ed) == "") return;
 
-  if (variable_struct_exists(_ed, "open_snapshot") && is_array(_ed.open_snapshot)) {
+  if (variable_struct_exists(_ed, "open_snapshot") && is_struct(_ed.open_snapshot)) {
     __poly_rebuild(_ed, _ed.open_snapshot);
     __poly_sel_clear(_ed);
     __poly_history_clear(_ed);
@@ -173,6 +173,7 @@ function __poly_delete_sel(_ed) {
 
   if (array_length(_victims) == 0) return;
   var _before = __poly_history_snap(_ed);
+  __poly_physics_debug_destroy(_ed);
 
   for (var _j = 0, _nv = array_length(_victims); _j < _nv; _j++) {
     __poly_spawn_unregister(_ed, _victims[_j]);
@@ -181,10 +182,11 @@ function __poly_delete_sel(_ed) {
 
   _ed.rt.scene.update(0);
   __poly_sel_clear(_ed);
+  __poly_physics_debug_rebuild(_ed);
   __poly_history_commit(_ed, _before);
 }
 
-// Duplicates one asset node in place, copying shadow flags.
+// Duplicates one asset node in place, copying shadow flags and spawn physics defaults.
 function __poly_duplicate_asset(_ed, _src) {
   var _key = __poly_asset_name(_ed, _src);
 
@@ -214,7 +216,8 @@ function __poly_duplicate_asset(_ed, _src) {
     var _copy_en = __poly_registry_find(_ed, _copy);
 
     if (_copy_en != undefined) {
-      _copy_en.data = { castShadows: _cast, receiveShadows: _recv };
+      _copy_en.data.castShadows = _cast;
+      _copy_en.data.receiveShadows = _recv;
     }
 
     __poly_flags_apply(_copy, _cast, _recv);
@@ -246,6 +249,7 @@ function __poly_duplicate_sel(_ed) {
   }
 
   if (array_length(_out) > 0) _ed.sel = _out;
+  __poly_physics_debug_rebuild(_ed);
   __poly_history_commit(_ed, _before);
 }
 
@@ -345,6 +349,7 @@ function __poly_clipboard_cut(_ed) {
   if (array_length(_victims) == 0) return false;
   var _before = __poly_history_snap(_ed);
   _ed.clipboard = { descs: _descs, cut: true };
+  __poly_physics_debug_destroy(_ed);
 
   for (var _j = 0, _nv = array_length(_victims); _j < _nv; _j++) {
     __poly_spawn_unregister(_ed, _victims[_j]);
@@ -353,6 +358,7 @@ function __poly_clipboard_cut(_ed) {
 
   _ed.rt.scene.update(0);
   __poly_sel_clear(_ed);
+  __poly_physics_debug_rebuild(_ed);
   __poly_history_commit(_ed, _before);
   return true;
 }

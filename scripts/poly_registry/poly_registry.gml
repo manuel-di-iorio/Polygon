@@ -181,7 +181,10 @@ function __poly_spawn_reset_child(_child) {
 
 // Registers spawned asset node for tracking.
 function __poly_spawn_register(_ed, _node, _asset, _label = undefined) {
-  __poly_kind_register(_ed, _node, "instance", _asset, _label, __poly_flags_read(_node));
+  var _data = __poly_flags_read(_node);
+  var _physics = __poly_physics_live_read(_node);
+  if (_physics != undefined && _physics.mode != "none") _data.physics = _physics;
+  __poly_kind_register(_ed, _node, "instance", _asset, _label, _data);
 }
 
 // Registers a wrapper node with kind and metadata.
@@ -257,7 +260,7 @@ function __poly_asset_desc(_ed, _node) {
     _recv = _en.data.receiveShadows == true;
   }
 
-  return {
+  var _out = {
     id: _en.id,
     asset: _en.asset,
     label: _en.label,
@@ -268,6 +271,8 @@ function __poly_asset_desc(_ed, _node) {
     },
     shadows: { cast: _cast, receive: _recv },
   };
+  if (is_struct(_en.data) && is_struct(_en.data[$ "physics"]) && _en.data.physics.mode != "none") _out.physics = __poly_physics_data(_en.data.physics);
+  return _out;
 }
 
 // Lists tracked root scene nodes (via stored refs, no lookup).
@@ -487,6 +492,33 @@ function __poly_spawn(_ed, _opt) {
   if (_is_chrome) return _wrap;
 
   if (_is_inst) {
+    var _physics = undefined;
+    if (is_struct(_data) && variable_struct_exists(_data, "physics")) {
+      _physics = __poly_physics_data(_data.physics);
+      var _instance_character = _data[$ "physics"][$ "character"];
+      if (_physics.mode == "character" && (!is_struct(_instance_character) || !variable_struct_exists(_instance_character, "visualOffset"))) _physics = __poly_physics_fit_visual(_model, _physics);
+    }
+    else if (_is_ed && _data == undefined) {
+      var _meta = is_struct(_ed.asset_meta) ? _ed.asset_meta[$ _asset] : undefined;
+      if (is_struct(_meta) && is_struct(_meta[$ "physics"])) {
+        _physics = __poly_physics_data(_meta.physics);
+        var _meta_character = _meta[$ "physics"][$ "character"];
+        if (_physics.mode == "character" && (!is_struct(_meta_character) || !variable_struct_exists(_meta_character, "visualOffset"))) _physics = __poly_physics_fit_visual(_model, _physics);
+      }
+      var _lib_entry = __poly_asset_get(_ed, _asset);
+      if (_physics == undefined && _lib_entry != undefined && is_struct(_lib_entry[$ "physics_default"])) {
+        _physics = __poly_physics_data(_lib_entry.physics_default);
+        var _default_character = _lib_entry[$ "physics_default"][$ "character"];
+        if (_physics.mode == "character" && (!is_struct(_default_character) || !variable_struct_exists(_default_character, "visualOffset"))) _physics = __poly_physics_fit_visual(_model, _physics);
+      }
+    }
+    if (_physics != undefined && _physics.mode != "none") __poly_physics_apply(_wrap, _physics);
+    if (is_struct(_data)) {
+      if (_physics != undefined) _data.physics = _physics;
+      else if (variable_struct_exists(_data, "physics")) _data.physics = __poly_physics_data(_data.physics);
+    } else if (_physics != undefined) {
+      _data = { castShadows: true, receiveShadows: true, physics: _physics };
+    }
     if (_is_ed) {
       __poly_magenta_fix(_ed, _wrap);
     } else {
@@ -506,9 +538,9 @@ function __poly_spawn(_ed, _opt) {
     if (_is_ed && !_skip_reg) {
       var _pp = _wrap.getLocalPosition();
 
-      if (is_struct(_data) && variable_struct_exists(_data, "castShadows")) {
+      if (is_struct(_data) && (variable_struct_exists(_data, "castShadows") || variable_struct_exists(_data, "physics"))) {
         __poly_kind_register(_ed, _wrap, "instance", _asset, _label, _data);
-        __poly_flags_apply_data(_wrap, _data);
+        if (variable_struct_exists(_data, "castShadows")) __poly_flags_apply_data(_wrap, _data);
       } else {
         __poly_spawn_register(_ed, _wrap, _asset, _label);
       }
@@ -517,6 +549,7 @@ function __poly_spawn(_ed, _opt) {
     }
 
     if (variable_struct_exists(_opt, "adopt_src") && _opt.adopt_src != undefined) __poly_track_adopt_flags(_opt.adopt_src, _wrap);
+    if (_is_ed) __poly_physics_debug_rebuild(_ed);
     return _wrap;
   }
 
@@ -585,6 +618,7 @@ function __poly_track_place_asset(_ed, _key, _model, _node, _label = undefined) 
     label: _label,
     id: __poly_wrap_claim(_ed, __poly_wrap_id_of(_node)),
     adopt_src: _node,
+    data: { castShadows: true, receiveShadows: true },
   });
 }
 
@@ -659,6 +693,11 @@ function __poly_track_adopt_auto(_ed, _node) {
 
   if (_new == undefined) return undefined;
   __poly_track_adopt_flags(_node, _new);
+  var _live_physics = __poly_physics_live_read(_node);
+  if (_live_physics != undefined) {
+    var _en = __poly_registry_find(_ed, _new);
+    if (_en != undefined) { _en.data.physics = _live_physics; __poly_physics_apply(_new, _live_physics); }
+  }
   return _new;
 }
 

@@ -402,6 +402,7 @@ function __poly_step_nudge(_ed, _keys) {
   }
 
   __poly_history_commit(_ed, _before);
+  __poly_physics_debug_rebuild(_ed);
 }
 
 // Handles editor keyboard shortcuts and nudging.
@@ -426,6 +427,11 @@ function __poly_step_hotkeys(_ed, _input) {
   if (__poly_bind_pressed(_keys, "snap")) _ed.snap_on = !_ed.snap_on;
   if (__poly_bind_pressed(_keys, "pivot")) __poly_toggle_pivot(_ed);
   if (__poly_bind_pressed(_keys, "orient")) __poly_toggle_orient(_ed);
+  if (__poly_bind_pressed(_keys, "colliders")) {
+    _ed.show_colliders = !_ed.show_colliders;
+    if (_ed.show_colliders) __poly_physics_debug_rebuild(_ed); else __poly_physics_debug_destroy(_ed);
+    _ed.view_dirty = true;
+  }
   if (__poly_bind_pressed(_keys, "rename") && array_length(_ed.sel) > 0) __poly_rename_begin(_ed, _ed.sel[0]);
   __poly_step_nudge(_ed, _keys);
 
@@ -475,6 +481,7 @@ function __poly_cancel_gizmo(_ed) {
   // the outline mask keep showing the dragged (uncommitted) state.
   _ed.dirty = true;
   _ed.view_dirty = true;
+  __poly_physics_debug_rebuild(_ed);
   if (variable_struct_exists(_ed, "outline") && is_struct(_ed.outline)) _ed.outline.cheap = undefined;
   __poly_input_owner_clear(_ed, "gizmo");
 }
@@ -523,6 +530,7 @@ function __poly_step_gizmo(_ed, _input) {
     _ed.giz.drag = -1;
 
     if (_ed.hist_before != undefined) __poly_cmd_commit(_ed, _ed.hist_before, "gizmo-drag");
+    __poly_physics_debug_rebuild(_ed);
     __poly_wrap_end(_ed);
 
     _ed.hist_before = undefined;
@@ -579,6 +587,7 @@ function __poly_libdrop_commit_preview(_ed, _asset, _spawn, _drop) {
     _asset.key
   );
   __poly_spawn_shadow_apply(_ed, _asset, _ed.drag_preview);
+  __poly_physics_debug_rebuild(_ed);
   _ed.sel = [ _ed.drag_preview ];
   _ed.giz.drag = -1;
   _ed.drag_preview = undefined;

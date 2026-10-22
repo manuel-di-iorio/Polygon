@@ -1,3 +1,129 @@
+# Revisione confermata — 2026-10-22
+
+Questa revisione sostituisce le decisioni incompatibili nelle sezioni successive del piano. I dettagli architetturali restano validi solo dove non contraddicono questa sezione.
+
+## Obiettivo e perimetro V1
+
+Integrare nell'editor Polygon i collider GM3D per oggetto, la visualizzazione debug, le impostazioni fisiche per oggetto e per mondo e la configurazione del character controller. V1 comprende **Body + Shape + Character**. La modalità editor resta di sola visualizzazione: nessuno step o anteprima di simulazione.
+
+- Modalità: `none`, `static`, `kinematic`, `dynamic`, `character`. Un trigger è un body sensore, non una modalità.
+- Un oggetto è fisico se `physics.mode != "none"` oppure se nasce da un prefab con default physics.
+- Il blocco `physics` opzionale per istanza vive nel descrittore dell'istanza; se assente, l'istanza non è fisica.
+- I default physics dei prefab vivono nella mappa top-level `assets`, accanto ad `actor`; si applicano solo a nuovi spawn e duplicati.
+- I dati `world` vivono al top-level della scena: `gravity`, `fixedTimeStep`, `maxSubSteps`, `maxBodies`.
+- JSON resta `version: 1` con campi opzionali. Il binario PLYB passa a v2 e mantiene la lettura v1.
+- Shape V1: Box, Sphere, Capsule, Cylinder. Mesh/ConvexHull restano sperimentali fino allo spike. Fuori scope: constraints, veicoli, ragdoll, collider composti, anteprima simulazione e matrice layer.
+
+## Inspector, prefab e cronologia
+
+Le impostazioni World non hanno un pannello separato né una finestra dockable. La UI usa l'Inspector nello stato senza selezione:
+
+- nessun oggetto e nessun prefab selezionato: suggerimento + `__poly_imgui_world_sec(_ed)`;
+- prefab selezionato: resta l'Inspector prefab esistente;
+- oggetto selezionato: Inspector oggetto.
+
+Il comportamento di selezione prefab non cambia: il suo Inspector ha precedenza sulla sezione World. Non creare `win_world`, una finestra World dockable o `poly_imgui_world.gml`.
+
+Le impostazioni World partecipano a undo/redo: gli snapshot includono `world` e `__poly_history_commit` lo confronta. I default physics del prefab si applicano soltanto a nuovi spawn/duplicati, senza alterare istanze già esistenti.
+
+## Debug collider nell'editor
+
+Usare il debug draw nativo GM3D, `GM3D_PhysicsWorld.setDebugDrawEnabled`, controllato da un pulsante icona nella toolbar. La modalità mostra i collider ma non simula.
+
+Il debug world è uno snapshot statico: crearlo pigramente quando `show_colliders` viene attivato, abilitare `setDebugDrawEnabled(true)`, chiamare `syncScene()`, aggiungere i character e non chiamare mai step/interpolate/restore. Ricostruirlo dopo modifiche strutturali o ai dati fisici e distruggerlo prima della scena.
+
+## Character
+
+Il capsule character è centrato sull'origine del wrapper. Il modello visuale viene allineato tramite `character.visualOffset`, automatico ma modificabile; offrire un'azione Recenter.
+
+## Fasi aggiornate
+
+1. **Fase 0 — spike API (da completare):** verificare che `setDebugDrawEnabled` renda i collider senza simulazione; verificare il rapporto tra scala del nodo e half-extents; verificare Mesh/ConvexHull con mesh figlia del wrapper. Annotare risultati e limiti prima di esporre le shape sperimentali.
+2. **Fase 1 — dati e runtime comune (implementata, da validare):** `poly_physics` per apply/read/validate/fit/default World; `physics` nei descrittori istanza e `world` al top-level; JSON v1 e PLYB v2 con lettura v1; caricamento runtime e report physics.
+3. **Fase 1 — UI e debug editor (implementata, da validare):** Inspector Body/Shape, toolbar e scorciatoia `P`, debug world statico; impostazioni World nello stato Inspector senza selezione. La sezione prefab conserva la precedenza.
+4. **Fase 2 — character e prefab (implementata, da validare):** controller, capsule centrata sul wrapper, `visualOffset` automatico/modificabile con Recenter, default fisici applicati alle nuove istanze e helper runtime.
+5. **Fase 3 — integrazioni (parzialmente implementata):** physics mantenuta nel duplicate e nel bridge AI; tooltip aggiunti a controlli Physics, Physics World, default prefab e flag Shadows. Da verificare e completare gli altri percorsi copy/paste, il badge gerarchia e le relative rifiniture/documentazione.
+
+### Lavoro svolto in questa implementazione
+
+- Aggiunti dati e applicazione GM3D per Body, Shape, Character e World, senza simulazione nell'editor.
+- Aggiunte impostazioni per istanza e default prefab, Inspector World nello stato senza selezione, undo/redo e rebuild della visualizzazione debug.
+- Aggiornati salvataggio/caricamento, formati JSON/PLYB e bridge runtime/AI; PLYB v2 conserva la lettura dei file v1.
+- Aggiunti tooltip descrittivi ai parametri fisici, alle azioni Fit/Clear/Recenter, ai parametri World, ai default prefab e alle checkbox Shadows Cast/Receive.
+- Corretto un accesso a `physics` opzionale che causava `ReferenceError` aprendo l'Inspector; aggiunti controlli analoghi ad altri campi opzionali. Va confermato nel runtime che l'errore non si ripresenti.
+- In un avvio runtime sono comparsi warning GM3D che clampano `m_maxBodyPairs` e `m_maxContactConstraints` da 65536 a 1024. Non è ancora verificato se siano innocui nel percorso debug; la documentazione API disponibile non indica opzioni pubbliche per quei limiti.
+
+### Prossimo passo
+
+1. Aprire il progetto nell'IDE GameMaker, eseguire una build GMRT e riprodurre l'apertura dell'Inspector per confermare la correzione del `ReferenceError`.
+2. Attivare/disattivare il debug collider e confermare che i warning di clamp non diventino errori e che i collider restino visibili senza `step`, `interpolateForRender` o `restoreSimulationPositions` nell'editor.
+3. Verificare visivamente scala nodo vs half-extents per Box, Sphere, Capsule e Cylinder; correggere fit e tooltip se il comportamento osservato differisce.
+4. Provare Mesh/ConvexHull con mesh figlia del wrapper. Tenerle fuori dalle shape selezionabili se lo spike non conferma supporto corretto.
+5. Completare la verifica di duplicate/copy/paste, badge gerarchia e round-trip di undo/redo e salvataggio JSON/PLYB; annotare gli esiti qui prima di chiudere le fasi.
+
+### Roadmap successiva — dopo la validazione V1
+
+Le fasi sotto sono proposte successive alla verifica runtime della V1 e vanno affrontate in ordine di dipendenza. I sistemi avanzati restano fuori dal perimetro V1 finché non viene approvata la relativa fase.
+
+#### Fase 4 — Trigger di gioco
+
+La V1 rappresenta già il trigger come body sensore (`isSensor`), non come modalità fisica autonoma. Prima di ampliare l'editor, verificare che la scelta del layer `Trigger` e il flag `Sensor` producano un comportamento coerente; mantenere un'unica invariante chiara per il body sensore.
+
+- Definire gli eventi supportati dal contratto Polygon (almeno inizio e fine overlap, se GM3D li distingue in modo affidabile).
+- Definire il payload runtime stabile: identificativi dei due nodi, tipo evento ed eventuali dati di contatto disponibili.
+- Esporre gli eventi al gioco dopo `GM3D_PhysicsWorld.step()` tramite helper/callback documentati; l'editor continua a non simulare.
+- Verificare più sensori, distruzione/rimozione dei nodi, ordine degli eventi e compatibilità con load/rebuild.
+- Non aggiungere una modalità `trigger`: si configura un body sensore attraverso i dati physics esistenti.
+
+#### Fase 5 — Collider Mesh e Convex
+
+Abilitare le shape sperimentali solo dopo gli spike con mesh figlia del wrapper e la verifica di scala/rotazione.
+
+- Provare `Mesh`, `ConvexHull` e, se disponibile e valido nella versione GM3D usata, `ConvexDecomposition` su asset rappresentativi.
+- Determinare compatibilità con body statici/dinamici, mesh skinned, gerarchie figlie, trasformazioni e salvataggio/caricamento.
+- Documentare limiti di precisione, costo di cooking/performance e casi non supportati.
+- Esporre nell'Inspector soltanto le shape validate; segnalare esplicitamente quelle che restano sperimentali.
+
+#### Fase 6 — Collider composti
+
+- Passare dal singolo `physics.shape` a una lista versionabile di shape locali per istanza, ciascuna con tipo, dimensioni, offset e rotazione.
+- Aggiungere nell'Inspector lista, aggiunta/rimozione, selezione e modifica delle shape; includere preview debug, undo/redo e duplicazione.
+- Aggiornare validazione, JSON, PLYB e caricamento runtime mantenendo la lettura dei dati V1 come singola shape.
+- Verificare quali combinazioni e limiti di numero componenti sono supportati da GM3D.
+
+#### Fase 7 — Vincoli e giunti
+
+- Definire il formato per joint tra due istanze: tipo, riferimenti stabili ai nodi, ancoraggi locali, assi, limiti e parametri opzionali di motore.
+- Implementare selezione dei corpi collegati e UI per configurazione/visualizzazione del joint.
+- Validare riferimenti mancanti, cancellazione o duplicazione di un corpo collegato, prefab e rebuild della scena.
+- Aggiornare undo/redo, serializzazione e helper runtime; i vincoli non entrano nei dati V1.
+
+#### Fase 8 — Veicoli
+
+- Modellare il veicolo come configurazione collegata al body: wheel nodes, assi/posizioni, raggio e larghezza, sospensione e sterzo.
+- Aggiungere configurazione di powertrain, cambio, differenziale e anti-roll; includere collision tester e validazione dei riferimenti alle ruote.
+- Creare UI per assegnare e ispezionare le ruote e visualizzarne i parametri senza simulazione editoriale.
+- Esporre helper runtime per input (acceleratore, sterzo, freno, freno a mano) e lettura di velocità/stato ruote.
+- Provare veicoli a ruote e decidere separatamente se supportare moto o veicoli cingolati.
+
+#### Fase 9 — Ragdoll
+
+- Mappare nodi/corpi ai bone di una mesh skinned e definire joint e collider per segmento.
+- Gestire passaggio tra animazione e controllo fisico, sincronizzazione dello scheletro e ritorno all'animazione.
+- Costruire una UI di setup scheletrico e uno strumento debug per collider e giunti.
+- Verificare costi, limiti di rig e serializzazione prima di definire un formato stabile.
+
+#### Fase 10 — Matrice collisioni e query
+
+- Aggiungere una matrice layer-layer con regole di collisione modificabili e salvate a livello World.
+- Valutare strumenti editor non simulati per raycast/overlap di diagnostica e documentare la differenza rispetto alle query runtime.
+- Includere migrazione per scene esistenti e undo/redo delle regole World.
+
+#### Fase 11 — Eventuale anteprima di simulazione editoriale
+
+Resta fuori scope finché non viene richiesta e progettata separatamente. Dovrà usare un world temporaneo isolato, controlli Play/Pause/Reset e ripristino deterministico dei transform, senza riusare o contaminare il world statico impiegato dal collider debug.
+
+---
 # Piano: Fisica in Polygon (GM3D 0.22.4)
 
 ## 1. Obiettivo

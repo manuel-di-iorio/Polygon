@@ -5,6 +5,7 @@ function poly_cleanup(_ed = undefined) {
   _ed ??= __poly_inst();
 
   if (_ed == undefined) return;
+  __poly_physics_debug_destroy(_ed);
   __poly_outline_cleanup(_ed);
   __poly_gpupick_cleanup(_ed);
   __poly_ai_disconnect(_ed);

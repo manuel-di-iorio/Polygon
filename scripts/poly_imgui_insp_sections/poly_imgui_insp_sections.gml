@@ -64,9 +64,193 @@ function __poly_imgui_asset_sec(_ed, _node, _en) {
   var _d = _en.data;
   ImGui.Spacing();
   __poly_edit_bool(_ed, _node, _d, "castShadows", "Cast", __poly_flags_apply_data);
+  if (ImGui.IsItemHovered()) ImGui.SetTooltip("Controls whether this object casts shadows onto other surfaces.");
   ImGui.SameLine(0, 18);
   __poly_edit_bool(_ed, _node, _d, "receiveShadows", "Receive", __poly_flags_apply_data);
+  if (ImGui.IsItemHovered()) ImGui.SetTooltip("Controls whether shadows from other objects appear on this object.");
   ImGui.Spacing();
+}
+
+function __poly_physics_ui_change(_ed, _node, _en, _data, _field, _value, _child = "") {
+  var _before = __poly_history_snap(_ed);
+  if (_child != "") _data[$ _child][$ _field] = _value; else _data[$ _field] = _value;
+  if (_field == "mode" && _value == "character" && _child == "") {
+    var _model_for_fit = __poly_imgui_node_model(_ed, _node);
+    _data = __poly_physics_fit_visual(_model_for_fit, _data);
+  }
+  _data = __poly_physics_data(_data);
+  _en.data.physics = _data;
+  __poly_physics_debug_destroy(_ed);
+  __poly_physics_apply(_node, _data);
+  _ed.rt.scene.update(0.0);
+  __poly_physics_debug_rebuild(_ed);
+  _ed.view_dirty = true;
+  if (_before != undefined) __poly_history_commit(_ed, _before);
+}
+
+function __poly_imgui_physics_tip(_text) {
+  if (ImGui.IsItemHovered()) ImGui.SetTooltip(_text);
+}
+
+function __poly_imgui_physics_float(_ed, _node, _en, _data, _field, _label, _speed, _min, _max, _child = "", _tip = "") {
+  var _value = _child != "" ? _data[$ _child][$ _field] : _data[$ _field];
+  var _id = "physics_" + _child + "_" + _field;
+  var _next = __poly_imgui_prop_float(_ed, _id, _label, _value, 120);
+  if (_tip != "") __poly_imgui_physics_tip(_tip);
+  if (_next == undefined || _next == _value) return;
+  _next = clamp(_next, _min, _max);
+  __poly_physics_ui_change(_ed, _node, _en, _data, _field, _next, _child);
+}
+
+function __poly_imgui_physics_sec(_ed, _node, _en) {
+  if (!is_struct(_en.data)) _en.data = __poly_flags_read(_node);
+  if (!variable_struct_exists(_en.data, "physics") || !is_struct(_en.data[$ "physics"])) _en.data.physics = __poly_physics_defaults();
+  var _d = __poly_physics_data(_en.data.physics);
+  _en.data.physics = _d;
+  ImGui.Spacing();
+  __poly_imgui_sec_open();
+  if (!ImGui.CollapsingHeader("Physics")) return;
+  var _enabled = _d.mode != "none";
+  var _was_enabled = ImGui.Checkbox("Physical", _enabled);
+  __poly_imgui_physics_tip("Enables a collider on this object. Choose a mode below to set its behavior.");
+  if (_was_enabled != _enabled) {
+    __poly_physics_ui_change(_ed, _node, _en, _d, "mode", _was_enabled ? "static" : "none");
+    _d = _en.data.physics;
+  }
+  if (_d.mode == "none") return;
+  var _modes = ["static", "kinematic", "dynamic", "character"];
+  var _mode_open = ImGui.BeginCombo("Mode", _d.mode);
+  __poly_imgui_physics_tip("Static does not move; Kinematic is moved by code; Dynamic is simulated by the game; Character uses a character controller.");
+  if (_mode_open) {
+    for (var _i = 0; _i < array_length(_modes); _i++) if (ImGui.Selectable(_modes[_i], _d.mode == _modes[_i])) {
+      __poly_physics_ui_change(_ed, _node, _en, _d, "mode", _modes[_i]);
+      _d = _en.data.physics;
+    }
+    ImGui.EndCombo();
+  }
+  var _layers = ["Static", "Default", "Character", "Trigger", "Debris"];
+  if (_d.mode != "character") {
+    var _layer_open = ImGui.BeginCombo("Layer", _d.layer);
+    __poly_imgui_physics_tip("Collision layer used with GM3D's collision rules. Trigger selects the trigger layer; Sensor makes the collider overlap-only.");
+    if (_layer_open) {
+    for (var _l = 0; _l < array_length(_layers); _l++) if (ImGui.Selectable(_layers[_l], _d.layer == _layers[_l])) {
+      __poly_physics_ui_change(_ed, _node, _en, _d, "layer", _layers[_l]);
+      _d = _en.data.physics;
+    }
+    ImGui.EndCombo();
+    }
+  }
+  if (_d.mode == "character") {
+    __poly_imgui_physics_float(_ed, _node, _en, _d, "radius", "Radius", 0.01, 0.01, 100, "character", "Radius of the character capsule.");
+    __poly_imgui_physics_float(_ed, _node, _en, _d, "halfHeight", "Half height", 0.01, 0.01, 100, "character", "Half of the capsule's cylindrical section height; total capsule height also includes both rounded ends.");
+    __poly_imgui_physics_float(_ed, _node, _en, _d, "stepHeight", "Step height", 0.01, 0, 20, "character", "Maximum height of a step the controller can climb.");
+    __poly_imgui_physics_float(_ed, _node, _en, _d, "maxSlopeAngle", "Max slope", 0.5, 0, 89, "character", "Steepest slope, in degrees, the controller can stand on.");
+    __poly_imgui_physics_float(_ed, _node, _en, _d, "mass", "Mass", 0.5, 0.001, 100000, "character", "Character controller mass used by GM3D's character movement and contacts.");
+    __poly_imgui_physics_float(_ed, _node, _en, _d, "maxStrength", "Max strength", 1, 0.001, 100000, "character", "Maximum force the controller can apply to push other bodies.");
+    for (var _a = 0; _a < 3; _a++) {
+      var _axes = ["X", "Y", "Z"];
+      var _nv = __poly_imgui_prop_float(_ed, "physics_visual_" + _axes[_a], "Visual offset " + _axes[_a], _d.character.visualOffset[_a], 120);
+      __poly_imgui_physics_tip("Local model offset on the " + _axes[_a] + " axis. The character capsule stays centered on the wrapper origin.");
+      if (_nv != undefined && _nv != _d.character.visualOffset[_a]) {
+        var _offset = __poly_physics_copy3(_d.character.visualOffset);
+        _offset[_a] = _nv;
+        __poly_physics_ui_change(_ed, _node, _en, _d, "visualOffset", _offset, "character");
+        _d = _en.data.physics;
+      }
+    }
+    if (ImGui.Button("Recenter visual")) {
+      var _model = __poly_imgui_node_model(_ed, _node);
+      var _bb = _model != undefined ? _model.getBoundingBox() : undefined;
+      if (is_struct(_bb) && _bb.min != undefined && _bb.max != undefined) {
+        __poly_physics_ui_change(_ed, _node, _en, _d, "visualOffset", [-(_bb.min.x + _bb.max.x) * 0.5, -(_bb.min.y + _bb.max.y) * 0.5, -(_bb.min.z + _bb.max.z) * 0.5], "character");
+      }
+    }
+    if (ImGui.IsItemHovered()) ImGui.SetTooltip("Centers the visual model on the wrapper origin using its bounds. The Character capsule remains centered at the origin; adjust Visual offset to fine-tune.");
+    return;
+  }
+  var _shapes = ["Box", "Sphere", "Capsule", "Cylinder"];
+  var _shape_open = ImGui.BeginCombo("Shape", _d.shape);
+  __poly_imgui_physics_tip("Collider geometry: Box, Sphere, Capsule or Cylinder. Dimensions below are half-extents.");
+  if (_shape_open) {
+    for (var _s = 0; _s < array_length(_shapes); _s++) if (ImGui.Selectable(_shapes[_s], _d.shape == _shapes[_s])) {
+      __poly_physics_ui_change(_ed, _node, _en, _d, "shape", _shapes[_s]);
+      _d = _en.data.physics;
+    }
+    ImGui.EndCombo();
+  }
+  if (_d.mode == "dynamic") {
+    __poly_imgui_physics_float(_ed, _node, _en, _d, "mass", "Mass", 0.1, 0.001, 100000, "", "Mass of this dynamic body; higher mass makes it harder to accelerate or push.");
+    __poly_imgui_physics_float(_ed, _node, _en, _d, "linearDamping", "Linear damping", 0.01, 0, 1000, "", "Slows straight-line motion over time. Zero applies no damping.");
+    __poly_imgui_physics_float(_ed, _node, _en, _d, "angularDamping", "Angular damping", 0.01, 0, 1000, "", "Slows rotation over time. Zero applies no damping.");
+    __poly_imgui_physics_float(_ed, _node, _en, _d, "gravityFactor", "Gravity factor", 0.1, -100, 100, "", "Scales world gravity for this body: 1 is normal, 0 disables gravity, negative values reverse it.");
+  }
+  __poly_imgui_physics_float(_ed, _node, _en, _d, "friction", "Friction", 0.01, 0, 1, "", "Surface grip during contact. Higher values resist sliding more.");
+  __poly_imgui_physics_float(_ed, _node, _en, _d, "restitution", "Restitution", 0.01, 0, 1, "", "Bounciness during contact: 0 absorbs bounce, 1 is highly elastic.");
+  var _sensor = ImGui.Checkbox("Sensor", _d.isSensor == true);
+  __poly_imgui_physics_tip("Detects overlaps without physically blocking or pushing other bodies.");
+  if (_sensor != (_d.isSensor == true)) __poly_physics_ui_change(_ed, _node, _en, _d, "isSensor", _sensor);
+  var _labels = ["X", "Y", "Z"];
+  for (var _v = 0; _v < 3; _v++) {
+    var _half = __poly_imgui_prop_float(_ed, "physics_extent_" + _labels[_v], "Half extent " + _labels[_v], _d.halfExtents[_v], 120);
+    __poly_imgui_physics_tip("Half-size of the collider on the " + _labels[_v] + " axis; full size is twice this value.");
+    if (_half != undefined && _half != _d.halfExtents[_v]) {
+      var _he = __poly_physics_copy3(_d.halfExtents); _he[_v] = max(0.001, _half);
+      __poly_physics_ui_change(_ed, _node, _en, _d, "halfExtents", _he);
+      _d = _en.data.physics;
+    }
+    var _off = __poly_imgui_prop_float(_ed, "physics_offset_" + _labels[_v], "Offset " + _labels[_v], _d.offset[_v], 120);
+    __poly_imgui_physics_tip("Local collider offset on the " + _labels[_v] + " axis, relative to the wrapper origin.");
+    if (_off != undefined && _off != _d.offset[_v]) {
+      var _of = __poly_physics_copy3(_d.offset); _of[_v] = _off;
+      __poly_physics_ui_change(_ed, _node, _en, _d, "offset", _of);
+      _d = _en.data.physics;
+    }
+  }
+  if (ImGui.Button("Fit to mesh")) {
+    var _model = __poly_imgui_node_model(_ed, _node);
+    var _box = _model != undefined ? _model.getBoundingBox() : undefined;
+    if (is_struct(_box) && _box.min != undefined && _box.max != undefined) {
+      __poly_physics_ui_change(_ed, _node, _en, _d, "halfExtents", [max(0.001, abs(_box.max.x - _box.min.x) * 0.5), max(0.001, abs(_box.max.y - _box.min.y) * 0.5), max(0.001, abs(_box.max.z - _box.min.z) * 0.5)]);
+    }
+  }
+  __poly_imgui_physics_tip("Sets collider half-extents from the model's bounding box. You can adjust them afterward.");
+  ImGui.SameLine();
+  if (ImGui.Button("Clear")) __poly_physics_ui_change(_ed, _node, _en, _d, "mode", "none");
+  __poly_imgui_physics_tip("Removes the physics body or character controller from this object.");
+}
+
+function __poly_world_ui_change(_ed, _field, _value, _axis = -1) {
+  var _before = __poly_history_snap(_ed);
+  var _d = __poly_world_data(_ed.world);
+  if (_axis >= 0) _d.gravity[_axis] = _value; else _d[$ _field] = _value;
+  _ed.world = __poly_world_data(_d);
+  __poly_physics_debug_rebuild(_ed);
+  _ed.view_dirty = true;
+  if (_before != undefined) __poly_history_commit(_ed, _before);
+}
+
+function __poly_imgui_world_sec(_ed) {
+  if (!is_struct(_ed.world)) _ed.world = __poly_world_defaults();
+  var _d = __poly_world_data(_ed.world);
+  ImGui.Spacing();
+  __poly_imgui_sec_open();
+  if (!ImGui.CollapsingHeader("Physics World")) return;
+  ImGui.TextDisabled("Scene-wide physics defaults");
+  var _axis = ["X", "Y", "Z"];
+  for (var _i = 0; _i < 3; _i++) {
+    var _nv = __poly_imgui_prop_float(_ed, "world_gravity_" + _axis[_i], "Gravity " + _axis[_i], _d.gravity[_i], 120);
+    __poly_imgui_physics_tip("World gravity acceleration on the " + _axis[_i] + " axis, in scene units per second squared.");
+    if (_nv != undefined && _nv != _d.gravity[_i]) { __poly_world_ui_change(_ed, "gravity", _nv, _i); _d = _ed.world; }
+  }
+  var _step = __poly_imgui_prop_float(_ed, "world_step", "Fixed time step", _d.fixedTimeStep, 120);
+  __poly_imgui_physics_tip("Time interval used by each physics simulation step. The game controls when the world is stepped.");
+  if (_step != undefined && _step != _d.fixedTimeStep) __poly_world_ui_change(_ed, "fixedTimeStep", clamp(_step, 0.001, 1));
+  var _sub = __poly_imgui_prop_float(_ed, "world_substeps", "Max substeps", _d.maxSubSteps, 120);
+  __poly_imgui_physics_tip("Maximum catch-up steps the game world may run for one update.");
+  if (_sub != undefined && _sub != _d.maxSubSteps) __poly_world_ui_change(_ed, "maxSubSteps", clamp(round(_sub), 1, 64));
+  var _bodies = __poly_imgui_prop_float(_ed, "world_bodies", "Max bodies", _d.maxBodies, 120);
+  __poly_imgui_physics_tip("Capacity reserved for physics bodies in the game world.");
+  if (_bodies != undefined && _bodies != _d.maxBodies) __poly_world_ui_change(_ed, "maxBodies", clamp(round(_bodies), 1, 65535));
 }
 
 // Edits light properties in Inspector.
@@ -308,6 +492,10 @@ function __poly_imgui_spawn_sec(_ed, _entry) {
 
   ImGui.Spacing();
   __poly_imgui_sec_open();
+  if (ImGui.CollapsingHeader("Physics Defaults")) __poly_imgui_prefab_physics(_ed, _entry);
+
+  ImGui.Spacing();
+  __poly_imgui_sec_open();
 
   var _asset_mats = __poly_collect_asset_mats(_entry);
 
@@ -328,6 +516,67 @@ function __poly_imgui_spawn_sec(_ed, _entry) {
     ImGui.Spacing();
     __poly_imgui_actor_sec(_ed, _entry);
     ImGui.Spacing();
+  }
+}
+
+function __poly_imgui_prefab_physics(_ed, _entry) {
+  if (!is_struct(_ed.asset_meta)) _ed.asset_meta = {};
+  var _meta = variable_struct_exists(_ed.asset_meta, _entry.key) ? _ed.asset_meta[$ _entry.key] : undefined;
+  if (!is_struct(_entry[$ "physics_default"])) _entry.physics_default = is_struct(_meta) && is_struct(_meta[$ "physics"]) ? __poly_physics_data(_meta.physics) : __poly_physics_defaults();
+  var _d = __poly_physics_data(_entry.physics_default);
+  var _enabled = _d.mode != "none";
+  var _next = ImGui.Checkbox("Spawn with physics", _enabled);
+  __poly_imgui_physics_tip("Applies these physics defaults to newly spawned instances of this prefab.");
+  if (_next != _enabled) {
+    var _before = __poly_history_snap(_ed);
+    _d.mode = _next ? "static" : "none";
+    _entry.physics_default = _d;
+    if (!is_struct(_meta)) _meta = { type: "model" };
+    _meta.physics = _d;
+    _ed.asset_meta[$ _entry.key] = _meta;
+    if (_before != undefined) __poly_history_commit(_ed, _before);
+  }
+  if (_d.mode == "none") return;
+  var _modes = ["static", "kinematic", "dynamic", "character"];
+  var _prefab_mode_open = ImGui.BeginCombo("Mode", _d.mode);
+  __poly_imgui_physics_tip("Default behavior for new instances: fixed, code-driven, simulated, or character-controlled.");
+  if (_prefab_mode_open) {
+    for (var _i = 0; _i < array_length(_modes); _i++) if (ImGui.Selectable(_modes[_i], _d.mode == _modes[_i])) {
+      var _before = __poly_history_snap(_ed);
+      _d.mode = _modes[_i];
+      if (_d.mode == "character") _d = __poly_physics_fit_visual(_entry.model, _d);
+      _entry.physics_default = _d;
+      if (!is_struct(_meta)) _meta = { type: "model" };
+      _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
+      if (_before != undefined) __poly_history_commit(_ed, _before);
+    }
+    ImGui.EndCombo();
+  }
+  var _shapes = ["Box", "Sphere", "Capsule", "Cylinder"];
+  if (_d.mode != "character") {
+    var _prefab_shape_open = ImGui.BeginCombo("Shape", _d.shape);
+    __poly_imgui_physics_tip("Default collider geometry for new instances.");
+    if (_prefab_shape_open) {
+    for (var _s = 0; _s < array_length(_shapes); _s++) if (ImGui.Selectable(_shapes[_s], _d.shape == _shapes[_s])) {
+      var _before = __poly_history_snap(_ed);
+      _d.shape = _shapes[_s]; _entry.physics_default = _d;
+      if (!is_struct(_meta)) _meta = { type: "model" };
+      _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
+      if (_before != undefined) __poly_history_commit(_ed, _before);
+    }
+    ImGui.EndCombo();
+    }
+  }
+  if (_d.mode == "dynamic") {
+    var _mass = __poly_imgui_prop_float(_ed, "prefab_physics_mass", "Mass", _d.mass, 120);
+    __poly_imgui_physics_tip("Default mass assigned to each newly spawned dynamic instance.");
+    if (_mass != undefined && _mass != _d.mass) {
+      var _before = __poly_history_snap(_ed);
+      _d.mass = max(0.001, _mass); _entry.physics_default = _d;
+      if (!is_struct(_meta)) _meta = { type: "model" };
+      _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
+      if (_before != undefined) __poly_history_commit(_ed, _before);
+    }
   }
 }
 

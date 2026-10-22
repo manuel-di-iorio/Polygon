@@ -54,6 +54,8 @@ function __poly_node_desc(_ed, _node) {
     shadows: _asset.shadows,
   };
 
+  if (is_struct(_asset[$ "physics"]) && _asset.physics.mode != "none") _desc.physics = __poly_physics_data(_asset.physics);
+
   if (is_string(_asset.label) && _asset.label != "") _desc.label = _asset.label;
   return _desc;
 }
@@ -346,6 +348,25 @@ function __poly_validate_asset_desc(_desc) {
     if (!variable_struct_exists(_desc.shadows, "receive") || !is_bool(_desc.shadows.receive)) return false;
   }
 
+  if (variable_struct_exists(_desc, "physics")) {
+    var _p = _desc.physics;
+    if (!is_struct(_p)) return false;
+    if (variable_struct_exists(_p, "mode") && !is_string(_p.mode)) return false;
+    if (variable_struct_exists(_p, "shape") && !is_string(_p.shape)) return false;
+    if (variable_struct_exists(_p, "layer") && !is_string(_p.layer)) return false;
+    var _vecs = ["halfExtents", "offset"];
+    for (var _v = 0; _v < array_length(_vecs); _v++) if (variable_struct_exists(_p, _vecs[_v]) && !__poly_is_num3(_p, _vecs[_v])) return false;
+    var _nums = ["mass", "linearDamping", "angularDamping", "gravityFactor", "friction", "restitution"];
+    for (var _n = 0; _n < array_length(_nums); _n++) if (variable_struct_exists(_p, _nums[_n]) && !is_real(_p[$ _nums[_n]])) return false;
+    if (variable_struct_exists(_p, "isSensor") && !is_bool(_p.isSensor)) return false;
+    if (variable_struct_exists(_p, "character")) {
+      if (!is_struct(_p.character)) return false;
+      var _cn = ["radius", "halfHeight", "stepHeight", "maxSlopeAngle", "mass", "maxStrength"];
+      for (var _c = 0; _c < array_length(_cn); _c++) if (variable_struct_exists(_p.character, _cn[_c]) && !is_real(_p.character[$ _cn[_c]])) return false;
+      if (variable_struct_exists(_p.character, "visualOffset") && !__poly_is_num3(_p.character, "visualOffset")) return false;
+    }
+  }
+
   return true;
 }
 
@@ -355,6 +376,7 @@ function __poly_validate_asset_desc(_desc) {
 
 // Clears tracked scene content, remembering hidden/locked ids.
 function __poly_rebuild_clear(_ed) {
+  __poly_physics_debug_destroy(_ed);
   var _tracked = __poly_root_tracked(_ed);
   var _hidden = [];
   var _locked = [];
@@ -395,6 +417,8 @@ function __poly_rebuild_place_asset(_ed, _p, _key) {
   if (variable_struct_exists(_p, "shadows") && is_struct(_p.shadows)) {
     _flags = { castShadows: _p.shadows.cast == true, receiveShadows: _p.shadows.receive == true };
   }
+  if (!is_struct(_flags)) _flags = {};
+  if (variable_struct_exists(_p, "physics")) _flags.physics = __poly_physics_data(_p.physics);
 
   var _wrap = __poly_spawn(_ed, {
     kind: "instance",
@@ -427,6 +451,12 @@ function __poly_rebuild_restore_states(_ed, _states) {
 
 // Clears scene and rebuilds from descriptors.
 function __poly_rebuild(_ed, _nodes) {
+  var _world = is_struct(_nodes) ? _nodes[$ "world"] : undefined;
+  if (is_struct(_nodes) && is_struct(_nodes[$ "assets"])) _ed.asset_meta = _nodes.assets;
+  if (is_struct(_nodes)) _nodes = _nodes[$ "nodes"];
+  if (!is_array(_nodes)) _nodes = [];
+  _ed.world = __poly_world_data(_world);
+  __poly_physics_prefab_meta_sync(_ed);
   _ed.unlit_quiet = false;
   var _report = { placed: 0, failed: 0, err: "" };
 
@@ -449,6 +479,7 @@ function __poly_rebuild(_ed, _nodes) {
   __poly_cameras_mute(_ed);
   __poly_unlit_apply(_ed);
   __poly_rebuild_restore_states(_ed, _states);
+  __poly_physics_debug_rebuild(_ed);
 
   return _report;
 }
@@ -501,7 +532,7 @@ function __poly_load_data_file(_abs) {
   var _ok = is_struct(_data) && _data.version == 1 && variable_struct_exists(_data, "nodes") && is_array(_data.nodes);
 
   if (!_ok) return undefined;
-  return { seq: _data[$ "seq"], assets: _data[$ "assets"], nodes: _data.nodes };
+  return { seq: _data[$ "seq"], assets: _data[$ "assets"], nodes: _data.nodes, world: _data[$ "world"] };
 }
 
 // Starts a chunked scene load: parses now, places nodes across steps so
@@ -536,6 +567,8 @@ function __poly_load_scene_begin(_ed) {
   var _states = __poly_rebuild_clear(_ed);
   _ed.unlit_quiet = true;
   _ed.asset_meta = __poly_file_assets(_file);
+  __poly_physics_prefab_meta_sync(_ed);
+  _ed.world = __poly_world_data(_file[$ "world"]);
   __poly_history_clear(_ed);
   _ed.load_job = { nodes: _nodes, idx: 0, report: { placed: 0, failed: 0, err: "" }, states: _states };
   return "";
@@ -570,6 +603,7 @@ function __poly_load_scene_finish(_ed) {
   __poly_cameras_mute(_ed);
   __poly_unlit_apply(_ed);
   __poly_rebuild_restore_states(_ed, _job.states);
+  __poly_physics_debug_rebuild(_ed);
   // Files rarely carry sun/env: without them the
   // exterior renders pitch black. Same ensure as import/new scene.
   if (__poly_light_count(_ed) == 0) __poly_default_sun(_ed);
@@ -699,6 +733,16 @@ function __poly_write_file_assets(_ed) {
       && is_string(_mv.actor[$ "object"]) && _mv.actor.object != "") {
         _dst.actor = _mv.actor;
       }
+      if (is_struct(_mv[$ "physics"])) _dst.physics = __poly_physics_data(_mv.physics);
+    }
+  }
+
+  if (is_array(_ed.assets)) {
+    for (var _a = 0; _a < array_length(_ed.assets); _a++) {
+      var _entry = _ed.assets[_a];
+      if (!is_struct(_entry) || !is_string(_entry.key) || !is_struct(_entry[$ "physics_default"])) continue;
+      if (!variable_struct_exists(_out, _entry.key)) _out[$ _entry.key] = { type: "model" };
+      _out[$ _entry.key].physics = __poly_physics_data(_entry.physics_default);
     }
   }
 
@@ -716,9 +760,9 @@ function __poly_save_scene(_ed) {
   __poly_ensure_dir(_path);
 
   if (__poly_scene_fmt_of(_path) == "bin") {
-    if (!__poly_bin_save_descs(_path, _ed.id_seq, _assets, _nodes)) return false;
+    if (!__poly_bin_save_descs(_path, _ed.id_seq, _assets, _nodes, _ed.world)) return false;
   } else {
-    var _json = __poly_json_stringify_ordered({ version: 1, seq: _ed.id_seq, assets: _assets, nodes: _nodes }, true, 100);
+    var _json = __poly_json_stringify_ordered({ version: 1, seq: _ed.id_seq, assets: _assets, world: __poly_world_data(_ed.world), nodes: _nodes }, true, 100);
 
     if (!__poly_write_text_file(_path, _json)) return false;
   }

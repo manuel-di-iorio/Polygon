@@ -13,7 +13,7 @@ function __poly_ang_diff(_a, _b) {
 }
 
 // Collects rotation/scale/shadow overrides against spawn defaults.
-function __poly_over_diffs(_node, _en, _entry) {
+function __poly_over_diffs(_ed, _node, _en, _entry) {
   var _diffs = [];
   var _spawn = __poly_spawn_t(_entry);
 
@@ -49,6 +49,13 @@ function __poly_over_diffs(_node, _en, _entry) {
     }
   }
 
+  var _defaults = is_struct(_entry[$ "physics_default"]) ? _entry.physics_default
+    : is_struct(_ed.asset_meta) && is_struct(_ed.asset_meta[$ _entry.key]) && is_struct(_ed.asset_meta[$ _entry.key][$ "physics"])
+      ? _ed.asset_meta[$ _entry.key].physics : undefined;
+  if (_defaults != undefined && is_struct(_en.data) && is_struct(_en.data[$ "physics"])) {
+    if (json_stringify(__poly_physics_data(_defaults)) != json_stringify(__poly_physics_data(_en.data.physics))) array_push(_diffs, { kind: "physics", label: "Physics" });
+  }
+
   return _diffs;
 }
 
@@ -57,9 +64,10 @@ function __poly_over_diffs(_node, _en, _entry) {
 // ---------------------------------------------------------------------------
 
 // Reverts one override kind to the asset prefab (no history here).
-function __poly_over_revert(_node, _en, _entry, _kind) {
+function __poly_over_revert(_ed, _node, _en, _entry, _kind) {
   var _spawn = __poly_spawn_t(_entry);
   var _shadow = __poly_spawn_shadow(_entry);
+  var _physics_default = is_struct(_entry[$ "physics_default"]) ? _entry.physics_default : undefined;
 
   if (_kind == "rot" && _spawn != undefined) {
     _node.setLocalRotation(__poly_euler_to_quat(degtorad(_spawn.rot[0]), degtorad(_spawn.rot[1]), degtorad(_spawn.rot[2])));
@@ -69,6 +77,11 @@ function __poly_over_revert(_node, _en, _entry, _kind) {
     _en.data.castShadows = _shadow.cast == true;
     _en.data.receiveShadows = _shadow.recv == true;
     __poly_flags_apply(_node, _en.data.castShadows, _en.data.receiveShadows);
+  } else if (_kind == "physics" && is_struct(_physics_default) && is_struct(_en.data)) {
+    _en.data.physics = __poly_physics_data(_physics_default);
+    __poly_physics_debug_destroy(_ed);
+    __poly_physics_apply(_node, _en.data.physics);
+    __poly_physics_debug_rebuild(_ed);
   }
 }
 
@@ -97,13 +110,19 @@ function __poly_over_apply(_ed, _node, _en, _entry, _kind) {
   } else if (_kind == "shad" && _shadow != undefined && is_struct(_en.data)) {
     _shadow.cast = _en.data.castShadows == true;
     _shadow.recv = _en.data.receiveShadows == true;
+  } else if (_kind == "physics" && is_struct(_en.data) && is_struct(_en.data[$ "physics"])) {
+    _entry.physics_default = __poly_physics_data(_en.data.physics);
+    if (!is_struct(_ed.asset_meta)) _ed.asset_meta = {};
+    var _meta = variable_struct_exists(_ed.asset_meta, _entry.key) ? _ed.asset_meta[$ _entry.key] : { type: "model" };
+    _meta.physics = __poly_physics_data(_en.data.physics);
+    _ed.asset_meta[$ _entry.key] = _meta;
   }
 }
 
 // Reverts one override with undo.
 function __poly_over_revert_one(_ed, _node, _en, _entry, _kind) {
   var _before = __poly_history_snap(_ed);
-  __poly_over_revert(_node, _en, _entry, _kind);
+  __poly_over_revert(_ed, _node, _en, _entry, _kind);
 
   if (_before != undefined) __poly_history_commit(_ed, _before);
 }
@@ -112,7 +131,7 @@ function __poly_over_revert_one(_ed, _node, _en, _entry, _kind) {
 function __poly_over_revert_all(_ed, _node, _en, _entry, _diffs) {
   var _before = __poly_history_snap(_ed);
 
-  for (var _i = 0, _n = array_length(_diffs); _i < _n; _i++) __poly_over_revert(_node, _en, _entry, _diffs[_i].kind);
+  for (var _i = 0, _n = array_length(_diffs); _i < _n; _i++) __poly_over_revert(_ed, _node, _en, _entry, _diffs[_i].kind);
   if (_before != undefined) __poly_history_commit(_ed, _before);
 }
 
@@ -190,7 +209,7 @@ function __poly_imgui_prefab_row(_ed, _node) {
   var _entry = __poly_asset_get(_ed, _en.asset);
 
   if (_entry == undefined) return false;
-  var _diffs = __poly_over_diffs(_node, _en, _entry);
+  var _diffs = __poly_over_diffs(_ed, _node, _en, _entry);
   _ed.prefab_override_count = array_length(_diffs);
 
   ImGui.AlignTextToFramePadding();

@@ -8,7 +8,7 @@ function __poly_load_jobs_push(_job) {
 // Places one descriptor of a job (hooks, companions and report included).
 function __poly_load_place(_job, _p) {
   var _rep = _job.report;
-  var _pl = __poly_load_node(_job.scene, _job.assets, _p);
+  var _pl = __poly_load_node(_job.scene, _job.assets, _p, _job.actors);
 
   if (_pl == undefined) {
     _rep.failed++;
@@ -27,7 +27,8 @@ function __poly_load_place(_job, _p) {
     _inst = __poly_actor_of(_pl.id);
   }
 
-  array_push(_rep.placements, { node: _pl.node, asset: _pl.asset, id: _pl.id, label: _pl.label, model: _pl.model, instance: _inst });
+  var _physics = variable_struct_exists(_pl, "physics") ? _pl.physics : __poly_physics_live_read(_pl.node);
+  array_push(_rep.placements, { node: _pl.node, asset: _pl.asset, id: _pl.id, label: _pl.label, model: _pl.model, instance: _inst, physics: _physics });
 }
 
 // Reads the tolerant per-model file map ("assets"). Unknown content is
@@ -102,7 +103,7 @@ function __poly_actor_map() {
 // Returns a placement struct { node, kind, asset, id, label, model } for
 // spawned instances (asset/model feed the spawn hooks and companions),
 // { node, kind, ... } for props, or undefined on failure.
-function __poly_load_node(_scene, _assets, _p) {
+function __poly_load_node(_scene, _assets, _p, _meta = undefined) {
   if (_scene == undefined || !is_struct(_p)) return undefined;
   var _kind = undefined;
 
@@ -135,6 +136,9 @@ function __poly_load_node(_scene, _assets, _p) {
   if (variable_struct_exists(_p, "shadows") && is_struct(_p.shadows)) {
     _flags = { castShadows: _p.shadows[$ "cast"] == true, receiveShadows: _p.shadows[$ "receive"] == true };
   }
+  if (!is_struct(_flags)) _flags = {};
+  if (variable_struct_exists(_p, "physics")) _flags.physics = __poly_physics_data(_p.physics);
+  else if (is_struct(_meta) && is_struct(_meta[$ _akey]) && is_struct(_meta[$ _akey][$ "physics"])) _flags.physics = __poly_physics_data(_meta[$ _akey].physics);
 
   var _t = is_struct(_p[$ "transform"]) ? _p.transform : {};
 
@@ -151,7 +155,7 @@ function __poly_load_node(_scene, _assets, _p) {
   });
 
   if (_node == undefined) return undefined;
-  return { node: _node, kind: "instance", asset: _akey, id: _id, label: _p[$ "label"], model: _model };
+  return { node: _node, kind: "instance", asset: _akey, id: _id, label: _p[$ "label"], model: _model, physics: is_struct(_flags[$ "physics"]) ? _flags.physics : undefined };
 }
 
 // Creates light camera environment from descriptor.

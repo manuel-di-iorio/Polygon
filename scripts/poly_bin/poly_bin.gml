@@ -1,19 +1,22 @@
-// poly_bin — optimized binary scene format (PLYB v1), buffer-based.
-// Same content as JSON v1 (seq + assets + nodes), no JSON involved.
+// poly_bin — optimized binary scene format (PLYB v2), buffer-based.
 // Layout (little-endian, alignment 1, strings = buffer_string):
-//   u8[4] magic "PLYB", u16 bin_version (=1), s32 seq
-//   u16 asset_count, per asset: string key, u8 has_actor, [string obj, string layer]
+//   u8[4] magic "PLYB", u16 bin_version (=2), s32 seq
+//   v2: 3x f32 gravity, f32 fixedTimeStep, u16 maxSubSteps, u16 maxBodies
+//   u16 asset_count, per asset: string key, u8 has_actor, [string obj, string layer],
+//     v2: u8 has_physics, [string physics_json]
 //   u32 node_count, per node:
 //     u8 kind (0 instance, 1 light, 2 camera, 3 env)
 //     string id, string label ("" = none)
 //     3x f32 pos, 4x f32 rot, 3x f32 scale
-//     instance: string assetId, u8 shadow bits (1 cast, 2 receive)
+//     instance: string assetId, u8 shadow bits (1 cast, 2 receive),
+//       v2: u8 has_physics, [string physics_json]
 //     light: u8 type (0 dir, 1 point, 2 spot), 3x u8 color,
 //       f32 intensity, range, inner, outer, u8 flags (1 enabled, 2 shadow),
 //       u16 shadowRes, f32 shadowDist, f32 shadowNormal
 //     camera: u8 proj (0 persp, 1 ortho), f32 fov, ow, oh, near, far, u8 enabled
 //     env: 3x f32 size, 3x u8 ambient, u8 fog, 3x u8 fogColor,
 //       f32 fogStart, f32 fogEnd, u8 enabled
+//   v1 files omit all v2 fields and load with default world/no physics.
 
 // Returns the binary scene extension (with dot).
 function __poly_bin_ext() {
@@ -87,7 +90,7 @@ function __poly_bin_r_num(_v, _def) {
 }
 
 // Saves descriptors to a binary file. Returns true on success.
-function __poly_bin_save_descs(_path, _seq, _assets, _nodes) {
+function __poly_bin_save_descs(_path, _seq, _assets, _nodes, _world = undefined) {
   if (!is_string(_path) || _path == "") return false;
   if (!is_array(_nodes)) return false;
   if (!is_struct(_assets)) _assets = {};
@@ -97,8 +100,13 @@ function __poly_bin_save_descs(_path, _seq, _assets, _nodes) {
   buffer_write(_buf, buffer_u8, 76); // L
   buffer_write(_buf, buffer_u8, 89); // Y
   buffer_write(_buf, buffer_u8, 66); // B
-  buffer_write(_buf, buffer_u16, 1);
+  buffer_write(_buf, buffer_u16, 2);
   buffer_write(_buf, buffer_s32, is_real(_seq) ? floor(_seq) : 1);
+  var _wd = __poly_world_data(_world);
+  __poly_bin_w_vec3(_buf, _wd.gravity, 0, -9.81, 0);
+  buffer_write(_buf, buffer_f32, _wd.fixedTimeStep);
+  buffer_write(_buf, buffer_u16, _wd.maxSubSteps);
+  buffer_write(_buf, buffer_u16, _wd.maxBodies);
   var _akeys = variable_struct_get_names(_assets);
   // Keep only struct values (same tolerance as the JSON "assets" map).
   var _kept = [];
@@ -123,6 +131,9 @@ function __poly_bin_save_descs(_path, _seq, _assets, _nodes) {
       var _layer = _meta.actor[$ "layer"];
       __poly_bin_w_str(_buf, is_string(_layer) && _layer != "" ? _layer : "Instances");
     }
+    var _has_physics = is_struct(_meta[$ "physics"]);
+    buffer_write(_buf, buffer_u8, _has_physics ? 1 : 0);
+    if (_has_physics) __poly_bin_w_str(_buf, json_stringify(_meta.physics));
   }
 
   buffer_write(_buf, buffer_u32, array_length(_nodes));
@@ -161,6 +172,9 @@ function __poly_bin_save_descs(_path, _seq, _assets, _nodes) {
       }
 
       buffer_write(_buf, buffer_u8, (_cast ? 1 : 0) | (_recv ? 2 : 0));
+      var _has_instance_physics = is_struct(_d[$ "physics"]);
+      buffer_write(_buf, buffer_u8, _has_instance_physics ? 1 : 0);
+      if (_has_instance_physics) __poly_bin_w_str(_buf, json_stringify(_d.physics));
     } else if (_kind == "light") {
       var _l = is_struct(_d[$ "light"]) ? _d.light : {};
       var _lt = _l[$ "type"];
@@ -233,12 +247,19 @@ function __poly_bin_load_data(_path) {
 
   var _ver = buffer_read(_buf, buffer_u16);
 
-  if (_ver != 1) {
+  if (_ver != 1 && _ver != 2) {
     buffer_delete(_buf);
     return undefined;
   }
 
   var _seq = buffer_read(_buf, buffer_s32);
+  var _world = __poly_world_defaults();
+  if (_ver >= 2) {
+    _world.gravity = [buffer_read(_buf, buffer_f32), buffer_read(_buf, buffer_f32), buffer_read(_buf, buffer_f32)];
+    _world.fixedTimeStep = buffer_read(_buf, buffer_f32);
+    _world.maxSubSteps = buffer_read(_buf, buffer_u16);
+    _world.maxBodies = buffer_read(_buf, buffer_u16);
+  }
   var _assets = {};
   var _na = buffer_read(_buf, buffer_u16);
 
@@ -252,6 +273,11 @@ function __poly_bin_load_data(_path) {
       var _layer = buffer_read(_buf, buffer_string);
 
       if (_obj != "") _entry.actor = { object: _obj, layer: _layer != "" ? _layer : "Instances" };
+    }
+    if (_ver >= 2 && buffer_read(_buf, buffer_u8) == 1) {
+      var _asset_physics_text = buffer_read(_buf, buffer_string);
+      var _asset_physics_data = json_parse(_asset_physics_text);
+      if (is_struct(_asset_physics_data)) _entry.physics = _asset_physics_data;
     }
 
     if (_key != "") _assets[$ _key] = _entry;
@@ -288,6 +314,11 @@ function __poly_bin_load_data(_path) {
       _desc.assetId = buffer_read(_buf, buffer_string);
       var _bits = buffer_read(_buf, buffer_u8);
       _desc.shadows = { cast: (_bits & 1) != 0, receive: (_bits & 2) != 0 };
+      if (_ver >= 2 && buffer_read(_buf, buffer_u8) == 1) {
+        var _node_physics_text = buffer_read(_buf, buffer_string);
+        var _node_physics_data = json_parse(_node_physics_text);
+        if (is_struct(_node_physics_data)) _desc.physics = _node_physics_data;
+      }
     } else if (_kind == "light") {
       var _lt = buffer_read(_buf, buffer_u8);
       var _col = __poly_bin_r_col(_buf);
@@ -328,7 +359,7 @@ function __poly_bin_load_data(_path) {
     array_push(_nodes, _desc);
   }
 
-  _out = { seq: _seq, assets: _assets, nodes: _nodes };
+  _out = { seq: _seq, assets: _assets, nodes: _nodes, world: _world };
 
   buffer_delete(_buf);
   return _out;

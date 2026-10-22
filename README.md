@@ -22,6 +22,7 @@ Polygon opens inside your running game (press **F1** in the demo), mirrors the l
 **Scene content**
 - Models (prefabs) with per-asset spawn defaults (rotation, scale, shadows)
 - Lights (directional, point), cameras (perspective, ortho) and an environment volume (ambient, fog)
+- Per-instance physics bodies, Box / Sphere / Capsule / Cylinder colliders, character controllers and GM3D collider debug draw (visualization only; no editor simulation)
 - Prefab overrides with per-field **Revert / Apply**
 - Read-only inspection of materials, textures (with sampler state) and animation clips, including a playable animation preview
 
@@ -244,7 +245,17 @@ Notes:
 - **Models**: filterable list or cards of your library. Drag into the viewport to place. Select one to edit its spawn defaults.
 - **Hierarchy**: eye = hide, hand = lock (locked objects cannot be selected). Ctrl+click selects a range, right-click opens the context menu, rubber-band selects rows. The filter button limits types (models, lights, cameras, environment).
 - **Eye menu** (toolbar, next to AA): toggle hidden-objects visibility, skybox and selection outline.
-- **Inspector**: Transform, Light / Camera / Environment, Shadows, Materials, Animations. Prefab instances show an **Overrides** menu to revert or apply rotation, scale and shadow changes.
+- **Inspector**: Transform, Physics, Light / Camera / Environment, Shadows, Materials, Animations. With no object or prefab selected it shows scene-wide Physics World settings. Prefab instances show an **Overrides** menu for supported instance overrides.
+
+### Physics
+
+Select an instance and open **Physics** in the Inspector to choose `static`, `kinematic`, `dynamic`, or `character`, configure its shape and body/controller properties, fit a collider to the model bounds, or clear physics. An instance with no `physics` block is non-physical. Prefab **Physics Defaults** are stored in the top-level `assets` map and affect new spawns and duplicates.
+
+`poly_load` applies each instance's saved `physics` block to its GM3D node; if the instance has no block, it can use that model's physics default from the scene's `assets` metadata. This adds the body/shape or character-controller component, but **does not create or step a `GM3D_PhysicsWorld`**. The game must create its own world after loading, configure it from `job.world` / `_rep.world`, call `syncScene()`, and register characters with `addCharacter()`. Without that game-owned world, the components are present on the nodes but are not simulated. See [Runtime physics setup](#runtime-physics-setup) below.
+
+The toolbar collider button or **P** toggles GM3D's native debug draw. This creates a static debug snapshot for visualization; Polygon does not step a physics world in the editor. The no-selection Inspector state contains scene gravity, fixed time step, max substeps and max bodies. World edits are undoable.
+
+Character controllers use a capsule centered at the wrapper origin. **Visual offset** moves the model child independently; **Recenter visual** derives an initial offset from its model bounds.
 
 ### Creating lights, cameras and environment
 
@@ -273,7 +284,7 @@ on_compose: function(_surf, _w, _h) {
 
 ## Saving and loading scenes
 
-Scenes are saved from **File → Save / Save As** into `working_directory/__PolygonEditor__/scenes/<name>.json` or `<name>.bin`. The save dialog has a **JSON / Binary** radio (no extra modal): Binary is a compact buffer format (`PLYB` magic, `buffer_*` types, no JSON inside) with the same content as JSON v1. **File → Load** shows a search + file list with one row per file (`scene.json` and `scene.bin` listed separately); `poly_load` opens either one.
+Scenes are saved from **File → Save / Save As** into `working_directory/__PolygonEditor__/scenes/<name>.json` or `<name>.bin`. The save dialog has a **JSON / Binary** radio (no extra modal). JSON remains version 1 with optional physics/world fields. Binary uses `PLYB` v2 and reads v1 files; transforms and common fields use `buffer_*` values, while physics blocks are stored as optional JSON strings. **File → Load** shows a search + file list with one row per file (`scene.json` and `scene.bin` listed separately); `poly_load` opens either one.
 
 Load a scene in your game, without the editor, with (always async: parse
 now, spawn chunked — pump every Step, callback on completion):
@@ -286,14 +297,68 @@ assets[$ "models/rock.glb"] = { model: my_model_b, on_create: my_rock_setup };
 
 var job = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", assets, my_on_create, function(_rep) {
   show_debug_message("placed: " + string(_rep.placed) + " failed: " + string(_rep.failed));
+  physicsWorld = new GM3D_PhysicsWorld(my_scene, {
+    maxBodies: _rep.world.maxBodies,
+    fixedTimeStep: _rep.world.fixedTimeStep,
+    maxSubSteps: _rep.world.maxSubSteps,
+  });
+  physicsWorld.setGravity(new GM3D_Vec3(_rep.world.gravity[0], _rep.world.gravity[1], _rep.world.gravity[2]));
+  physicsWorld.syncScene();
+  for (var i = 0; i < array_length(_rep.placements); i++) {
+    var placement = _rep.placements[i];
+    if (is_struct(placement.physics) && placement.physics.mode == "character") physicsWorld.addCharacter(placement.node);
+  }
 });
 // undefined = missing/invalid file. The scene must outlive the load.
 
 // oGame / Step
 poly_load_step(); // advances all pending loads (~48 nodes each frame), returns pending count
-// report = { placed, failed, companions, warnings, placements }
-// placements = [{ node, asset, id, label, model, instance }]
+// report = { placed, failed, companions, warnings, placements, world }
+// placements = [{ node, asset, id, label, model, instance, physics }]
 ```
+
+The scene-wide settings are available as `job.world` immediately and as `_rep.world` in the completion callback. `syncScene()` registers body/shape instances; characters need `addCharacter()` after the sync.
+
+`poly_load` does the per-object work: it creates the GM3D body/shape or character component from the saved instance data and returns the normalized settings in `placement.physics`. It deliberately leaves world ownership and simulation to the caller. If the caller does not create a `GM3D_PhysicsWorld`, loaded physics components remain inactive; loading alone will not make bodies fall or resolve collisions.
+
+### Runtime physics setup
+
+Create the game-owned physics world in the load completion callback, after all scene nodes have been placed. Use the saved `world` values, register the scene's body/shape nodes with `syncScene()`, then register every character controller. Keep the world alive as long as the scene and destroy it before destroying the scene:
+
+```gml
+var physicsWorld;
+
+var job = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", assets, undefined, function(_rep) {
+  physicsWorld = new GM3D_PhysicsWorld(my_scene, {
+    maxBodies: _rep.world.maxBodies,
+    fixedTimeStep: _rep.world.fixedTimeStep,
+    maxSubSteps: _rep.world.maxSubSteps,
+  });
+  physicsWorld.setGravity(new GM3D_Vec3(
+    _rep.world.gravity[0], _rep.world.gravity[1], _rep.world.gravity[2]
+  ));
+  physicsWorld.syncScene();
+
+  for (var i = 0; i < array_length(_rep.placements); i++) {
+    var placement = _rep.placements[i];
+    if (is_struct(placement.physics) && placement.physics.mode == "character") {
+      physicsWorld.addCharacter(placement.node);
+    }
+  }
+});
+```
+
+Pump the asynchronous load from Step until it completes:
+
+```gml
+poly_load_step();
+```
+
+For simulation, use the GM3D lifecycle order: apply input/kinematic changes, call `my_scene.update(dt)`, `physicsWorld.step(dt)`, and `physicsWorld.interpolateForRender()`; render the scene, then call `physicsWorld.restoreSimulationPositions()`. Skip the physics calls if the game does not want simulation. On teardown, destroy `physicsWorld` before `my_scene`.
+
+`job.world` is scene configuration, not a world instance. The editor's collider-debug world is a separate static snapshot used only for visualization; never share it with gameplay. When Polygon is open on a live game scene, pause the game's physics stepping and interpolation until the editor closes, then rebuild or resync the game world from the edited scene as appropriate.
+
+When the editor is open over a live game, pause `step`, interpolation and render-position restoration until it closes. The editor's collider debug world is separate from the game's simulation world.
 
 `poly_load` spawns instances, lights, cameras and environments, preserving node ids. For every instance it calls, in order:
 
@@ -330,8 +395,9 @@ poly_actor_of(node);       // companion instance id bound to a node, or undefine
   "version": 1,
   "seq": 12,
   "assets": {
-    "models/tree.glb": { "type": "model", "actor": { "object": "oTree", "layer": "Actors" } }
+    "models/tree.glb": { "type": "model", "actor": { "object": "oTree", "layer": "Actors" }, "physics": { "mode": "static", "shape": "Box" } }
   },
+  "world": { "gravity": [0, -9.81, 0], "fixedTimeStep": 0.0166667, "maxSubSteps": 4, "maxBodies": 512 },
   "nodes": [
     {
       "kind": "instance",
@@ -343,7 +409,8 @@ poly_actor_of(node);       // companion instance id bound to a node, or undefine
         "rotation": [0, 0, 0, 1],
         "scale": [1, 1, 1]
       },
-      "shadows": { "cast": true, "receive": true }
+      "shadows": { "cast": true, "receive": true },
+      "physics": { "mode": "static", "shape": "Box", "halfExtents": [0.5, 0.5, 0.5], "offset": [0, 0, 0], "mass": 1, "friction": 0.8, "restitution": 0 }
     }
   ]
 }
@@ -351,7 +418,7 @@ poly_actor_of(node);       // companion instance id bound to a node, or undefine
 
 `kind` is one of `instance`, `light`, `camera`, `environment` (the last three carry a `light` / `camera` / `environment` sub-object). The transform lives in `transform: { position, rotation, scale }` (rotation is a quaternion `[x, y, z, w]`). Instances link their model via `assetId`. `label` is an optional custom instance name (F2 in the Hierarchy); without it, the asset file name + id number is shown. Node ids are stable and are what the AI bridge uses.
 
-The Binary variant (`.bin`, magic `PLYB`, version 1) stores the same fields with `buffer_*` types: strings as `buffer_string`, transforms as `f32`, colors as `u8`, flags packed in bits — no JSON inside.
+The Binary variant (`.bin`, magic `PLYB`, version 2) stores scene/world values with `buffer_*` types and optional physics blocks as JSON strings. Version 1 binaries remain readable. JSON scene files stay at `version: 1`; their optional `physics` and `world` fields preserve compatibility with older files.
 
 ---
 
@@ -371,8 +438,8 @@ pointing at the address `127.0.0.1:5192`.
 
 Available tools (23, all prefixed `poly_`):
 
-Inspect: `poly_get_status`, `poly_get_scene_hierarchy`, `poly_get_selection`, `poly_get_object_details`, `poly_get_assets`, `poly_raycast_down`, `poly_take_screenshot`, `poly_capture_views`, `poly_audit_overlaps`, `poly_audit_walkability`.
-Edit: `poly_select_objects`, `poly_focus_object`, `poly_set_camera`, `poly_create_object`, `poly_set_transform`, `poly_rename_object`, `poly_delete_objects`, `poly_save_scene`, `poly_apply_batch`, `poly_drop_to_ground`, `poly_place_on`, `poly_set_visible`, `poly_load_scene`.
+Inspect: `poly_get_status`, `poly_get_scene_hierarchy`, `poly_get_selection`, `poly_get_object_details` (includes physics), `poly_get_assets`, `poly_raycast_down`, `poly_take_screenshot`, `poly_capture_views`, `poly_audit_overlaps`, `poly_audit_walkability`.
+Edit: `poly_select_objects`, `poly_focus_object`, `poly_set_camera`, `poly_create_object` and `poly_set_transform` (optional `physics`), `poly_rename_object`, `poly_delete_objects`, `poly_save_scene`, `poly_apply_batch`, `poly_drop_to_ground`, `poly_place_on`, `poly_set_visible`, `poly_load_scene`.
 
 Details in [`other/mcp-relay/README.md`](other/mcp-relay/README.md).
 

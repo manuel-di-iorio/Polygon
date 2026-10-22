@@ -37,6 +37,7 @@ function __poly_create_rt(_src) {
 // { assetKey: { model, on_create? } }.
 function __poly_create_assets(_src) {
   if (!variable_struct_exists(_src, "assets") || !is_struct(_src.assets)) return;
+  var _ed = __poly_inst();
   var _keys = variable_struct_get_names(_src.assets);
 
   for (var _i = 0, _n = array_length(_keys); _i < _n; _i++) {
@@ -44,7 +45,9 @@ function __poly_create_assets(_src) {
     var _a = _src.assets[$ _k];
 
     if (!is_struct(_a) || _a.model == undefined) continue;
-    poly_asset_add(_a.model, "prefab", _k, _a[$ "on_create"]);
+    var _added = poly_asset_add(_a.model, "prefab", _k, _a[$ "on_create"]);
+    var _entry = __poly_asset_get(_ed, _k);
+    if (_entry != undefined && is_struct(_a[$ "physics"])) _entry.physics_default = __poly_physics_data(_a.physics);
   }
 }
 
@@ -52,6 +55,7 @@ function __poly_create_assets(_src) {
 // Runs on every enable: wrappers with ids are preserved, bare roots get
 // fresh ids. With no live scene (or no live roots), defaults spawn.
 function __poly_import_live(_ed) {
+  __poly_physics_debug_destroy(_ed);
   __poly_drop_preview_clear(_ed);
   var _tracked = __poly_root_tracked(_ed);
 
@@ -404,7 +408,8 @@ function __poly_activate(_ed) {
   __poly_history_clear(_ed);
   _ed.scene_file = "";
   _ed.dirty = false;
-  _ed.open_snapshot = __poly_serialize_scene(_ed);
+  _ed.open_snapshot = { world: __poly_world_data(_ed.world), assets: __poly_write_file_assets(_ed), nodes: __poly_serialize_scene(_ed) };
+  if (_ed.show_colliders == true) __poly_physics_debug_rebuild(_ed);
 }
 
 // Toggles editor active state with setup.
@@ -551,6 +556,7 @@ function __poly_keys_defaults() {
     ],
     pivot: [ { key: ord("Z") } ],
     orient: [ { key: ord("X") } ],
+    colliders: [ { key: ord("P") } ],
     rename: [ { key: vk_f2 } ],
     save: [ { key: vk_control, modifier: true }, { key: ord("S") } ],
     dupe: [ { key: vk_control, modifier: true }, { key: ord("D") } ],
@@ -708,6 +714,9 @@ function __poly_create_state(_rt) {
     snap_z: true,
     show_grid: true,
     show_shadows: true,
+    show_colliders: false,
+    physics_debug_world: undefined,
+    world: __poly_world_defaults(),
     show_unlit: false,
     show_hidden: false,
     vis_sky: true,
@@ -745,7 +754,7 @@ function __poly_step(_ed, _dt) {
   if (__poly_bind_pressed(_keys, "fps")) _ed.show_fps = !_ed.show_fps;
   __poly_view_sync(_ed);
 
-  if (_ed.open_snapshot == undefined && _ed.dirty != true) _ed.open_snapshot = __poly_serialize_scene(_ed);
+  if (_ed.open_snapshot == undefined && _ed.dirty != true) _ed.open_snapshot = { world: __poly_world_data(_ed.world), assets: __poly_write_file_assets(_ed), nodes: __poly_serialize_scene(_ed) };
   // Chunked scene loads progress here (even with the Load dialog open).
   if (variable_struct_exists(_ed, "load_job") && is_struct(_ed.load_job)) __poly_load_scene_pump(_ed);
   var _input = __poly_input_context(_ed, _keys);
@@ -802,7 +811,7 @@ function __poly_drop_preview_spawn(_ed, _asset, _spawn) {
   if (_asset == undefined || _asset.model == undefined) return undefined;
   var _wrap = __poly_spawn(_ed, {
     kind: "instance",
-    asset: _asset,
+    asset: _asset.key,
     model: _asset.model,
     scale: _spawn.sca,
     rot: _spawn.rot,
@@ -837,5 +846,6 @@ function __poly_drop_preview_clear(_ed) {
     _ed.drag_preview = undefined;
 
     if (_ed.rt != undefined && _ed.rt.scene != undefined) _ed.rt.scene.update(0);
+    __poly_physics_debug_rebuild(_ed);
   }
 }

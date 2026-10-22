@@ -176,6 +176,7 @@ function __poly_imgui_asset_secs(_ed, _node, _en) {
   __poly_imgui_sec_open();
 
   if (ImGui.CollapsingHeader("Shadows")) __poly_imgui_asset_sec(_ed, _node, _en);
+  __poly_imgui_physics_sec(_ed, _node, _en);
   ImGui.Spacing();
   __poly_imgui_sec_open();
 
@@ -295,6 +296,7 @@ function __poly_imgui_inspector(_ed) {
     } else {
       ImGui.TextDisabled("No selection");
       ImGui.Text("Click an object or drag a model in.");
+      __poly_imgui_world_sec(_ed);
     }
   } else if (__poly_imgui_sel_body(_ed, _n)) {
     return;

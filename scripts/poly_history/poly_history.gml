@@ -20,6 +20,7 @@ function __poly_history_stacks(_ed) {
 // Captures current scene and selection as snapshot.
 function __poly_history_snap(_ed) {
   var _nodes = __poly_serialize_scene(_ed);
+  var _scene = { world: __poly_world_data(_ed.world), assets: __poly_write_file_assets(_ed), nodes: _nodes };
   var _sel = [];
 
   for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++) {
@@ -28,7 +29,7 @@ function __poly_history_snap(_ed) {
     if (_desc != undefined) array_push(_sel, _desc);
   }
 
-  return { json: json_stringify(_nodes), sel: _sel };
+  return { json: json_stringify(_scene), sel: _sel };
 }
 
 // Pushes prior snapshot onto undo stack.
@@ -148,7 +149,7 @@ function __poly_history_peek(_stack) {
   var _entry = _stack[array_length(_stack) - 1];
   var _data = json_parse(_entry.json);
 
-  if (!is_array(_data)) return undefined;
+  if (!is_struct(_data) || !is_array(_data[$ "nodes"])) return undefined;
   return { entry: _entry, data: _data };
 }
 

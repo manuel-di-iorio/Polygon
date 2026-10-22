@@ -418,12 +418,19 @@ function __poly_ai_v_create(_ed, _p) {
   return __poly_ai_v_vec3(_p, "position", true, "position ([x, y, z] numbers) required", undefined)
     ?? __poly_ai_v_vec3(_p, "rotation", false, undefined, "rotation must be [rx, ry, rz] euler degrees")
     ?? __poly_ai_v_vec3(_p, "scale", false, undefined, "scale must be [sx, sy, sz] numbers")
+    ?? __poly_ai_v_physics(_p)
     ?? __poly_ai_v_num(_p, "base_y", "base_y must be a number (world bottom Y)")
     ?? __poly_ai_v_idstr(_p, "on_top_of", "on_top_of must be a node id string")
     ?? __poly_ai_v_num(_p, "gap", "gap must be a number")
     ?? __poly_ai_v_exclusive(_p)
     ?? __poly_ai_v_asset(_ed, _p)
     ?? __poly_ai_v_onsupport(_ed, _p);
+}
+
+function __poly_ai_v_physics(_p) {
+  if (!variable_struct_exists(_p, "physics")) return undefined;
+  if (!__poly_physics_validate(_p.physics)) return "physics must be a valid physics settings object";
+  return undefined;
 }
 
 // Rejects base_y + on_top_of together.
@@ -458,12 +465,13 @@ function __poly_ai_v_transform(_ed, _p) {
   return __poly_ai_v_vec3(_p, "position", false, undefined, "position must be [x, y, z] numbers")
     ?? __poly_ai_v_vec3(_p, "rotation", false, undefined, "rotation must be [rx, ry, rz] euler degrees")
     ?? __poly_ai_v_vec3(_p, "scale", false, undefined, "scale must be [sx, sy, sz] numbers")
+    ?? __poly_ai_v_physics(_p)
     ?? __poly_ai_v_node(_ed, _p);
 }
 
 // Requires one of position/rotation/scale.
 function __poly_ai_v_oneof(_p) {
-  if (!variable_struct_exists(_p, "position") && !variable_struct_exists(_p, "rotation") && !variable_struct_exists(_p, "scale")) return "one of position/rotation/scale required";
+  if (!variable_struct_exists(_p, "position") && !variable_struct_exists(_p, "rotation") && !variable_struct_exists(_p, "scale") && !variable_struct_exists(_p, "physics")) return "one of position/rotation/scale/physics required";
   return undefined;
 }
 
@@ -963,6 +971,12 @@ function __poly_ai_op_create(_ed, _p, _commit) {
 
   if (_node == undefined) return __poly_ai_err("failed", "spawn failed for asset: " + _p.asset);
   __poly_spawn_shadow_apply(_ed, _entry, _node);
+  if (variable_struct_exists(_p, "physics")) {
+    var _physics_en = __poly_registry_find(_ed, _node);
+    if (_physics_en != undefined) _physics_en.data.physics = __poly_physics_data(_p.physics);
+    __poly_physics_debug_destroy(_ed);
+    __poly_physics_apply(_node, _p.physics);
+  }
   _ed.rt.scene.update(0);
 
   // Resting correction (measured, not guessed).
@@ -998,9 +1012,11 @@ function __poly_ai_op_create(_ed, _p, _commit) {
 
   var _en = __poly_registry_find(_ed, _node);
   __poly_sel_assign(_ed, [ _node ]);
+  __poly_physics_debug_rebuild(_ed);
 
   if (_commit) __poly_history_commit(_ed, _before);
   var _res = { id: _en != undefined ? _en.id : _node.name, label: __poly_node_display(_ed, _node, _en) };
+  if (variable_struct_exists(_p, "physics")) _res.physics = __poly_physics_data(_p.physics);
 
   if (is_struct(_bounds) && _bounds.valid == true) _res.bounds = _bounds;
   return _res;
@@ -1359,6 +1375,7 @@ function __poly_ai_op_transform(_ed, _p, _commit) {
   var _has_pos = variable_struct_exists(_p, "position");
   var _has_rot = variable_struct_exists(_p, "rotation");
   var _has_sca = variable_struct_exists(_p, "scale");
+  var _has_physics = variable_struct_exists(_p, "physics");
   var _node = __poly_ai_node(_ed, _p.id);
 
   if (__poly_locked_get(_ed, _node)) return __poly_ai_err("locked", "node is locked: " + _p.id);
@@ -1367,10 +1384,19 @@ function __poly_ai_op_transform(_ed, _p, _commit) {
   if (_has_pos) _node.setLocalPosition(new GM3D_Vec3(_p.position[0], _p.position[1], _p.position[2]));
   if (_has_rot) _node.setLocalRotation(__poly_euler_to_quat(degtorad(_p.rotation[0]), degtorad(_p.rotation[1]), degtorad(_p.rotation[2])));
   if (_has_sca) _node.setLocalScale(new GM3D_Vec3(max(_p.scale[0], 0.01), max(_p.scale[1], 0.01), max(_p.scale[2], 0.01)));
+  if (_has_physics) {
+    var _physics_en = __poly_registry_find(_ed, _node);
+    if (_physics_en != undefined) _physics_en.data.physics = __poly_physics_data(_p.physics);
+    __poly_physics_debug_destroy(_ed);
+    __poly_physics_apply(_node, _p.physics);
+  }
   _ed.rt.scene.update(0);
+  __poly_physics_debug_rebuild(_ed);
 
   if (_commit) __poly_history_commit(_ed, _before);
-  return { id: _p.id, transform: __poly_ai_transform_of(_node) };
+  var _result = { id: _p.id, transform: __poly_ai_transform_of(_node) };
+  if (_has_physics) _result.physics = __poly_physics_data(_p.physics);
+  return _result;
 }
 
 function __poly_ai_op_rename(_ed, _p, _commit) {
@@ -1415,6 +1441,7 @@ function __poly_ai_op_delete(_ed, _p, _commit) {
   var _before = _commit ? __poly_history_snap(_ed) : undefined;
   var _ids = [];
   var _kept = [];
+  __poly_physics_debug_destroy(_ed);
 
   for (var _k = 0, _nk = array_length(_ed.sel); _k < _nk; _k++) {
     var _dead = false;
@@ -1439,6 +1466,7 @@ function __poly_ai_op_delete(_ed, _p, _commit) {
 
   _ed.rt.scene.update(0);
   __poly_sel_assign(_ed, _kept);
+  __poly_physics_debug_rebuild(_ed);
 
   if (_commit) __poly_history_commit(_ed, _before);
   return { deleted: _ids };

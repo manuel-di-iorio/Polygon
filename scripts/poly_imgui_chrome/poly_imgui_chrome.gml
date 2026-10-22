@@ -75,6 +75,13 @@ function __poly_imgui_toolbar(_ed) {
   }
 
   ImGui.SameLine();
+  if (__poly_imgui_icon_btn("##tb_colliders", "Show collider debug (on/off) [P]", _ed.show_colliders == true, "Co", "", 15, 15)) {
+    _ed.show_colliders = !_ed.show_colliders;
+    if (_ed.show_colliders) __poly_physics_debug_rebuild(_ed); else __poly_physics_debug_destroy(_ed);
+    _ed.view_dirty = true;
+  }
+
+  ImGui.SameLine();
   __poly_imgui_grid_snap(_ed);
   __poly_toolbar_sep();
 
