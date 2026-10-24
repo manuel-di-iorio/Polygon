@@ -105,14 +105,16 @@ function __poly_imgui_toolbar(_ed) {
       _ed.view_dirty = true;
     }
 
-    var _vc = ImGui.Checkbox("Colliders", _ed.show_colliders == true);
+    if (_ed.physics_enabled) {
+      var _vc = ImGui.Checkbox("Colliders", _ed.show_colliders == true);
 
-    if (ImGui.IsItemHovered()) ImGui.SetTooltip("Click to toggle collider debug visibility");
+      if (ImGui.IsItemHovered()) ImGui.SetTooltip("Click to toggle collider debug visibility");
 
-    if (_vc != (_ed.show_colliders == true)) {
-      _ed.show_colliders = _vc;
-      if (_ed.show_colliders) __poly_physics_debug_rebuild(_ed); else __poly_physics_debug_destroy(_ed);
-      _ed.view_dirty = true;
+      if (_vc != (_ed.show_colliders == true)) {
+        _ed.show_colliders = _vc;
+        if (_ed.show_colliders) __poly_physics_debug_rebuild(_ed); else __poly_physics_debug_destroy(_ed);
+        _ed.view_dirty = true;
+      }
     }
 
     var _vh = ImGui.Checkbox("Hidden objects", _ed.show_hidden);

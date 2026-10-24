@@ -479,6 +479,7 @@ function __poly_rebuild(_ed, _nodes) {
   if (is_struct(_nodes)) _nodes = _nodes[$ "nodes"];
   if (!is_array(_nodes)) _nodes = [];
   _ed.world = __poly_world_data(_world);
+  _ed.physics_enabled = _ed.world.physics_enabled == true;
   __poly_physics_prefab_meta_sync(_ed);
   _ed.unlit_quiet = false;
   var _report = { placed: 0, failed: 0, err: "" };

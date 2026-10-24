@@ -103,6 +103,7 @@ function __poly_imgui_physics_float(_ed, _node, _en, _data, _field, _label, _spe
 }
 
 function __poly_imgui_physics_sec(_ed, _node, _en) {
+  if (!_ed.physics_enabled) return;
   if (!is_struct(_en.data)) _en.data = __poly_flags_read(_node);
   if (!variable_struct_exists(_en.data, "physics") || !is_struct(_en.data[$ "physics"])) _en.data.physics = __poly_physics_defaults();
   var _d = __poly_physics_data(_en.data.physics);
@@ -362,6 +363,7 @@ function __poly_physics_multi_apply(_ed, _nodes, _field, _value) {
 // across the selection show as "Mixed"; editing them applies to every
 // selected instance.
 function __poly_imgui_physics_multi_sec(_ed, _nodes) {
+  if (!_ed.physics_enabled) return;
   var _count = 0;
   var _mode = undefined;
   var _layer = undefined;
@@ -432,7 +434,13 @@ function __poly_imgui_world_sec(_ed) {
   ImGui.Spacing();
   __poly_imgui_sec_open();
   if (!ImGui.CollapsingHeader("Physics World")) return;
-  ImGui.TextDisabled("Scene-wide physics defaults");
+  var _pe = ImGui.Checkbox("Enable Physics", _ed.physics_enabled == true);
+  __poly_imgui_physics_tip("Master switch for the physics editor: shows Physics World settings and per-object Physics sections.");
+  if (_pe != (_ed.physics_enabled == true)) {
+    __poly_world_ui_change(_ed, "physics_enabled", _pe);
+    _ed.physics_enabled = _pe;
+  }
+  if (!_ed.physics_enabled) return;
   var _axis = ["X", "Y", "Z"];
   for (var _i = 0; _i < 3; _i++) {
     var _nv = __poly_imgui_prop_float(_ed, "world_gravity_" + _axis[_i], "Gravity " + _axis[_i], _d.gravity[_i], 120);
@@ -452,6 +460,8 @@ function __poly_imgui_world_sec(_ed) {
   if (ImGui.CollapsingHeader("Layer collision")) {
     var _lnames = ["St", "Df", "Ch", "Tr", "Db"];
     var _full = ["Static", "Default", "Character", "Trigger", "Debris"];
+    ImGui.TextDisabled("Uncheck a cell to disable collision");
+    ImGui.TextDisabled("between two layers.");
     // header row
     ImGui.Text("   ");
     for (var _j = 0; _j < 5; _j++) { ImGui.SameLine(30 + _j * 26); ImGui.Text(_lnames[_j]); if (ImGui.IsItemHovered()) ImGui.SetTooltip(_full[_j]); }
@@ -740,6 +750,7 @@ function __poly_imgui_spawn_sec(_ed, _entry) {
 }
 
 function __poly_imgui_prefab_physics(_ed, _entry) {
+  if (!_ed.physics_enabled) return;
   if (!is_struct(_ed.asset_meta)) _ed.asset_meta = {};
   var _meta = variable_struct_exists(_ed.asset_meta, _entry.key) ? _ed.asset_meta[$ _entry.key] : undefined;
   if (!is_struct(_entry[$ "physics_default"])) _entry.physics_default = is_struct(_meta) && is_struct(_meta[$ "physics"]) ? __poly_physics_data(_meta.physics) : __poly_physics_defaults();

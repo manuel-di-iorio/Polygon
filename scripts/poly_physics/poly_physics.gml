@@ -35,7 +35,7 @@ function __poly_physics_defaults() {
 function __poly_world_defaults() {
   var _lc = [];
   for (var _i = 0; _i < 5; _i++) { var _r = []; for (var _j = 0; _j < 5; _j++) array_push(_r, true); array_push(_lc, _r); }
-  return { gravity: [0.0, -9.81, 0.0], fixedTimeStep: 1.0 / 60.0, maxSubSteps: 4, maxBodies: 512, layerCollision: _lc };
+  return { gravity: [0.0, -9.81, 0.0], fixedTimeStep: 1.0 / 60.0, maxSubSteps: 4, maxBodies: 512, layerCollision: _lc, physics_enabled: false };
 }
 
 function __poly_physics_copy3(_a) {
@@ -338,6 +338,7 @@ function __poly_world_data(_source) {
   if (variable_struct_exists(_source, "fixedTimeStep") && is_real(_source.fixedTimeStep)) _out.fixedTimeStep = clamp(_source.fixedTimeStep, 0.001, 1.0);
   if (variable_struct_exists(_source, "maxSubSteps") && is_real(_source.maxSubSteps)) _out.maxSubSteps = clamp(round(_source.maxSubSteps), 1, 64);
   if (variable_struct_exists(_source, "maxBodies") && is_real(_source.maxBodies)) _out.maxBodies = clamp(round(_source.maxBodies), 1, 65535);
+  if (variable_struct_exists(_source, "physics_enabled")) _out.physics_enabled = _source.physics_enabled == true;
   // layerCollision: 5x5 bool matrix (default all true).
   var _lc = [];
   for (var _i = 0; _i < 5; _i++) {

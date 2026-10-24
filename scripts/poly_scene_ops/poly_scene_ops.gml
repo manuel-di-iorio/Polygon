@@ -89,6 +89,7 @@ function __poly_new_scene(_ed) {
   __poly_history_clear(_ed);
   _ed.asset_meta = {};
   _ed.world = __poly_world_defaults();
+  _ed.physics_enabled = false;
   _ed.dirty = false;
   _ed.drag_lib = undefined;
   _ed.drag_moved = false;

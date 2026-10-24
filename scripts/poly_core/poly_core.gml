@@ -401,6 +401,7 @@ function __poly_activate(_ed) {
   __poly_view_save(_ed);
   __poly_view_sync(_ed);
   __poly_import_live(_ed);
+  _ed.physics_enabled = is_struct(_ed.world) && _ed.world.physics_enabled == true;
   __poly_bg_apply(_ed);
   __poly_grid_ensure(_ed);
   __poly_cameras_mute(_ed);
@@ -718,6 +719,7 @@ function __poly_create_state(_rt) {
     show_unlit: false,
     show_hidden: false,
     show_gizmo: true,
+    physics_enabled: false,
     vis_sky: true,
     vis_outline: true,
     unlit_quiet: false,
