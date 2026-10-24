@@ -1,0 +1,46 @@
+#!/bin/sh
+#
+# Rebuild editor.yymps before every commit, staging the refreshed package
+# into the same commit. This avoids a separate "chore: rebuild editor.yymps"
+# commit being created on push.
+#
+# See other/tools/pack_yymps.ps1 for the rebuild itself.
+#
+# Skip with:            POLYGON_SKIP_PACK=1 git commit
+# Bypass all hooks with: git commit --no-verify
+
+root=$(git rev-parse --show-toplevel) || exit 0
+script="$root/other/tools/pack_yymps.ps1"
+
+[ -z "$POLYGON_SKIP_PACK" ] || exit 0
+[ -f "$script" ] || exit 0
+
+if command -v pwsh >/dev/null 2>&1; then
+  ps=pwsh
+elif command -v powershell >/dev/null 2>&1; then
+  ps=powershell
+else
+  echo "pre-commit: PowerShell not found, editor.yymps not rebuilt" >&2
+  exit 0
+fi
+
+"$ps" -NoProfile -ExecutionPolicy Bypass -File "$script"
+code=$?
+
+# pack_yymps.ps1: 0 = up to date, 2 = rewritten, 3 = skipped, 1 = error.
+case "$code" in
+  0|2)
+    # If the package was rewritten, stage it so it lands in this commit.
+    if [ -n "$(git status --porcelain -- editor.yymps)" ]; then
+      git add -- editor.yymps >/dev/null 2>&1
+    fi
+    ;;
+  3)
+    echo "pre-commit: rebuild of editor.yymps skipped (ProjectTool/PowerShell not available)." >&2
+    ;;
+  *)
+    echo "pre-commit: pack_yymps returned an error (exit $code), editor.yymps not updated." >&2
+    ;;
+esac
+
+exit 0

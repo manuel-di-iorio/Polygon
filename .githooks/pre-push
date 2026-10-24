@@ -30,18 +30,10 @@ code=$?
 # pack_yymps.ps1: 0 = up to date, 2 = rewritten, 3 = skipped, 1 = error.
 case "$code" in
   0|2)
-    # The package on disk is fresh. If it differs from the committed one, save
-    # it in its own commit: this push already goes through, the next one ships
-    # it. We never block.
+    # The package on disk is fresh. Since pre-commit already rebuilds and
+    # stages it, nothing more to do here. Just warn if it is somehow stale.
     if [ -n "$(git status --porcelain -- editor.yymps)" ]; then
-      if [ -d "$root/.git/rebase-merge" ] || [ -d "$root/.git/rebase-apply" ] || \
-         [ -n "$(git rev-parse -q --verify MERGE_HEAD 2>/dev/null)" ]; then
-        echo "pre-push: editor.yymps updated, but a merge/rebase is in progress: commit it manually." >&2
-      elif git commit -m "chore: rebuild editor.yymps" -- editor.yymps >/dev/null 2>&1; then
-        echo "pre-push: editor.yymps was obsolete -> commit 'chore: rebuild editor.yymps' (will be included in the next push)." >&2
-      else
-        echo "pre-push: editor.yymps updated but not committed (git add editor.yymps)." >&2
-      fi
+      echo "pre-push: editor.yymps is stale; run 'git add editor.yymps' or commit again." >&2
     fi
     ;;
   3)
