@@ -274,7 +274,6 @@ function __poly_outline_walk_apply(_ed, _o) {
 // Wanted mask size this frame: pass size when the scratch is ready,
 // scene size as fallback (keeps every 3D pass of the frame uniform).
 function __poly_mask_want(_ed) {
-  if (_ed.hi_ready) return __poly_pass_size(_ed);
   return [ max(1, round(_ed.scene_w)), max(1, round(_ed.scene_h)) ];
 }
 
@@ -431,10 +430,7 @@ function __poly_outline_capture(_ed) {
   if (_o == undefined) return;
   if (_ed.rt == undefined || _ed.rt.scene == undefined || _ed.renderer == undefined) return;
   __poly_outline_ensure_fields(_o);
-  // Mask follows the common offscreen pass scale (SSAA): mixed 3D
-  // resolutions in one frame invalidate the whole submit. Thickness
-  // compensation in the composite already handles arbitrary scales.
-  _o.scale = __poly_pass_scale(_ed);
+  _o.scale = 1;
   __poly_outline_warmup(_ed, _o);
 
   // Selection size for the idle fast path below.

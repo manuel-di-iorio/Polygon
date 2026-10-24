@@ -249,12 +249,8 @@ function __poly_gpupick_begin(_ed, _g) {
     _w = _ed.scene_w;
     _h = _ed.scene_h;
 
-    // Pick at the common offscreen pass size: mixed 3D resolutions in
-    // one frame invalidate the whole submit. Coordinates scale via
-    // __poly_gpupick_to_surf, so picking stays exact at any size.
-    var _ps = __poly_pass_size(_ed);
-    _w = _ps[0];
-    _h = _ps[1];
+    _w = _ed.scene_w;
+    _h = _ed.scene_h;
   }
 
   if (!__poly_gpupick_surf(_ed, _g, _w, _h)) {

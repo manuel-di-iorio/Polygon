@@ -79,21 +79,7 @@ function __poly_imgui_toolbar(_ed) {
 
   // if (__poly_imgui_icon_btn("##tb_home", "Reset camera to the initial view", false, "Hm", "sprPolygonEditorIconCenter", 15, 15)) __poly_cam_home(_ed, true);
   // ImGui.SameLine();
-  // AA combo (disabled): default is no AA.
-  // ImGui.SetNextItemWidth(86);
-  // var _aa = __poly_aa_mode(_ed);
-  // var _aa_label = _aa == "off" ? "AA Off" : (_aa == "fxaa" ? "FXAA" : (_aa == "smaa" ? "SMAA" : "SSAA"));
-  //
-  // if (!ImGui.BeginCombo("##aa_mode", _aa_label)) {
-  //   if (ImGui.IsItemHovered()) ImGui.SetTooltip("Viewport antialiasing");
-  // } else {
-  //   if (ImGui.Selectable("AA Off", _aa == "off", 0, 0, 0)) __poly_aa_set(_ed, "off");
-  //   if (ImGui.Selectable("FXAA", _aa == "fxaa", 0, 0, 0)) __poly_aa_set(_ed, "fxaa");
-  //   if (ImGui.Selectable("SMAA", _aa == "smaa", 0, 0, 0)) __poly_aa_set(_ed, "smaa");
-  //   if (ImGui.Selectable("SSAA", _aa == "ssaa", 0, 0, 0)) __poly_aa_set(_ed, "ssaa");
-  //   ImGui.EndCombo();
-  // }
-
+  // AA removed.
   ImGui.SameLine();
   __poly_vis_defaults(_ed);
 

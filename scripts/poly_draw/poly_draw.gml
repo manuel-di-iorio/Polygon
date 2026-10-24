@@ -39,7 +39,7 @@ function poly_draw() {
     // below (pick, mask, main) must share it, or mixed resolutions in one
     // frame invalidate the whole submit. Ensures (and progressively
     // creates) the scratch surface as a side effect.
-    _ed.hi_ready = __poly_hi_ready(_ed);
+    _ed.hi_ready = true;
     __poly_thumbs_pump(_ed);
     __poly_mat_queue_pump(_ed);
     __poly_anim_pv_tick(_ed, delta_time * 0.000001);
