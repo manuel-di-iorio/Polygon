@@ -20,7 +20,7 @@ function __poly_history_stacks(_ed) {
 // Captures current scene and selection as snapshot.
 function __poly_history_snap(_ed) {
   var _nodes = __poly_serialize_scene(_ed);
-  var _scene = { world: __poly_world_data(_ed.world), assets: __poly_write_file_assets(_ed), nodes: _nodes };
+  var _scene = { physics: __poly_world_data(_ed.world), assets: __poly_write_file_assets(_ed), nodes: _nodes };
   var _sel = [];
 
   for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++) {

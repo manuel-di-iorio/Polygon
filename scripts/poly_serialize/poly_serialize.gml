@@ -474,12 +474,12 @@ function __poly_rebuild_restore_states(_ed, _states) {
 
 // Clears scene and rebuilds from descriptors.
 function __poly_rebuild(_ed, _nodes) {
-  var _world = is_struct(_nodes) ? _nodes[$ "world"] : undefined;
+  var _world = is_struct(_nodes) ? _nodes[$ "physics"] : undefined;
   if (is_struct(_nodes) && is_struct(_nodes[$ "assets"])) _ed.asset_meta = _nodes.assets;
   if (is_struct(_nodes)) _nodes = _nodes[$ "nodes"];
   if (!is_array(_nodes)) _nodes = [];
   _ed.world = __poly_world_data(_world);
-  _ed.physics_enabled = _ed.world.physics_enabled == true;
+  _ed.physics_enabled = _ed.world.enabled == true;
   __poly_physics_prefab_meta_sync(_ed);
   _ed.unlit_quiet = false;
   var _report = { placed: 0, failed: 0, err: "" };
@@ -556,7 +556,7 @@ function __poly_load_data_file(_abs) {
   var _ok = is_struct(_data) && _data.version == 1 && variable_struct_exists(_data, "nodes") && is_array(_data.nodes);
 
   if (!_ok) return undefined;
-  return { seq: _data[$ "seq"], assets: _data[$ "assets"], nodes: _data.nodes, world: _data[$ "world"] };
+  return { seq: _data[$ "seq"], assets: _data[$ "assets"], nodes: _data.nodes, physics: _data[$ "physics"] };
 }
 
 // Starts a chunked scene load: parses now, places nodes across steps so
@@ -592,7 +592,8 @@ function __poly_load_scene_begin(_ed) {
   _ed.unlit_quiet = true;
   _ed.asset_meta = __poly_file_assets(_file);
   __poly_physics_prefab_meta_sync(_ed);
-  _ed.world = __poly_world_data(_file[$ "world"]);
+  _ed.world = __poly_world_data(_file[$ "physics"]);
+  _ed.physics_enabled = _ed.world.enabled == true;
   __poly_history_clear(_ed);
   _ed.load_job = { nodes: _nodes, idx: 0, report: { placed: 0, failed: 0, err: "" }, states: _states };
   return "";
@@ -786,7 +787,7 @@ function __poly_save_scene(_ed) {
   if (__poly_scene_fmt_of(_path) == "bin") {
     if (!__poly_bin_save_descs(_path, _ed.id_seq, _assets, _nodes, _ed.world)) return false;
   } else {
-    var _json = __poly_json_stringify_ordered({ version: 1, seq: _ed.id_seq, assets: _assets, world: __poly_world_data(_ed.world), nodes: _nodes }, true, 100);
+    var _json = __poly_json_stringify_ordered({ version: 1, seq: _ed.id_seq, assets: _assets, physics: __poly_world_data(_ed.world), nodes: _nodes }, true, 100);
 
     if (!__poly_write_text_file(_path, _json)) return false;
   }

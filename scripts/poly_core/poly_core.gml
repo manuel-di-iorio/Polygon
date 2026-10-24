@@ -401,7 +401,7 @@ function __poly_activate(_ed) {
   __poly_view_save(_ed);
   __poly_view_sync(_ed);
   __poly_import_live(_ed);
-  _ed.physics_enabled = is_struct(_ed.world) && _ed.world.physics_enabled == true;
+  _ed.physics_enabled = is_struct(_ed.world) && _ed.world.enabled == true;
   __poly_bg_apply(_ed);
   __poly_grid_ensure(_ed);
   __poly_cameras_mute(_ed);
@@ -410,7 +410,7 @@ function __poly_activate(_ed) {
   __poly_history_clear(_ed);
   _ed.scene_file = "";
   _ed.dirty = false;
-  _ed.open_snapshot = { world: __poly_world_data(_ed.world), assets: __poly_write_file_assets(_ed), nodes: __poly_serialize_scene(_ed) };
+  _ed.open_snapshot = { physics: __poly_world_data(_ed.world), assets: __poly_write_file_assets(_ed), nodes: __poly_serialize_scene(_ed) };
   if (_ed.show_colliders == true) __poly_physics_debug_rebuild(_ed);
 }
 
@@ -755,7 +755,7 @@ function __poly_step(_ed, _dt) {
   if (__poly_bind_pressed(_keys, "fps")) _ed.show_fps = !_ed.show_fps;
   __poly_view_sync(_ed);
 
-  if (_ed.open_snapshot == undefined && _ed.dirty != true) _ed.open_snapshot = { world: __poly_world_data(_ed.world), assets: __poly_write_file_assets(_ed), nodes: __poly_serialize_scene(_ed) };
+  if (_ed.open_snapshot == undefined && _ed.dirty != true) _ed.open_snapshot = { physics: __poly_world_data(_ed.world), assets: __poly_write_file_assets(_ed), nodes: __poly_serialize_scene(_ed) };
   // Chunked scene loads progress here (even with the Load dialog open).
   if (variable_struct_exists(_ed, "load_job") && is_struct(_ed.load_job)) __poly_load_scene_pump(_ed);
   var _input = __poly_input_context(_ed, _keys);

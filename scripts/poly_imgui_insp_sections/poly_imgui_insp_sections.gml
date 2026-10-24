@@ -437,7 +437,7 @@ function __poly_imgui_world_sec(_ed) {
   var _pe = ImGui.Checkbox("Enable Physics", _ed.physics_enabled == true);
   __poly_imgui_physics_tip("Master switch for the physics editor: shows Physics World settings and per-object Physics sections.");
   if (_pe != (_ed.physics_enabled == true)) {
-    __poly_world_ui_change(_ed, "physics_enabled", _pe);
+    __poly_world_ui_change(_ed, "enabled", _pe);
     _ed.physics_enabled = _pe;
   }
   if (!_ed.physics_enabled) return;

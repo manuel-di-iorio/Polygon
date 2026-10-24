@@ -359,7 +359,7 @@ function __poly_bin_load_data(_path) {
     array_push(_nodes, _desc);
   }
 
-  _out = { seq: _seq, assets: _assets, nodes: _nodes, world: _world };
+  _out = { seq: _seq, assets: _assets, nodes: _nodes, physics: _world };
 
   buffer_delete(_buf);
   return _out;

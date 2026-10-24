@@ -255,7 +255,7 @@ Select an instance and open **Physics** in the Inspector to choose `static`, `ki
 With several instances selected, the Inspector shows a shared **Physics** section for the common `Mode`, `Layer` and `Mass` fields. Values that differ across the selection read **Mixed**; editing a field applies it to every selected instance as one undo step.
 
 
-`poly_load` applies each instance's saved `physics` block to its GM3D node; if the instance has no block, it can use that model's physics default from the scene's `assets` metadata. This adds the body/shape or character-controller component, but **does not create or step a `GM3D_PhysicsWorld`**. The game must create its own world after loading, configure it from `job.world` / `_rep.world`, call `syncScene()`, and register characters with `addCharacter()`. Without that game-owned world, the components are present on the nodes but are not simulated. See [Runtime physics setup](#runtime-physics-setup) below.
+`poly_load` applies each instance's saved `physics` block to its GM3D node; if the instance has no block, it can use that model's physics default from the scene's `assets` metadata. This adds the body/shape or character-controller component, but **does not create or step a `GM3D_PhysicsWorld`**. The game must create its own world after loading, configure it from `job.physics` / `_rep.physics`, call `syncScene()`, and register characters with `addCharacter()`. Without that game-owned world, the components are present on the nodes but are not simulated. See [Runtime physics setup](#runtime-physics-setup) below.
 
 The toolbar collider button or **P** toggles GM3D's native debug draw. This creates a static debug snapshot for visualization; Polygon does not step a physics world in the editor. The no-selection Inspector state contains scene gravity, fixed time step, max substeps and max bodies. World edits are undoable.
 
@@ -306,11 +306,11 @@ assets[$ "models/rock.glb"] = { model: my_model_b, on_create: my_rock_setup };
 var job = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", assets, my_on_create, function(_rep) {
   show_debug_message("placed: " + string(_rep.placed) + " failed: " + string(_rep.failed));
   physicsWorld = new GM3D_PhysicsWorld(my_scene, {
-    maxBodies: _rep.world.maxBodies,
-    fixedTimeStep: _rep.world.fixedTimeStep,
-    maxSubSteps: _rep.world.maxSubSteps,
+    maxBodies: _rep.physics.maxBodies,
+    fixedTimeStep: _rep.physics.fixedTimeStep,
+    maxSubSteps: _rep.physics.maxSubSteps,
   });
-  physicsWorld.setGravity(new GM3D_Vec3(_rep.world.gravity[0], _rep.world.gravity[1], _rep.world.gravity[2]));
+  physicsWorld.setGravity(new GM3D_Vec3(_rep.physics.gravity[0], _rep.physics.gravity[1], _rep.physics.gravity[2]));
   physicsWorld.syncScene();
   for (var i = 0; i < array_length(_rep.placements); i++) {
     var placement = _rep.placements[i];
@@ -325,7 +325,7 @@ poly_load_step(); // advances all pending loads (~48 nodes each frame), returns 
 // placements = [{ node, asset, id, label, model, instance, physics }]
 ```
 
-The scene-wide settings are available as `job.world` immediately and as `_rep.world` in the completion callback. `syncScene()` registers body/shape instances; characters need `addCharacter()` after the sync.
+The scene-wide settings are available as `job.physics` immediately and as `_rep.physics` in the completion callback. `syncScene()` registers body/shape instances; characters need `addCharacter()` after the sync.
 
 `poly_load` does the per-object work: it creates the GM3D body/shape or character component from the saved instance data and returns the normalized settings in `placement.physics`. It deliberately leaves world ownership and simulation to the caller. If the caller does not create a `GM3D_PhysicsWorld`, loaded physics components remain inactive; loading alone will not make bodies fall or resolve collisions.
 
@@ -338,12 +338,12 @@ var physicsWorld;
 
 var job = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", assets, undefined, function(_rep) {
   physicsWorld = new GM3D_PhysicsWorld(my_scene, {
-    maxBodies: _rep.world.maxBodies,
-    fixedTimeStep: _rep.world.fixedTimeStep,
-    maxSubSteps: _rep.world.maxSubSteps,
+    maxBodies: _rep.physics.maxBodies,
+    fixedTimeStep: _rep.physics.fixedTimeStep,
+    maxSubSteps: _rep.physics.maxSubSteps,
   });
   physicsWorld.setGravity(new GM3D_Vec3(
-    _rep.world.gravity[0], _rep.world.gravity[1], _rep.world.gravity[2]
+    _rep.physics.gravity[0], _rep.physics.gravity[1], _rep.physics.gravity[2]
   ));
   physicsWorld.syncScene();
 
@@ -364,7 +364,7 @@ poly_load_step();
 
 For simulation, use the GM3D lifecycle order: apply input/kinematic changes, call `my_scene.update(dt)`, `physicsWorld.step(dt)`, and `physicsWorld.interpolateForRender()`; render the scene, then call `physicsWorld.restoreSimulationPositions()`. Skip the physics calls if the game does not want simulation. On teardown, destroy `physicsWorld` before `my_scene`.
 
-`job.world` is scene configuration, not a world instance. The editor's collider-debug world is a separate static snapshot used only for visualization; never share it with gameplay. When Polygon is open on a live game scene, pause the game's physics stepping and interpolation until the editor closes, then rebuild or resync the game world from the edited scene as appropriate.
+`job.physics` is scene configuration, not a world instance. The editor's collider-debug world is a separate static snapshot used only for visualization; never share it with gameplay. When Polygon is open on a live game scene, pause the game's physics stepping and interpolation until the editor closes, then rebuild or resync the game world from the edited scene as appropriate.
 
 When the editor is open over a live game, pause `step`, interpolation and render-position restoration until it closes. The editor's collider debug world is separate from the game's simulation world.
 
