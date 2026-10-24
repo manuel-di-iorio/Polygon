@@ -360,6 +360,25 @@ function __poly_validate_asset_desc(_desc) {
     for (var _n = 0; _n < array_length(_nums); _n++) if (variable_struct_exists(_p, _nums[_n]) && !is_real(_p[$ _nums[_n]])) return false;
     if (variable_struct_exists(_p, "isSensor") && !is_bool(_p.isSensor)) return false;
     if (variable_struct_exists(_p, "shapes") && !is_array(_p.shapes)) return false;
+    if (variable_struct_exists(_p, "constraint")) {
+      if (!is_struct(_p.constraint)) return false;
+      if (variable_struct_exists(_p.constraint, "type") && !is_string(_p.constraint.type)) return false;
+      if (variable_struct_exists(_p.constraint, "nodeB") && !is_string(_p.constraint.nodeB)) return false;
+      var _cvecs = ["pivotA", "pivotB", "axisA"];
+      for (var _cv = 0; _cv < array_length(_cvecs); _cv++) if (variable_struct_exists(_p.constraint, _cvecs[_cv]) && !__poly_is_num3(_p.constraint, _cvecs[_cv])) return false;
+      var _cnums = ["minLimit", "maxLimit", "motorVelocity", "motorMaxForce"];
+      for (var _cn = 0; _cn < array_length(_cnums); _cn++) if (variable_struct_exists(_p.constraint, _cnums[_cn]) && !is_real(_p.constraint[$ _cnums[_cn]])) return false;
+      if (variable_struct_exists(_p.constraint, "motorEnabled") && !is_bool(_p.constraint.motorEnabled)) return false;
+    }
+    if (variable_struct_exists(_p, "vehicle")) {
+      if (!is_struct(_p.vehicle)) return false;
+      if (variable_struct_exists(_p.vehicle, "enabled") && !is_bool(_p.vehicle.enabled)) return false;
+      if (variable_struct_exists(_p.vehicle, "automatic") && !is_bool(_p.vehicle.automatic)) return false;
+      var _vnums = ["mass", "linearDamping", "angularDamping", "friction", "wheelRadius", "wheelWidth", "maxSteerAngle", "maxTorque", "minRPM", "maxRPM", "shiftUpRPM", "shiftDownRPM", "finalDriveRatio", "reverseGearRatio", "clutchStrength", "antiRollStiffness"];
+      for (var _vn = 0; _vn < array_length(_vnums); _vn++) if (variable_struct_exists(_p.vehicle, _vnums[_vn]) && !is_real(_p.vehicle[$ _vnums[_vn]])) return false;
+      if (variable_struct_exists(_p.vehicle, "wheelCount") && !is_real(_p.vehicle.wheelCount)) return false;
+      if (variable_struct_exists(_p.vehicle, "gearCount") && !is_real(_p.vehicle.gearCount)) return false;
+    }
     if (variable_struct_exists(_p, "triggerEnter") && !is_bool(_p.triggerEnter)) return false;
     if (variable_struct_exists(_p, "triggerStay") && !is_bool(_p.triggerStay)) return false;
     if (variable_struct_exists(_p, "triggerExit") && !is_bool(_p.triggerExit)) return false;

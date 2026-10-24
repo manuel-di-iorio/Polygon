@@ -67,12 +67,6 @@ function __poly_imgui_toolbar(_ed) {
   if (__poly_imgui_icon_btn("##tb_snap", "Snap to increments (on/off) [\\]", _ed.snap_on, "Sn", "sprPolygonEditorIconSnap", 15, 15)) _ed.snap_on = !_ed.snap_on;
   ImGui.SameLine();
 
-  if (__poly_imgui_icon_btn("##tb_colliders", "Show collider debug (on/off) [P]", _ed.show_colliders == true, "Co", "", 15, 15)) {
-    _ed.show_colliders = !_ed.show_colliders;
-    if (_ed.show_colliders) __poly_physics_debug_rebuild(_ed); else __poly_physics_debug_destroy(_ed);
-    _ed.view_dirty = true;
-  }
-
   ImGui.SameLine();
   __poly_imgui_grid_snap(_ed);
   __poly_toolbar_sep();
@@ -83,8 +77,8 @@ function __poly_imgui_toolbar(_ed) {
   if (__poly_imgui_icon_btn("##tb_shaded", "Shaded Draw Mode", _ed.show_unlit != true, "Sh", "sprPolygonEditorIconShaded", 15, 15)) __poly_draw_mode(_ed, false);
   __poly_toolbar_sep();
 
-  if (__poly_imgui_icon_btn("##tb_home", "Reset camera to the initial view", false, "Hm", "sprPolygonEditorIconCenter", 15, 15)) __poly_cam_home(_ed, true);
-  ImGui.SameLine();
+  // if (__poly_imgui_icon_btn("##tb_home", "Reset camera to the initial view", false, "Hm", "sprPolygonEditorIconCenter", 15, 15)) __poly_cam_home(_ed, true);
+  // ImGui.SameLine();
   // AA combo (disabled): default is no AA.
   // ImGui.SetNextItemWidth(86);
   // var _aa = __poly_aa_mode(_ed);
@@ -122,6 +116,16 @@ function __poly_imgui_toolbar(_ed) {
 
     if (_vgz != (_ed.show_gizmo == true)) {
       _ed.show_gizmo = _vgz;
+      _ed.view_dirty = true;
+    }
+
+    var _vc = ImGui.Checkbox("Colliders", _ed.show_colliders == true);
+
+    if (ImGui.IsItemHovered()) ImGui.SetTooltip("Click to toggle collider debug visibility");
+
+    if (_vc != (_ed.show_colliders == true)) {
+      _ed.show_colliders = _vc;
+      if (_ed.show_colliders) __poly_physics_debug_rebuild(_ed); else __poly_physics_debug_destroy(_ed);
       _ed.view_dirty = true;
     }
 

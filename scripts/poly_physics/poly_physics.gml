@@ -5,6 +5,8 @@ function __poly_physics_defaults() {
     mode: "none",
     shape: "Box",
     shapes: undefined,
+    constraint: undefined,
+    vehicle: undefined,
     layer: "Default",
     mass: 1.0,
     linearDamping: 0.05,
@@ -31,7 +33,9 @@ function __poly_physics_defaults() {
 }
 
 function __poly_world_defaults() {
-  return { gravity: [0.0, -9.81, 0.0], fixedTimeStep: 1.0 / 60.0, maxSubSteps: 4, maxBodies: 512 };
+  var _lc = [];
+  for (var _i = 0; _i < 5; _i++) { var _r = []; for (var _j = 0; _j < 5; _j++) array_push(_r, true); array_push(_lc, _r); }
+  return { gravity: [0.0, -9.81, 0.0], fixedTimeStep: 1.0 / 60.0, maxSubSteps: 4, maxBodies: 512, layerCollision: _lc };
 }
 
 function __poly_physics_copy3(_a) {
@@ -83,6 +87,49 @@ function __poly_physics_data(_source) {
     }
     _out.shapes = _shapes_out;
   }
+  if (variable_struct_exists(_source, "constraint") && is_struct(_source.constraint)) {
+    var _c = _source.constraint;
+    var _cd = { type: "Point", nodeB: "", pivotA: [0.0, 0.0, 0.0], pivotB: [0.0, 0.0, 0.0], axisA: [0.0, 1.0, 0.0], minLimit: 0.0, maxLimit: 0.0, motorEnabled: false, motorVelocity: 0.0, motorMaxForce: 0.0 };
+    if (is_string(_c[$ "type"])) _cd.type = _c.type;
+    if (is_string(_c[$ "nodeB"])) _cd.nodeB = _c.nodeB;
+    if (is_array(_c[$ "pivotA"]) && array_length(_c.pivotA) == 3) _cd.pivotA = __poly_physics_copy3(_c.pivotA);
+    if (is_array(_c[$ "pivotB"]) && array_length(_c.pivotB) == 3) _cd.pivotB = __poly_physics_copy3(_c.pivotB);
+    if (is_array(_c[$ "axisA"]) && array_length(_c.axisA) == 3) _cd.axisA = __poly_physics_copy3(_c.axisA);
+    if (is_real(_c[$ "minLimit"])) _cd.minLimit = _c.minLimit;
+    if (is_real(_c[$ "maxLimit"])) _cd.maxLimit = _c.maxLimit;
+    if (is_bool(_c[$ "motorEnabled"])) _cd.motorEnabled = _c.motorEnabled;
+    if (is_real(_c[$ "motorVelocity"])) _cd.motorVelocity = _c.motorVelocity;
+    if (is_real(_c[$ "motorMaxForce"])) _cd.motorMaxForce = _c.motorMaxForce;
+    // Validate type.
+    if (_cd.type != "Fixed" && _cd.type != "Point" && _cd.type != "Hinge" && _cd.type != "Slider" && _cd.type != "Cone" && _cd.type != "Distance") _cd.type = "Point";
+    _out.constraint = _cd;
+  }
+  // Vehicle (optional configuration for dynamic bodies).
+  if (variable_struct_exists(_source, "vehicle") && is_struct(_source[$ "vehicle"])) {
+    var _v = _source.vehicle;
+    var _vd = { enabled: true, mass: 1325.0, linearDamping: 0.08, angularDamping: 1.05, friction: 0.22, wheelRadius: 0.33, wheelWidth: 0.24, wheelCount: 4, maxSteerAngle: 0.5, maxTorque: 500.0, minRPM: 900.0, maxRPM: 6000.0, shiftUpRPM: 5200.0, shiftDownRPM: 2200.0, finalDriveRatio: 3.4, gearCount: 6, reverseGearRatio: -3.2, clutchStrength: 8.0, automatic: true, antiRollStiffness: 12000.0 };
+    if (is_bool(_v[$ "enabled"])) _vd.enabled = _v.enabled;
+    if (is_real(_v[$ "mass"])) _vd.mass = max(0.001, _v.mass);
+    if (is_real(_v[$ "linearDamping"])) _vd.linearDamping = max(0.0, _v.linearDamping);
+    if (is_real(_v[$ "angularDamping"])) _vd.angularDamping = max(0.0, _v.angularDamping);
+    if (is_real(_v[$ "friction"])) _vd.friction = clamp(_v.friction, 0.0, 1.0);
+    if (is_real(_v[$ "wheelRadius"])) _vd.wheelRadius = max(0.001, _v.wheelRadius);
+    if (is_real(_v[$ "wheelWidth"])) _vd.wheelWidth = max(0.001, _v.wheelWidth);
+    if (is_real(_v[$ "wheelCount"])) _vd.wheelCount = clamp(round(_v.wheelCount), 2, 16);
+    if (is_real(_v[$ "maxSteerAngle"])) _vd.maxSteerAngle = clamp(_v.maxSteerAngle, 0.0, 3.14);
+    if (is_real(_v[$ "maxTorque"])) _vd.maxTorque = max(0.0, _v.maxTorque);
+    if (is_real(_v[$ "minRPM"])) _vd.minRPM = max(0.0, _v.minRPM);
+    if (is_real(_v[$ "maxRPM"])) _vd.maxRPM = max(1.0, _v.maxRPM);
+    if (is_real(_v[$ "shiftUpRPM"])) _vd.shiftUpRPM = max(0.0, _v.shiftUpRPM);
+    if (is_real(_v[$ "shiftDownRPM"])) _vd.shiftDownRPM = max(0.0, _v.shiftDownRPM);
+    if (is_real(_v[$ "finalDriveRatio"])) _vd.finalDriveRatio = _v.finalDriveRatio;
+    if (is_real(_v[$ "gearCount"])) _vd.gearCount = clamp(round(_v.gearCount), 1, 12);
+    if (is_real(_v[$ "reverseGearRatio"])) _vd.reverseGearRatio = _v.reverseGearRatio;
+    if (is_real(_v[$ "clutchStrength"])) _vd.clutchStrength = max(0.0, _v.clutchStrength);
+    if (is_bool(_v[$ "automatic"])) _vd.automatic = _v.automatic;
+    if (is_real(_v[$ "antiRollStiffness"])) _vd.antiRollStiffness = max(0.0, _v.antiRollStiffness);
+    _out.vehicle = _vd;
+  }
   if (variable_struct_exists(_source, "character") && is_struct(_source[$ "character"])) {
     var _ck = ["radius", "halfHeight", "stepHeight", "maxSlopeAngle", "mass", "maxStrength"];
     for (var _c = 0; _c < array_length(_ck); _c++) if (variable_struct_exists(_source.character, _ck[_c])) _out.character[$ _ck[_c]] = _source.character[$ _ck[_c]];
@@ -90,6 +137,8 @@ function __poly_physics_data(_source) {
   }
   if (!__poly_physics_mode_valid(_out.mode)) _out.mode = "none";
   if (_out.shape != "Box" && _out.shape != "Sphere" && _out.shape != "Capsule" && _out.shape != "Cylinder" && _out.shape != "Mesh" && _out.shape != "ConvexHull") { _out.shape = "Box"; _out.mode = "none"; }
+  // Mesh shape is only supported on static bodies in GM3D.
+  if (_out.shape == "Mesh" && _out.mode != "none" && _out.mode != "static") _out.mode = "static";
   if (!is_string(_out.layer) || (_out.layer != "Static" && _out.layer != "Default" && _out.layer != "Character" && _out.layer != "Trigger" && _out.layer != "Debris")) _out.layer = "Default";
   _out.mass = max(0.001, is_real(_out.mass) ? _out.mass : 1.0);
   _out.linearDamping = max(0.0, is_real(_out.linearDamping) ? _out.linearDamping : 0.05);
@@ -145,6 +194,8 @@ function __poly_physics_apply(_node, _source) {
   var _cc_find = _node[$ "findCharacterControllerComponent"];
   var _was_character = false;
   if (_cc_find != undefined) { var _cc_old = _node.findCharacterControllerComponent(); if (_cc_old != undefined) { _was_character = true; _node.removeComponent(_cc_old); } }
+  var _constraint_find = _node[$ "findPhysicsConstraintComponent"];
+  if (_constraint_find != undefined) { var _constraint_old = _node.findPhysicsConstraintComponent(); if (_constraint_old != undefined) _node.removeComponent(_constraint_old); }
   if (_d.mode == "none") {
     if (_was_character) { var _old_visual = __poly_first_child(_node); if (_old_visual != undefined) _old_visual.setLocalPosition(new GM3D_Vec3(0, 0, 0)); }
     return true;
@@ -261,6 +312,14 @@ function __poly_physics_debug_rebuild(_ed) {
   _ed.world = __poly_world_data(_ed.world);
   _ed.physics_debug_world = new GM3D_PhysicsWorld(_ed.rt.scene, _ed.world);
   _ed.physics_debug_world.setGravity(new GM3D_Vec3(_ed.world.gravity[0], _ed.world.gravity[1], _ed.world.gravity[2]));
+  var _layers = ["Static", "Default", "Character", "Trigger", "Debris"];
+  var _lvals = [1, 2, 4, 8, 16];
+  if (is_array(_ed.world.layerCollision)) {
+    for (var _i = 0; _i < 5; _i++) for (var _j = 0; _j < 5; _j++) {
+      var _setlc = _ed.physics_debug_world[$ "setLayerCollision"];
+      if (_setlc != undefined) method(_ed.physics_debug_world, _setlc)(_lvals[_i], _lvals[_j], _ed.world.layerCollision[_i][_j] == true);
+    }
+  }
   _ed.view_dirty = true;
   _ed.physics_debug_world.setDebugDrawEnabled(true);
   _ed.physics_debug_world.syncScene();
@@ -279,6 +338,18 @@ function __poly_world_data(_source) {
   if (variable_struct_exists(_source, "fixedTimeStep") && is_real(_source.fixedTimeStep)) _out.fixedTimeStep = clamp(_source.fixedTimeStep, 0.001, 1.0);
   if (variable_struct_exists(_source, "maxSubSteps") && is_real(_source.maxSubSteps)) _out.maxSubSteps = clamp(round(_source.maxSubSteps), 1, 64);
   if (variable_struct_exists(_source, "maxBodies") && is_real(_source.maxBodies)) _out.maxBodies = clamp(round(_source.maxBodies), 1, 65535);
+  // layerCollision: 5x5 bool matrix (default all true).
+  var _lc = [];
+  for (var _i = 0; _i < 5; _i++) {
+    var _row = [];
+    for (var _j = 0; _j < 5; _j++) {
+      var _val = true;
+      if (is_array(_source[$ "layerCollision"]) && array_length(_source.layerCollision) == 5 && is_array(_source.layerCollision[_i]) && array_length(_source.layerCollision[_i]) == 5) _val = _source.layerCollision[_i][_j] == true;
+      array_push(_row, _val);
+    }
+    array_push(_lc, _row);
+  }
+  _out.layerCollision = _lc;
   return _out;
 }
 
