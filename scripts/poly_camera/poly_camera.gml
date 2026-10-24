@@ -402,11 +402,10 @@ function __poly_cam_fly(_ed, _input, _dt) {
     var _zx = _nx - _target.x;
     var _zy = _ny - _target.y;
     var _zz = _nz - _target.z;
-    var _zoom_factor = _zoom
-      ? 1 + _md[1] * 0.001
-      : _wheel < 0
-      ? 0.9
-      : 1.1;
+    var _zoom_factor = 1.1;
+
+    if (_zoom) _zoom_factor = 1 + _md[1] * 0.001;
+    else if (_wheel < 0) _zoom_factor = 0.9;
     _zoom_factor = max(_zoom_factor, 0.01);
     _nx = _target.x + _zx * _zoom_factor;
     _ny = _target.y + _zy * _zoom_factor;

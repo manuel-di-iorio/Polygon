@@ -592,7 +592,7 @@ function __poly_gizmo_begin(_ed, _vp, _mx, _my) {
 
   for (var _j = 0, _ns = array_length(_g.starts); _j < _ns; _j++) {
     var _sca = _g.starts[_j].sca;
-    var _c = _ax == 0 ? _sca.x : _ax == 1 ? _sca.y : _sca.z;
+    var _c = _ax == 0 ? _sca.x : (_ax == 1 ? _sca.y : _sca.z);
     _g.world_len = max(_g.world_len, abs(_c));
   }
 

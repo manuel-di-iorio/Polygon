@@ -41,6 +41,7 @@ function __poly_destroy_subtree(_node) {
 // Clears scene to empty state (abandons any running chunked load).
 function __poly_new_scene(_ed) {
   _ed.load_job = undefined;
+  __poly_physics_debug_destroy(_ed);
   __poly_drop_preview_clear(_ed);
   var _tracked = __poly_root_tracked(_ed);
 
@@ -87,12 +88,14 @@ function __poly_new_scene(_ed) {
   __poly_sel_clear(_ed);
   __poly_history_clear(_ed);
   _ed.asset_meta = {};
+  _ed.world = __poly_world_defaults();
   _ed.dirty = false;
   _ed.drag_lib = undefined;
   _ed.drag_moved = false;
   _ed.rect = undefined;
   _ed.press_vp = false;
   _ed.scene_file = "";
+  __poly_physics_debug_rebuild(_ed);
 }
 
 // Creates the default raised sun for a fresh scene.
@@ -221,6 +224,16 @@ function __poly_duplicate_asset(_ed, _src) {
     }
 
     __poly_flags_apply(_copy, _cast, _recv);
+
+    // Duplicate keeps the source instance physics (mode, shape, body,
+    // controller and visual offset). A non-physical source keeps the
+    // prefab default applied by the spawn pipeline.
+    var _src_physics = is_struct(_src_en.data[$ "physics"]) ? __poly_physics_data(_src_en.data.physics) : undefined;
+
+    if (_src_physics != undefined && _src_physics.mode != "none") {
+      if (_copy_en != undefined) _copy_en.data.physics = _src_physics;
+      __poly_physics_apply(_copy, _src_physics);
+    }
   }
 
   return _copy;
@@ -396,6 +409,7 @@ function __poly_clipboard_paste(_ed) {
   __poly_cameras_mute(_ed);
 
   if (array_length(_nodes) > 0) __poly_sel_assign(_ed, _nodes);
+  __poly_physics_debug_rebuild(_ed);
   __poly_history_commit(_ed, _before);
   return true;
 }

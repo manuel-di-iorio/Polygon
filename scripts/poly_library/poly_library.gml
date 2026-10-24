@@ -73,7 +73,7 @@ function __poly_node_display(_ed, _node, _en = undefined) {
   if (_en != undefined && is_string(_en.asset) && _en.asset != "") {
     _base = __poly_display_from_key(_en.asset);
   } else if (_en != undefined && is_string(_en.kind) && _en.kind != "") {
-    _base = _en.kind == "light" ? "Light" : _en.kind == "camera" ? "Camera" : _en.kind == "environment" ? "Environment" : "node";
+    _base = _en.kind == "light" ? "Light" : (_en.kind == "camera" ? "Camera" : (_en.kind == "environment" ? "Environment" : "node"));
   }
 
   if (_base == "") _base = "node";

@@ -7,11 +7,11 @@
 // Reads one transform component from cached node parts.
 function __poly_axis_comp(_mode, _idx, _pos, _euler, _sca) {
   if (_mode == 0) {
-    return _idx == 0 ? _pos.x : _idx == 1 ? _pos.y : _pos.z;
+    return _idx == 0 ? _pos.x : (_idx == 1 ? _pos.y : _pos.z);
   } else if (_mode == 1) {
     return radtodeg(_euler[_idx]);
   } else {
-    return _idx == 0 ? _sca.x : _idx == 1 ? _sca.y : _sca.z;
+    return _idx == 0 ? _sca.x : (_idx == 1 ? _sca.y : _sca.z);
   }
 }
 

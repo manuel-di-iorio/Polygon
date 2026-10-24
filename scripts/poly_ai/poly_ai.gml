@@ -973,9 +973,10 @@ function __poly_ai_op_create(_ed, _p, _commit) {
   __poly_spawn_shadow_apply(_ed, _entry, _node);
   if (variable_struct_exists(_p, "physics")) {
     var _physics_en = __poly_registry_find(_ed, _node);
-    if (_physics_en != undefined) _physics_en.data.physics = __poly_physics_data(_p.physics);
+    var _physics_data = __poly_physics_data_auto(_ed, _node, _p.physics);
+    if (_physics_en != undefined) _physics_en.data.physics = _physics_data;
     __poly_physics_debug_destroy(_ed);
-    __poly_physics_apply(_node, _p.physics);
+    __poly_physics_apply(_node, _physics_data);
   }
   _ed.rt.scene.update(0);
 
@@ -1016,7 +1017,7 @@ function __poly_ai_op_create(_ed, _p, _commit) {
 
   if (_commit) __poly_history_commit(_ed, _before);
   var _res = { id: _en != undefined ? _en.id : _node.name, label: __poly_node_display(_ed, _node, _en) };
-  if (variable_struct_exists(_p, "physics")) _res.physics = __poly_physics_data(_p.physics);
+  if (variable_struct_exists(_p, "physics")) _res.physics = _physics_data;
 
   if (is_struct(_bounds) && _bounds.valid == true) _res.bounds = _bounds;
   return _res;
@@ -1384,18 +1385,21 @@ function __poly_ai_op_transform(_ed, _p, _commit) {
   if (_has_pos) _node.setLocalPosition(new GM3D_Vec3(_p.position[0], _p.position[1], _p.position[2]));
   if (_has_rot) _node.setLocalRotation(__poly_euler_to_quat(degtorad(_p.rotation[0]), degtorad(_p.rotation[1]), degtorad(_p.rotation[2])));
   if (_has_sca) _node.setLocalScale(new GM3D_Vec3(max(_p.scale[0], 0.01), max(_p.scale[1], 0.01), max(_p.scale[2], 0.01)));
+  var _physics_data = undefined;
+
   if (_has_physics) {
     var _physics_en = __poly_registry_find(_ed, _node);
-    if (_physics_en != undefined) _physics_en.data.physics = __poly_physics_data(_p.physics);
+    _physics_data = __poly_physics_data_auto(_ed, _node, _p.physics);
+    if (_physics_en != undefined) _physics_en.data.physics = _physics_data;
     __poly_physics_debug_destroy(_ed);
-    __poly_physics_apply(_node, _p.physics);
+    __poly_physics_apply(_node, _physics_data);
   }
   _ed.rt.scene.update(0);
   __poly_physics_debug_rebuild(_ed);
 
   if (_commit) __poly_history_commit(_ed, _before);
   var _result = { id: _p.id, transform: __poly_ai_transform_of(_node) };
-  if (_has_physics) _result.physics = __poly_physics_data(_p.physics);
+  if (_has_physics) _result.physics = _physics_data;
   return _result;
 }
 

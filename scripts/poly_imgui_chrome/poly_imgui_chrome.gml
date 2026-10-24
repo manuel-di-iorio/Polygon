@@ -67,14 +67,6 @@ function __poly_imgui_toolbar(_ed) {
   if (__poly_imgui_icon_btn("##tb_snap", "Snap to increments (on/off) [\\]", _ed.snap_on, "Sn", "sprPolygonEditorIconSnap", 15, 15)) _ed.snap_on = !_ed.snap_on;
   ImGui.SameLine();
 
-  if (__poly_imgui_icon_btn("##tb_grid", "Show grid (on/off)", _ed.show_grid, "Gr", "sprPolygonEditorIconGrid", 15, 15)) {
-    _ed.show_grid = !_ed.show_grid;
-    // Apply now: grid_ensure also runs in step, but after the toggle the
-    // flipped view key would consume the re-render on the stale scene.
-    __poly_grid_ensure(_ed);
-  }
-
-  ImGui.SameLine();
   if (__poly_imgui_icon_btn("##tb_colliders", "Show collider debug (on/off) [P]", _ed.show_colliders == true, "Co", "", 15, 15)) {
     _ed.show_colliders = !_ed.show_colliders;
     if (_ed.show_colliders) __poly_physics_debug_rebuild(_ed); else __poly_physics_debug_destroy(_ed);
@@ -93,19 +85,20 @@ function __poly_imgui_toolbar(_ed) {
 
   if (__poly_imgui_icon_btn("##tb_home", "Reset camera to the initial view", false, "Hm", "sprPolygonEditorIconCenter", 15, 15)) __poly_cam_home(_ed, true);
   ImGui.SameLine();
-  ImGui.SetNextItemWidth(86);
-  var _aa = __poly_aa_mode(_ed);
-  var _aa_label = _aa == "off" ? "AA Off" : _aa == "fxaa" ? "FXAA" : _aa == "smaa" ? "SMAA" : "SSAA";
-
-  if (!ImGui.BeginCombo("##aa_mode", _aa_label)) {
-    if (ImGui.IsItemHovered()) ImGui.SetTooltip("Viewport antialiasing");
-  } else {
-    if (ImGui.Selectable("AA Off", _aa == "off", 0, 0, 0)) __poly_aa_set(_ed, "off");
-    if (ImGui.Selectable("FXAA", _aa == "fxaa", 0, 0, 0)) __poly_aa_set(_ed, "fxaa");
-    if (ImGui.Selectable("SMAA", _aa == "smaa", 0, 0, 0)) __poly_aa_set(_ed, "smaa");
-    if (ImGui.Selectable("SSAA", _aa == "ssaa", 0, 0, 0)) __poly_aa_set(_ed, "ssaa");
-    ImGui.EndCombo();
-  }
+  // AA combo (disabled): default is no AA.
+  // ImGui.SetNextItemWidth(86);
+  // var _aa = __poly_aa_mode(_ed);
+  // var _aa_label = _aa == "off" ? "AA Off" : (_aa == "fxaa" ? "FXAA" : (_aa == "smaa" ? "SMAA" : "SSAA"));
+  //
+  // if (!ImGui.BeginCombo("##aa_mode", _aa_label)) {
+  //   if (ImGui.IsItemHovered()) ImGui.SetTooltip("Viewport antialiasing");
+  // } else {
+  //   if (ImGui.Selectable("AA Off", _aa == "off", 0, 0, 0)) __poly_aa_set(_ed, "off");
+  //   if (ImGui.Selectable("FXAA", _aa == "fxaa", 0, 0, 0)) __poly_aa_set(_ed, "fxaa");
+  //   if (ImGui.Selectable("SMAA", _aa == "smaa", 0, 0, 0)) __poly_aa_set(_ed, "smaa");
+  //   if (ImGui.Selectable("SSAA", _aa == "ssaa", 0, 0, 0)) __poly_aa_set(_ed, "ssaa");
+  //   ImGui.EndCombo();
+  // }
 
   ImGui.SameLine();
   __poly_vis_defaults(_ed);
@@ -113,6 +106,25 @@ function __poly_imgui_toolbar(_ed) {
   if (__poly_imgui_icon_btn("##tb_vis", "Visibility: hidden objects, skybox, outline", false, "Ey", "sprPolygonEditorIconEye", 15, 15)) ImGui.OpenPopup("##visoptions");
 
   if (ImGui.BeginPopup("##visoptions")) {
+    var _vg = ImGui.Checkbox("Grid", _ed.show_grid == true);
+
+    if (ImGui.IsItemHovered()) ImGui.SetTooltip("Click to toggle grid visibility");
+
+    if (_vg != (_ed.show_grid == true)) {
+      _ed.show_grid = _vg;
+      __poly_grid_ensure(_ed);
+      _ed.view_dirty = true;
+    }
+
+    var _vgz = ImGui.Checkbox("Gizmos", _ed.show_gizmo == true);
+
+    if (ImGui.IsItemHovered()) ImGui.SetTooltip("Click to toggle gizmo visibility");
+
+    if (_vgz != (_ed.show_gizmo == true)) {
+      _ed.show_gizmo = _vgz;
+      _ed.view_dirty = true;
+    }
+
     var _vh = ImGui.Checkbox("Hidden objects", _ed.show_hidden);
 
     if (ImGui.IsItemHovered()) ImGui.SetTooltip("Click to toggle hidden objects visibility");

@@ -603,6 +603,14 @@ function __poly_track_place_asset(_ed, _key, _model, _node, _label = undefined) 
   if (_ed == undefined || _model == undefined || _node == undefined) return undefined;
   var _pos = _node.getLocalPosition();
   var _sca = _node.getLocalScale();
+  var _data = { castShadows: true, receiveShadows: true };
+
+  // Adopt the live body/shape/controller so tracking (manual or automatic)
+  // never silently imports a physical instance as a visual-only node. Passing
+  // it as spawn data applies it before the debug world is rebuilt.
+  var _live_physics = __poly_physics_live_read(_node);
+
+  if (_live_physics != undefined && _live_physics.mode != "none") _data.physics = _live_physics;
 
   return __poly_spawn(_ed, {
     kind: "prefab",
@@ -618,7 +626,7 @@ function __poly_track_place_asset(_ed, _key, _model, _node, _label = undefined) 
     label: _label,
     id: __poly_wrap_claim(_ed, __poly_wrap_id_of(_node)),
     adopt_src: _node,
-    data: { castShadows: true, receiveShadows: true },
+    data: _data,
   });
 }
 
@@ -693,11 +701,6 @@ function __poly_track_adopt_auto(_ed, _node) {
 
   if (_new == undefined) return undefined;
   __poly_track_adopt_flags(_node, _new);
-  var _live_physics = __poly_physics_live_read(_node);
-  if (_live_physics != undefined) {
-    var _en = __poly_registry_find(_ed, _new);
-    if (_en != undefined) { _en.data.physics = _live_physics; __poly_physics_apply(_new, _live_physics); }
-  }
   return _new;
 }
 

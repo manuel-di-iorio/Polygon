@@ -185,7 +185,7 @@ function __poly_load_prop(_scene, _p, _kind, _name) {
     _node.addComponent(_lc);
     var _l = _sub;
     var _lt = __poly_str(_l, "type");
-    _lc.setType(_lt == "point" ? GM3D_ELightType.Point : _lt == "spot" ? GM3D_ELightType.Spot : GM3D_ELightType.Directional);
+    _lc.setType(_lt == "point" ? GM3D_ELightType.Point : (_lt == "spot" ? GM3D_ELightType.Spot : GM3D_ELightType.Directional));
 
     var _lic = __poly_read_col(_l, "color", undefined);
 

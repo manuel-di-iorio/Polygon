@@ -23,6 +23,7 @@ Polygon opens inside your running game (press **F1** in the demo), mirrors the l
 - Models (prefabs) with per-asset spawn defaults (rotation, scale, shadows)
 - Lights (directional, point), cameras (perspective, ortho) and an environment volume (ambient, fog)
 - Per-instance physics bodies, Box / Sphere / Capsule / Cylinder colliders, character controllers and GM3D collider debug draw (visualization only; no editor simulation)
+- Physics settings are preserved by duplicate, copy/paste, undo/redo and live-scene tracking
 - Prefab overrides with per-field **Revert / Apply**
 - Read-only inspection of materials, textures (with sampler state) and animation clips, including a playable animation preview
 
@@ -249,13 +250,20 @@ Notes:
 
 ### Physics
 
-Select an instance and open **Physics** in the Inspector to choose `static`, `kinematic`, `dynamic`, or `character`, configure its shape and body/controller properties, fit a collider to the model bounds, or clear physics. An instance with no `physics` block is non-physical. Prefab **Physics Defaults** are stored in the top-level `assets` map and affect new spawns and duplicates.
+Select an instance and open **Physics** in the Inspector to choose `static`, `kinematic`, `dynamic`, or `character`, configure its shape and body/controller properties, fit a collider to the model bounds, or clear physics. An instance with no `physics` block is non-physical. Prefab **Physics Defaults** are stored in the top-level `assets` map and affect new spawns and duplicates; duplicating, copying/pasting or tracking an existing instance keeps that instance's own physics instead of re-applying the prefab default.
+
+With several instances selected, the Inspector shows a shared **Physics** section for the common `Mode`, `Layer` and `Mass` fields. Values that differ across the selection read **Mixed**; editing a field applies it to every selected instance as one undo step.
+
 
 `poly_load` applies each instance's saved `physics` block to its GM3D node; if the instance has no block, it can use that model's physics default from the scene's `assets` metadata. This adds the body/shape or character-controller component, but **does not create or step a `GM3D_PhysicsWorld`**. The game must create its own world after loading, configure it from `job.world` / `_rep.world`, call `syncScene()`, and register characters with `addCharacter()`. Without that game-owned world, the components are present on the nodes but are not simulated. See [Runtime physics setup](#runtime-physics-setup) below.
 
 The toolbar collider button or **P** toggles GM3D's native debug draw. This creates a static debug snapshot for visualization; Polygon does not step a physics world in the editor. The no-selection Inspector state contains scene gravity, fixed time step, max substeps and max bodies. World edits are undoable.
 
 Character controllers use a capsule centered at the wrapper origin. **Visual offset** moves the model child independently; **Recenter visual** derives an initial offset from its model bounds.
+
+### Triggers
+
+A trigger is a sensor body, not a separate mode: enable **Sensor** on any body (or pick the `Trigger` layer) and the collider detects overlaps without blocking. The editor stores the requested event set in the instance `physics` block as `triggerEnter` / `triggerStay` / `triggerExit` (defaults: enter and exit on, stay off). At runtime the game creates its own `GM3D_PhysicsWorld`, calls `syncScene()`, and registers a contact callback on the body (or reads `world.getContactEvents()` after `step()`). The callback receives a `GM3D_ContactEvent` with `nodeA`, `nodeB`, `point`, `normal`, `impactVelocity`, `type` (`Enter`/`Stay`/`Exit`), `selfNode`, `otherNode`; filter by `otherNode` and by the configured event mask. Remove callbacks (`removeContactCallback`/`clearContactCallbacks`) and unregister bodies on node destruction or scene rebuild to avoid stale references. Multiple sensors, load/rebuild and destruction are supported as long as callbacks are re-registered after `syncScene()`.
 
 ### Creating lights, cameras and environment
 

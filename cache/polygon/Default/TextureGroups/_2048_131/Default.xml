@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TextureGroup>
+  <texture scale="1" mipsToGenerate="0" texwidth="128" texheight="256">default_0.bz2</texture>
+  <tpe x="2" y="2" tpage="default_0.bz2">sprPolygonEditorIconLogo_polygon_4767c1c4-1e73-4e7e-953c-bd3a7e2dd5c3.tpe</tpe>
+  <tpe x="2" y="134" tpage="default_0.bz2">sprPolygonEditorIconCenter_polygon_9cdde544-baa3-4cda-9514-bfb2538fd348.tpe</tpe>
+  <tpe x="2" y="153" tpage="default_0.bz2">sprPolygonEditorIconFilters_polygon_6ea2f30a-f992-4776-89b4-961b49ee295e.tpe</tpe>
+  <tpe x="2" y="172" tpage="default_0.bz2">sprPolygonEditorIconMove_polygon_2f8cca4a-6622-4799-872c-d44ada984fed.tpe</tpe>
+  <tpe x="2" y="191" tpage="default_0.bz2">sprPolygonEditorIconPointLight_polygon_5d89af8c-5504-43e0-a836-ca627271f786.tpe</tpe>
+  <tpe x="2" y="210" tpage="default_0.bz2">sprPolygonEditorIconShaded_polygon_93b6e67e-933d-4d36-9bcd-ed3726bf4665.tpe</tpe>
+  <tpe x="2" y="229" tpage="default_0.bz2">sprPolygonEditorIconSnap_polygon_f097728b-f0d1-40a3-8e64-2e2247cd3d60.tpe</tpe>
+  <tpe x="21" y="134" tpage="default_0.bz2">sprPolygonEditorIconUnlit_polygon_a046b59a-d1a7-48c2-896a-53a7494b506b.tpe</tpe>
+  <tpe x="21" y="153" tpage="default_0.bz2">sprPolygonEditorIconGrid_polygon_ac5bb536-05ea-42f1-af57-9d7fe7e2c0ba.tpe</tpe>
+  <tpe x="21" y="171" tpage="default_0.bz2">sprPolygonEditorIconScale_polygon_3c41fe57-25b4-4814-b7c9-ac33c13bd369.tpe</tpe>
+  <tpe x="21" y="189" tpage="default_0.bz2">sprPolygonEditorIconObject_polygon_f6708fdc-e5c3-4903-af22-dbe1b84f8d60.tpe</tpe>
+  <tpe x="21" y="208" tpage="default_0.bz2">sprPolygonEditorIconRotate_polygon_f9f55315-0fd8-42c8-8d90-83ae63443374.tpe</tpe>
+  <tpe x="21" y="225" tpage="default_0.bz2">sprPolygonEditorIconHandpoint_polygon_7744198b-58ff-4c40-9e23-315e6d29fb9a.tpe</tpe>
+  <tpe x="37" y="225" tpage="default_0.bz2">sprPolygonEditorIconHandpointDisabled_polygon_7744198b-58ff-4c40-9e23-315e6d29fb9a.tpe</tpe>
+  <tpe x="40" y="134" tpage="default_0.bz2">sprPolygonEditorIconCamera_polygon_8ffdb90b-96db-42bd-afca-9c05ca6752a7.tpe</tpe>
+  <tpe x="40" y="149" tpage="default_0.bz2">sprPolygonEditorIconEyeClosed_polygon_3bb534fa-d7db-4f9c-8d6b-16467aaa9633.tpe</tpe>
+  <tpe x="40" y="164" tpage="default_0.bz2">sprPolygonEditorIconHand_polygon_c53715b6-c45f-47d8-aa1f-e2ea81a29076.tpe</tpe>
+  <tpe x="39" y="183" tpage="default_0.bz2">sprPolygonEditorIconDirectionalLight_polygon_d538deaa-1336-40bc-8089-1a3b73d27a1a.tpe</tpe>
+  <tpe x="40" y="202" tpage="default_0.bz2">sprPolygonEditorIconEye_polygon_3bb534fa-d7db-4f9c-8d6b-16467aaa9633.tpe</tpe>
+</TextureGroup>

@@ -230,6 +230,8 @@ function __poly_imgui_sel_body(_ed, _n) {
 
   __poly_imgui_transform_sec(_ed, __poly_axis_visibility(_n, _skind, _stype));
 
+  if (_n > 1) __poly_imgui_physics_multi_sec(_ed, _ed.sel);
+
   if (_n == 1 && _skind != undefined) {
     var _en = __poly_registry_find(_ed, _ed.sel[0]);
 

@@ -371,6 +371,7 @@ function __poly_view_restore(_ed) {
 
 // Tears down editor chrome when closing.
 function __poly_deactivate(_ed) {
+  __poly_physics_debug_destroy(_ed);
   __poly_drop_preview_clear(_ed);
   _ed.load_job = undefined;
   __poly_view_restore(_ed);
@@ -669,7 +670,7 @@ function __poly_create_state(_rt) {
     viewpan_moved: false,
     scene_surf: undefined,
     scene_hi: undefined,
-    aa_mode: "smaa",
+    aa_mode: "off",
     aa_k: 2,
     aa_used: 1,
     scene_stable_w: -1,
@@ -719,6 +720,7 @@ function __poly_create_state(_rt) {
     world: __poly_world_defaults(),
     show_unlit: false,
     show_hidden: false,
+    show_gizmo: true,
     vis_sky: true,
     vis_outline: true,
     unlit_quiet: false,

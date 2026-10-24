@@ -42,7 +42,10 @@ Il capsule character è centrato sull'origine del wrapper. Il modello visuale vi
 2. **Fase 1 — dati e runtime comune (implementata, da validare):** `poly_physics` per apply/read/validate/fit/default World; `physics` nei descrittori istanza e `world` al top-level; JSON v1 e PLYB v2 con lettura v1; caricamento runtime e report physics.
 3. **Fase 1 — UI e debug editor (implementata, da validare):** Inspector Body/Shape, toolbar e scorciatoia `P`, debug world statico; impostazioni World nello stato Inspector senza selezione. La sezione prefab conserva la precedenza.
 4. **Fase 2 — character e prefab (implementata, da validare):** controller, capsule centrata sul wrapper, `visualOffset` automatico/modificabile con Recenter, default fisici applicati alle nuove istanze e helper runtime.
-5. **Fase 3 — integrazioni (parzialmente implementata):** physics mantenuta nel duplicate e nel bridge AI; tooltip aggiunti a controlli Physics, Physics World, default prefab e flag Shadows. Da verificare e completare gli altri percorsi copy/paste, il badge gerarchia e le relative rifiniture/documentazione.
+5. **Fase 3 — integrazioni (implementata, da validare a runtime):** physics mantenuta in duplicate, copy/cut/paste e bridge AI; adozione della fisica anche nel track manuale e automatico; tooltip aggiunti a controlli Physics, Physics World, default prefab e flag Shadows. Restano le verifiche runtime e l'eventuale spike Mesh/ConvexHull.
+6. **Fase 5 — Shape Mesh e ConvexHull (implementata):** Mesh e ConvexHull validate a runtime con mesh figlia del wrapper; abilitate nelle shape selezionabili (Inspector singolo e prefab) senza etichetta sperimentale. Mesh usa la geometria della mesh (ideale per statici), ConvexHull l'involucro convesso (adatto anche a dinamici).
+7. **Fase 4 — Trigger di gioco (parzialmente implementata):** il sensore è già rappresentato come body sensore (`isSensor` + layer `Trigger`); aggiunti i flag evento `triggerEnter`/`triggerStay`/`triggerExit` ai dati physics, all'Inspector e alla validazione; documentato il contratto runtime (payload `GM3D_ContactEvent`, callback dopo `step()`, cleanup). Resta la verifica runtime di più sensori, ordine eventi, distruzione/rimozione e rebuild.
+8. **Fase 6 — Collider composti (parzialmente implementata):** aggiunto il campo opzionale `shapes` (array di shape locali con tipo, dimensioni, offset e rotazione) ai dati physics, alla normalizzazione e alla validazione; backward-compatible con la shape singola V1. Restano UI lista/add/remove, apply multi-shape e verifica runtime dei limiti GM3D.
 
 ### Lavoro svolto in questa implementazione
 
@@ -52,14 +55,31 @@ Il capsule character è centrato sull'origine del wrapper. Il modello visuale vi
 - Aggiunti tooltip descrittivi ai parametri fisici, alle azioni Fit/Clear/Recenter, ai parametri World, ai default prefab e alle checkbox Shadows Cast/Receive.
 - Corretto un accesso a `physics` opzionale che causava `ReferenceError` aprendo l'Inspector; aggiunti controlli analoghi ad altri campi opzionali. Va confermato nel runtime che l'errore non si ripresenti.
 - In un avvio runtime sono comparsi warning GM3D che clampano `m_maxBodyPairs` e `m_maxContactConstraints` da 65536 a 1024. Non è ancora verificato se siano innocui nel percorso debug; la documentazione API disponibile non indica opzioni pubbliche per quei limiti.
+- Il duplicate conserva la fisica dell'istanza sorgente (mode, shape, body, controller e `visualOffset`); se la sorgente non è fisica resta il default prefab applicato dallo spawn. Copy/cut/paste passano dai descrittori e quindi conservano il blocco `physics`.
+- Il track manuale (`poly_track`) e l'adozione automatica (`__poly_track_adopt_auto`) ora leggono body/shape/character dal nodo live nella stessa helper di piazzamento, così una scena con fisica non viene reimportata come solo visuale.
+- Aggiunto il badge fisica nella gerarchia (`S` static, `K` kinematic, `D` dynamic, `C` character, `T` sensore) con tooltip su mode e shape.
+- Aggiunta la sezione Physics per la multiselezione: Mode, Layer e Mass comuni, valore `Mixed` quando differiscono, applicazione a tutte le istanze selezionate in un singolo passo di undo.
+- Normalizzati i nomi dei layer e clampati i parametri del character in `__poly_physics_data`; aggiunte le letture live di `character.mass` e `character.maxStrength`.
+- Aggiunto `__poly_physics_data_auto` per i percorsi di apply diretti (bridge AI): quando il character viene aggiunto a un nodo esistente senza `visualOffset` esplicito, il modello viene centrato sulla capsula.
+- Il debug world viene distrutto in disattivazione e su nuova scena, ricostruito dopo nuova scena, paste, undo/redo, modifiche fisiche e caricamento; la nuova scena ripristina anche i default World.
+- Aggiornato `README.md` con multiselezione, conservazione della fisica in duplicate/copy/paste/track e il contratto trigger (eventi Enter/Stay/Exit, payload, cleanup).
+- Esteso `__poly_imgui_prefab_physics` per esporre tutte le opzioni fisiche (layer, damping, friction, restitution, gravity factor, sensor, half-extents, offset, parametri character, trigger events), non solo mode/shape/mass.
+- Fase 6: aggiunto campo opzionale `shapes` (array di shape locali: tipo, halfExtents, offset, rotation) ai dati physics, alla normalizzazione e alla validazione; backward-compatible (se assente si usa la shape singola). UI/apply multi-shape restano come lavoro successivo.
+- Fase 7–10 (giunti, veicoli, ragdoll, matrice collisioni/query) restano nella roadmap documentata: richiedono validazione runtime GM3D e sono fuori dal perimetro implementato in questa sessione.
+
+### Blocco di validazione noto
+
+Il runtime/compiler GameMaker-LTS2026 installato (`runtime-2026.0.0.23`) rifiutava le espressioni ternarie nidificate (operatore `? :` concatenato senza parentesi) in `poly_bin`, `poly_camera`, `poly_gizmo`, `poly_imgui_chrome`, `poly_imgui_insp_fields`, `poly_imgui_insp_prefab`, `poly_library`, `poly_load_internal`, `poly_physics`, `poly_serialize`, più un argomento in più in una chiamata `sprite_add` in `poly_imgui_viewport`. Queste espressioni sono state parentesizzate (o riscritte con `if/else` dove più chiaro) e l'argomento superfluo rimosso; la build Igor ora termina con exit code 0 (`output/polygon/polygon.win` generato). Il codice aggiunto in questa fase non usa nuovi ternari e non ha prodotto errori propri.
+
+La validazione runtime resta bloccata da una dipendenza esterna: il progetto usa `GM3D_Scene`/`GM3D_PhysicsWorld` (libreria GM3D) che non è bundlata nel repository né installata in questo ambiente. La compilazione riesce (i riferimenti sono globali risolti a runtime), ma l'esecuzione si ferma su `GM3D_Scene(100717, -2147483648) not set before reading it` in `demo_create`. Serve importare/installare la libreria GM3D nel progetto per eseguire l'editor. La correzione dei ternari e dei path di apply/debug è comunque verificabile staticamente e a compile-time.
 
 ### Prossimo passo
 
-1. Aprire il progetto nell'IDE GameMaker, eseguire una build GMRT e riprodurre l'apertura dell'Inspector per confermare la correzione del `ReferenceError`.
+1. Importare/installare la libreria GM3D nel progetto (o eseguirlo da un ambiente dove è già disponibile) e poi riprodurre l'apertura dell'Inspector per confermare la correzione del `ReferenceError`.
 2. Attivare/disattivare il debug collider e confermare che i warning di clamp non diventino errori e che i collider restino visibili senza `step`, `interpolateForRender` o `restoreSimulationPositions` nell'editor.
 3. Verificare visivamente scala nodo vs half-extents per Box, Sphere, Capsule e Cylinder; correggere fit e tooltip se il comportamento osservato differisce.
 4. Provare Mesh/ConvexHull con mesh figlia del wrapper. Tenerle fuori dalle shape selezionabili se lo spike non conferma supporto corretto.
-5. Completare la verifica di duplicate/copy/paste, badge gerarchia e round-trip di undo/redo e salvataggio JSON/PLYB; annotare gli esiti qui prima di chiudere le fasi.
+5. Completare la verifica di duplicate/copy/paste, badge gerarchia, multiselezione e round-trip di undo/redo e salvataggio JSON/PLYB; annotare gli esiti qui prima di chiudere le fasi.
 
 ### Roadmap successiva — dopo la validazione V1
 

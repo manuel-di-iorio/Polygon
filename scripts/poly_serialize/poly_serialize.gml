@@ -359,6 +359,10 @@ function __poly_validate_asset_desc(_desc) {
     var _nums = ["mass", "linearDamping", "angularDamping", "gravityFactor", "friction", "restitution"];
     for (var _n = 0; _n < array_length(_nums); _n++) if (variable_struct_exists(_p, _nums[_n]) && !is_real(_p[$ _nums[_n]])) return false;
     if (variable_struct_exists(_p, "isSensor") && !is_bool(_p.isSensor)) return false;
+    if (variable_struct_exists(_p, "shapes") && !is_array(_p.shapes)) return false;
+    if (variable_struct_exists(_p, "triggerEnter") && !is_bool(_p.triggerEnter)) return false;
+    if (variable_struct_exists(_p, "triggerStay") && !is_bool(_p.triggerStay)) return false;
+    if (variable_struct_exists(_p, "triggerExit") && !is_bool(_p.triggerExit)) return false;
     if (variable_struct_exists(_p, "character")) {
       if (!is_struct(_p.character)) return false;
       var _cn = ["radius", "halfHeight", "stepHeight", "maxSlopeAngle", "mass", "maxStrength"];
@@ -621,7 +625,7 @@ function __poly_load_scene_finish(_ed) {
 // (defaults + mapped overrides; dotted keys resolve nesting).
 function __poly_rebuild_data(_p, _kind) {
   var _data = _kind == "light" ? __poly_light_defaults()
-    : _kind == "camera" ? __poly_camera_defaults() : __poly_env_defaults();
+    : (_kind == "camera" ? __poly_camera_defaults() : __poly_env_defaults());
   var _sub = is_struct(_p) ? _p[$ _kind] : undefined;
 
   if (!is_struct(_sub)) return _data;

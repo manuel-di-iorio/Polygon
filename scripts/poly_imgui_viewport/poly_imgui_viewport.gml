@@ -356,7 +356,7 @@ function __poly_scene_panel_open(_ed) {
 // Effective AA mode: off, fxaa, smaa or ssaa (anything else falls back to ssaa).
 function __poly_aa_mode(_ed) {
   var _m = _ed[$ "aa_mode"];
-  if (!__poly_aa_known(_m)) _m = "ssaa";
+  if (!__poly_aa_known(_m)) _m = "off";
   return _m;
 }
 
@@ -594,8 +594,8 @@ function __poly_smaa_luts(_ed) {
     var _dir = working_directory + "__PolygonEditor__/smaa/";
 
     if (!file_exists(_dir + "smaa_area.png") || !file_exists(_dir + "smaa_search.png")) return false;
-    var _sa = sprite_add(_dir + "smaa_area.png", 1, false, false, false, 0, 0);
-    var _ss = sprite_add(_dir + "smaa_search.png", 1, false, false, false, 0, 0);
+    var _sa = sprite_add(_dir + "smaa_area.png", 1, false, false, 0, 0);
+    var _ss = sprite_add(_dir + "smaa_search.png", 1, false, false, 0, 0);
 
     if (_sa < 0 || !sprite_exists(_sa) || sprite_get_width(_sa) != 160 || sprite_get_height(_sa) != 560 || sprite_get_number(_sa) != 1
     || _ss < 0 || !sprite_exists(_ss) || sprite_get_width(_ss) != 64 || sprite_get_height(_ss) != 16 || sprite_get_number(_ss) != 1) {

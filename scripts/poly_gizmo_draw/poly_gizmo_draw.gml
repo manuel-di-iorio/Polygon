@@ -10,6 +10,7 @@ function __poly_gizmo_draw(_ed, _vp) {
   static _high = [ make_colour_rgb(255, 150, 60), make_colour_rgb(255, 255, 120), make_colour_rgb(110, 200, 255) ];
 
   if (array_length(_ed.sel) == 0) return;
+  if (_ed.show_gizmo != true) return;
   if (!__poly_gizmo_allowed(_ed)) return;
   var _pivot = __poly_gizmo_pivot_draw(_ed);
   var _ps = __poly_world_to_screen(_vp, _pivot);

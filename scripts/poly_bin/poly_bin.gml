@@ -178,7 +178,7 @@ function __poly_bin_save_descs(_path, _seq, _assets, _nodes, _world = undefined)
     } else if (_kind == "light") {
       var _l = is_struct(_d[$ "light"]) ? _d.light : {};
       var _lt = _l[$ "type"];
-      buffer_write(_buf, buffer_u8, _lt == "point" ? 1 : _lt == "spot" ? 2 : 0);
+      buffer_write(_buf, buffer_u8, _lt == "point" ? 1 : (_lt == "spot" ? 2 : 0));
       __poly_bin_w_col(_buf, _l[$ "color"], 255, 255, 255);
       buffer_write(_buf, buffer_f32, __poly_bin_r_num(_l[$ "intensity"], 1));
       buffer_write(_buf, buffer_f32, __poly_bin_r_num(_l[$ "range"], 50));
@@ -300,7 +300,7 @@ function __poly_bin_load_data(_path) {
     var _sx = buffer_read(_buf, buffer_f32);
     var _sy = buffer_read(_buf, buffer_f32);
     var _sz = buffer_read(_buf, buffer_f32);
-    var _kind = _kid == 1 ? "light" : _kid == 2 ? "camera" : _kid == 3 ? "environment" : "instance";
+    var _kind = _kid == 1 ? "light" : (_kid == 2 ? "camera" : (_kid == 3 ? "environment" : "instance"));
     var _desc = {
       kind: _kind,
       id: _id,
@@ -331,7 +331,7 @@ function __poly_bin_load_data(_path) {
       var _dist = buffer_read(_buf, buffer_f32);
       var _nrm = buffer_read(_buf, buffer_f32);
       _desc.light = {
-        type: _lt == 1 ? "point" : _lt == 2 ? "spot" : "directional",
+        type: _lt == 1 ? "point" : (_lt == 2 ? "spot" : "directional"),
         color: _col, intensity: _inten, range: _range, innerCone: _inner, outerCone: _outer,
         enabled: (_flags & 1) != 0,
         shadow: { enabled: (_flags & 2) != 0, resolution: _res, distance: _dist, normalOffset: _nrm },

@@ -4,12 +4,16 @@ function __poly_physics_defaults() {
   return {
     mode: "none",
     shape: "Box",
+    shapes: undefined,
     layer: "Default",
     mass: 1.0,
     linearDamping: 0.05,
     angularDamping: 0.05,
     gravityFactor: 1.0,
     isSensor: false,
+    triggerEnter: true,
+    triggerStay: false,
+    triggerExit: true,
     friction: 0.8,
     restitution: 0.0,
     halfExtents: [0.5, 0.5, 0.5],
@@ -58,13 +62,27 @@ function __poly_physics_validate(_source) {
 function __poly_physics_data(_source) {
   var _out = __poly_physics_defaults();
   if (!is_struct(_source)) return _out;
-  var _keys = ["mode", "shape", "layer", "mass", "linearDamping", "angularDamping", "gravityFactor", "isSensor", "friction", "restitution"];
+  var _keys = ["mode", "shape", "layer", "mass", "linearDamping", "angularDamping", "gravityFactor", "isSensor", "triggerEnter", "triggerStay", "triggerExit", "friction", "restitution"];
   for (var _i = 0; _i < array_length(_keys); _i++) {
     var _k = _keys[_i];
     if (variable_struct_exists(_source, _k)) _out[$ _k] = _source[$ _k];
   }
   if (variable_struct_exists(_source, "halfExtents") && is_array(_source.halfExtents) && array_length(_source.halfExtents) == 3) _out.halfExtents = __poly_physics_copy3(_source.halfExtents);
   if (variable_struct_exists(_source, "offset") && is_array(_source.offset) && array_length(_source.offset) == 3) _out.offset = __poly_physics_copy3(_source.offset);
+  if (variable_struct_exists(_source, "shapes") && is_array(_source.shapes)) {
+    var _shapes_out = [];
+    for (var _s = 0; _s < array_length(_source.shapes); _s++) {
+      var _sh = _source.shapes[_s];
+      if (!is_struct(_sh)) continue;
+      var _shd = { type: "Box", halfExtents: [0.5, 0.5, 0.5], offset: [0.0, 0.0, 0.0], rotation: [0.0, 0.0, 0.0] };
+      if (is_string(_sh[$ "type"])) _shd.type = _sh.type;
+      if (is_array(_sh[$ "halfExtents"]) && array_length(_sh.halfExtents) == 3) _shd.halfExtents = __poly_physics_copy3(_sh.halfExtents);
+      if (is_array(_sh[$ "offset"]) && array_length(_sh.offset) == 3) _shd.offset = __poly_physics_copy3(_sh.offset);
+      if (is_array(_sh[$ "rotation"]) && array_length(_sh.rotation) == 3) _shd.rotation = __poly_physics_copy3(_sh.rotation);
+      array_push(_shapes_out, _shd);
+    }
+    _out.shapes = _shapes_out;
+  }
   if (variable_struct_exists(_source, "character") && is_struct(_source[$ "character"])) {
     var _ck = ["radius", "halfHeight", "stepHeight", "maxSlopeAngle", "mass", "maxStrength"];
     for (var _c = 0; _c < array_length(_ck); _c++) if (variable_struct_exists(_source.character, _ck[_c])) _out.character[$ _ck[_c]] = _source.character[$ _ck[_c]];
@@ -72,19 +90,49 @@ function __poly_physics_data(_source) {
   }
   if (!__poly_physics_mode_valid(_out.mode)) _out.mode = "none";
   if (_out.shape != "Box" && _out.shape != "Sphere" && _out.shape != "Capsule" && _out.shape != "Cylinder" && _out.shape != "Mesh" && _out.shape != "ConvexHull") { _out.shape = "Box"; _out.mode = "none"; }
-  if (!is_string(_out.layer)) _out.layer = "Default";
+  if (!is_string(_out.layer) || (_out.layer != "Static" && _out.layer != "Default" && _out.layer != "Character" && _out.layer != "Trigger" && _out.layer != "Debris")) _out.layer = "Default";
   _out.mass = max(0.001, is_real(_out.mass) ? _out.mass : 1.0);
   _out.linearDamping = max(0.0, is_real(_out.linearDamping) ? _out.linearDamping : 0.05);
   _out.angularDamping = max(0.0, is_real(_out.angularDamping) ? _out.angularDamping : 0.05);
   _out.gravityFactor = is_real(_out.gravityFactor) ? _out.gravityFactor : 1.0;
   _out.isSensor = _out.isSensor == true;
+  _out.triggerEnter = _out.triggerEnter == true;
+  _out.triggerStay = _out.triggerStay == true;
+  _out.triggerExit = _out.triggerExit == true;
   _out.friction = clamp(is_real(_out.friction) ? _out.friction : 0.8, 0.0, 1.0);
   _out.restitution = clamp(is_real(_out.restitution) ? _out.restitution : 0.0, 0.0, 1.0);
   for (var _a = 0; _a < 3; _a++) {
     _out.halfExtents[_a] = max(0.001, is_real(_out.halfExtents[_a]) ? abs(_out.halfExtents[_a]) : 0.5);
     _out.offset[_a] = is_real(_out.offset[_a]) ? _out.offset[_a] : 0.0;
+    if (!is_real(_out.character.visualOffset[_a])) _out.character.visualOffset[_a] = 0.0;
   }
+  _out.character.radius = clamp(is_real(_out.character.radius) ? _out.character.radius : 0.33, 0.01, 1000.0);
+  _out.character.halfHeight = clamp(is_real(_out.character.halfHeight) ? _out.character.halfHeight : 0.92, 0.01, 1000.0);
+  _out.character.stepHeight = max(0.0, is_real(_out.character.stepHeight) ? _out.character.stepHeight : 0.3);
+  _out.character.maxSlopeAngle = clamp(is_real(_out.character.maxSlopeAngle) ? _out.character.maxSlopeAngle : 55.0, 0.0, 89.0);
+  _out.character.mass = max(0.001, is_real(_out.character.mass) ? _out.character.mass : 80.0);
+  _out.character.maxStrength = max(0.001, is_real(_out.character.maxStrength) ? _out.character.maxStrength : 160.0);
   return _out;
+}
+
+// Normalizes physics data and auto-fits the character visual when the source
+// did not carry an explicit visualOffset. Used by direct (non-spawn) apply
+// paths such as the AI bridge, so a character added to an existing node still
+// gets its model centered on the capsule.
+function __poly_physics_data_auto(_ed, _node, _source) {
+  var _raw_char = undefined;
+
+  if (is_struct(_source) && is_struct(_source[$ "character"])) _raw_char = _source.character;
+  var _has_visual = is_struct(_raw_char) && variable_struct_exists(_raw_char, "visualOffset");
+  var _d = __poly_physics_data(_source);
+  if (_d.mode != "character" || _has_visual) return _d;
+  var _model = undefined;
+  var _en = __poly_registry_find(_ed, _node);
+  if (_en != undefined && is_string(_en.asset) && _en.asset != "") {
+    var _entry = __poly_asset_get(_ed, _en.asset);
+    if (_entry != undefined) _model = _entry.model;
+  }
+  return __poly_physics_fit_visual(_model, _d);
 }
 
 function __poly_physics_apply(_node, _source) {
@@ -117,9 +165,9 @@ function __poly_physics_apply(_node, _source) {
   }
   if (_was_character) { var _reset_visual = __poly_first_child(_node); if (_reset_visual != undefined) _reset_visual.setLocalPosition(new GM3D_Vec3(0, 0, 0)); }
   var _body = new GM3D_PhysicsBodyComponent();
-  _body.setMotionType(_d.mode == "static" ? GM3D_EPhysicsMotionType.Static : _d.mode == "kinematic" ? GM3D_EPhysicsMotionType.Kinematic : GM3D_EPhysicsMotionType.Dynamic);
+  _body.setMotionType(_d.mode == "static" ? GM3D_EPhysicsMotionType.Static : (_d.mode == "kinematic" ? GM3D_EPhysicsMotionType.Kinematic : GM3D_EPhysicsMotionType.Dynamic));
   _body.setMotionQuality(GM3D_EPhysicsMotionQuality.Discrete);
-  _body.setLayer(_d.isSensor || _d.layer == "Trigger" ? GM3D_EPhysicsLayer.Trigger : _d.layer == "Static" ? GM3D_EPhysicsLayer.Static : _d.layer == "Character" ? GM3D_EPhysicsLayer.Character : _d.layer == "Debris" ? GM3D_EPhysicsLayer.Debris : GM3D_EPhysicsLayer.Default);
+  _body.setLayer(_d.isSensor || _d.layer == "Trigger" ? GM3D_EPhysicsLayer.Trigger : (_d.layer == "Static" ? GM3D_EPhysicsLayer.Static : (_d.layer == "Character" ? GM3D_EPhysicsLayer.Character : (_d.layer == "Debris" ? GM3D_EPhysicsLayer.Debris : GM3D_EPhysicsLayer.Default))));
   _body.setMass(_d.mass);
   _body.setLinearDamping(_d.linearDamping);
   _body.setAngularDamping(_d.angularDamping);
@@ -129,7 +177,7 @@ function __poly_physics_apply(_node, _source) {
   _body.setAllowSleeping(true);
   _node.addComponent(_body);
   var _shape = new GM3D_PhysicsShapeComponent();
-  var _stype = _d.shape == "Sphere" ? GM3D_EPhysicsShapeType.Sphere : _d.shape == "Capsule" ? GM3D_EPhysicsShapeType.Capsule : _d.shape == "Cylinder" ? GM3D_EPhysicsShapeType.Cylinder : _d.shape == "Mesh" ? GM3D_EPhysicsShapeType.Mesh : _d.shape == "ConvexHull" ? GM3D_EPhysicsShapeType.ConvexHull : GM3D_EPhysicsShapeType.Box;
+  var _stype = _d.shape == "Sphere" ? GM3D_EPhysicsShapeType.Sphere : (_d.shape == "Capsule" ? GM3D_EPhysicsShapeType.Capsule : (_d.shape == "Cylinder" ? GM3D_EPhysicsShapeType.Cylinder : (_d.shape == "Mesh" ? GM3D_EPhysicsShapeType.Mesh : (_d.shape == "ConvexHull" ? GM3D_EPhysicsShapeType.ConvexHull : GM3D_EPhysicsShapeType.Box))));
   _shape.setShapeType(_stype);
   _shape.setHalfExtents(new GM3D_Vec3(_d.halfExtents[0], _d.halfExtents[1], _d.halfExtents[2]));
   _shape.setLocalOffset(new GM3D_Vec3(_d.offset[0], _d.offset[1], _d.offset[2]));
@@ -157,6 +205,10 @@ function __poly_physics_live_read(_node) {
     if (_ch != undefined) _out.character.halfHeight = method(_cc, _ch)();
     if (_cs != undefined) _out.character.stepHeight = method(_cc, _cs)();
     if (_cms != undefined) _out.character.maxSlopeAngle = radtodeg(method(_cc, _cms)());
+    var _cma = _cc[$ "getMass"];
+    var _cst = _cc[$ "getMaxStrength"];
+    if (_cma != undefined) _out.character.mass = method(_cc, _cma)();
+    if (_cst != undefined) _out.character.maxStrength = method(_cc, _cst)();
     var _visual = __poly_first_child(_node);
     if (_visual != undefined) {
       var _vp = _visual.getLocalPosition();
@@ -167,12 +219,12 @@ function __poly_physics_live_read(_node) {
   var _motion_fn = _body[$ "getMotionType"];
   if (_motion_fn != undefined) {
     var _motion = method(_body, _motion_fn)();
-    _out.mode = _motion == GM3D_EPhysicsMotionType.Static ? "static" : _motion == GM3D_EPhysicsMotionType.Kinematic ? "kinematic" : "dynamic";
+    _out.mode = _motion == GM3D_EPhysicsMotionType.Static ? "static" : (_motion == GM3D_EPhysicsMotionType.Kinematic ? "kinematic" : "dynamic");
   } else _out.mode = "static";
   var _shape_fn2 = _shape[$ "getShapeType"];
   if (_shape_fn2 != undefined) {
     var _st = method(_shape, _shape_fn2)();
-    _out.shape = _st == GM3D_EPhysicsShapeType.Sphere ? "Sphere" : _st == GM3D_EPhysicsShapeType.Capsule ? "Capsule" : _st == GM3D_EPhysicsShapeType.Cylinder ? "Cylinder" : _st == GM3D_EPhysicsShapeType.Mesh ? "Mesh" : _st == GM3D_EPhysicsShapeType.ConvexHull ? "ConvexHull" : "Box";
+    _out.shape = _st == GM3D_EPhysicsShapeType.Sphere ? "Sphere" : (_st == GM3D_EPhysicsShapeType.Capsule ? "Capsule" : (_st == GM3D_EPhysicsShapeType.Cylinder ? "Cylinder" : (_st == GM3D_EPhysicsShapeType.Mesh ? "Mesh" : (_st == GM3D_EPhysicsShapeType.ConvexHull ? "ConvexHull" : "Box"))));
   }
   var _read_body = [["mass", "getMass"], ["linearDamping", "getLinearDamping"], ["angularDamping", "getAngularDamping"], ["gravityFactor", "getGravityFactor"], ["isSensor", "getIsSensor"]];
   for (var _i = 0; _i < array_length(_read_body); _i++) {
@@ -182,7 +234,7 @@ function __poly_physics_live_read(_node) {
   var _layer_fn = _body[$ "getLayer"];
   if (_layer_fn != undefined) {
     var _layer = method(_body, _layer_fn)();
-    _out.layer = _layer == GM3D_EPhysicsLayer.Static ? "Static" : _layer == GM3D_EPhysicsLayer.Character ? "Character" : _layer == GM3D_EPhysicsLayer.Trigger ? "Trigger" : _layer == GM3D_EPhysicsLayer.Debris ? "Debris" : "Default";
+    _out.layer = _layer == GM3D_EPhysicsLayer.Static ? "Static" : (_layer == GM3D_EPhysicsLayer.Character ? "Character" : (_layer == GM3D_EPhysicsLayer.Trigger ? "Trigger" : (_layer == GM3D_EPhysicsLayer.Debris ? "Debris" : "Default")));
   }
   var _read_shape = [["friction", "getFriction"], ["restitution", "getRestitution"]];
   for (var _j = 0; _j < array_length(_read_shape); _j++) {
