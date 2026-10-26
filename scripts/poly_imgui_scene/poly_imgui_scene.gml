@@ -86,7 +86,7 @@ function __poly_imgui_lock(_locked, _ghost, _tipkey) {
   if (_spr != -1) {
     var _sx = ImGui.GetCursorScreenPosX();
     var _sy = ImGui.GetCursorScreenPosY();
-    ImGui.SetCursorScreenPos(_sx + 1, _sy - 3);
+    ImGui.SetCursorScreenPos(_sx, _sy);
     _hit = ImGui.ImageButton("lock", _spr, 0, _tint, _ghost ? 0 : 1, c_black, 0, sprite_get_width(_spr), sprite_get_height(_spr));
   } else {
     _hit = ImGui.SmallButton(_locked ? "Unlock##lock" : "Lock##lock");
@@ -166,12 +166,17 @@ function __poly_imgui_kind_icon(_ed, _node, _kind, _hidden, _idx) {
     ImGui.SameLine(0, 0);
   }
 
+  ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 3);
   ImGui.Image(_info.spr, 0, _tint, 1, _iw, _ih);
 
   if (ImGui.IsItemHovered()) {
-    __poly_imgui_tip_delayed("hier|icon|" + string(_idx), _info.tip, true);
-    _ed.imgui.scene_eye_idx = _idx;
-    _ed.imgui.scene_eye_till = current_time + 500;
+    __poly_imgui_tip_delayed("hier|icon|" + string(_node.name), _info.tip, true);
+
+    // Child rows (idx < 0) do not own an eye/lock pair to reveal.
+    if (_idx >= 0) {
+      _ed.imgui.scene_eye_idx = _idx;
+      _ed.imgui.scene_eye_till = current_time + 500;
+    }
   }
 }
 
@@ -304,37 +309,127 @@ function __poly_scene_row_reveal(_ui, _idx) {
   _ui.scene_eye_till = current_time + 500;
 }
 
-// Draws one hierarchy row (eye, lock, icon, selectable).
-function __poly_scene_row(_ed, _ui, _meta, _idx) {
-  var _node = _meta.node;
-  var _eye_on = _meta.hidden || (_ui.scene_eye_idx == _idx && current_time <= _ui.scene_eye_till);
+// Vertical frame padding (per side) that makes a tree node frame as tall as the
+// row. The eye/lock buttons are the tallest row content: their image plus the
+// frame padding. With the default style this is a couple of pixels taller than
+// ImGui's text-based frame height.
+function __poly_scene_row_pad_y() {
+  var _line_h = ImGui.GetTextLineHeight();
+  var _btn_h = _line_h;
+  var _eye = asset_get_index("sprPolygonEditorIconEye");
 
-  if (__poly_imgui_eye(_meta.hidden, !_eye_on, "hier|eye|" + string(_idx))) __poly_hidden_set(_ed, _node, !_meta.hidden);
-  if (ImGui.IsItemHovered()) __poly_scene_row_reveal(_ui, _idx);
-  ImGui.SameLine(0, 0);
-  var _lock_on = _meta.locked || (_ui.scene_eye_idx == _idx && current_time <= _ui.scene_eye_till);
+  if (_eye != -1) _btn_h = sprite_get_height(_eye) + ImGui.GetFrameHeight() - _line_h;
 
-  if (__poly_imgui_lock(_meta.locked, !_lock_on, "hier|lock|" + string(_idx))) __poly_locked_set(_ed, _node, !_meta.locked);
-  if (ImGui.IsItemHovered()) __poly_scene_row_reveal(_ui, _idx);
-  ImGui.SameLine();
-  __poly_imgui_kind_icon(_ed, _node, _meta.kind, _meta.hidden, _idx);
-  ImGui.SameLine();
+  return max(0, (_btn_h - _line_h) * 0.5);
+}
 
-  var _short = __poly_short_name(_meta.display);
+// Draws one node row as an ImGui tree node and recurses into its children.
+// Tracked roots (_is_root) own eye/lock buttons, selection, rename and the
+// context menu; child rows are display-only structure. Returns the row pitch.
+function __poly_scene_tree_row(_ed, _ui, _node, _is_root, _idx, _meta, _hidden, _pending) {
+  var _sel = false;
+  var _kind = undefined;
+  var _label = string(_node.name);
 
-  if (ImGui.Selectable(_short, _meta.sel)) __poly_scene_click(_ed, _node, _idx, _ed.hier_rows);
-
-  if (ImGui.IsItemHovered()) {
-    __poly_scene_row_reveal(_ui, _idx);
-    __poly_imgui_tip_delayed("hier|name|" + string(_idx), _meta.display, true);
+  if (_is_root) {
+    _sel = _meta.sel;
+    _kind = _meta.kind;
+    _label = _meta.display;
   }
 
-  if (ImGui.IsMouseDoubleClicked(0) && ImGui.IsItemHovered()) __poly_focus_node(_ed, _node);
+  var _renaming = _is_root
+    && _ed.rename_name != undefined
+    && _ed.rename_id != undefined
+    && string(_node.name) == string(_ed.rename_id)
+    && _meta.display == _ed.rename_name;
+
+  var _kids = _node.getChildren();
+  var _has_kids = false; // temporarily hide child nodes
+  var _flags = ImGuiTreeNodeFlags.SpanFullWidth | ImGuiTreeNodeFlags.OpenOnArrow | ImGuiTreeNodeFlags.AllowOverlap | ImGuiTreeNodeFlags.FramePadding;
+
+  if (!_has_kids) _flags = _flags | ImGuiTreeNodeFlags.Leaf;
+  if (_sel) _flags = _flags | ImGuiTreeNodeFlags.Selected;
+
+  var _row_y = ImGui.GetCursorPosY();
+
+  if (_is_root) _ed.hier_row_y[$ string(_idx)] = ImGui.GetCursorScreenPosY();
+
+  ImGui.PushID(string(_node.name));
+  ImGui.SetNextItemAllowOverlap();
+  // The node label is hidden, so TreeNodeEx would size its frame from the font
+  // height alone and the hover/selection fill would be shorter than the row.
+  // Padding the frame up to the eye/lock button height makes the frame, the
+  // click area and the row content coincide.
+  // 11 = ImGuiStyleVar.FramePadding (raw index, the binding has no enum for it);
+  // 4 is its default .x, so the arrow and content offsets do not move.
+  ImGui.PushStyleVar(11, 4, __poly_scene_row_pad_y());
+  var _open = ImGui.TreeNodeEx("##node", _flags);
+  var _row_clicked = ImGui.IsItemClicked();
+  ImGui.PopStyleVar();
+  ImGui.SameLine(0, 0);
+
+  // Clicks on the eye/lock buttons must not also select the row.
+  var _over_btn = false;
+
+  if (_is_root) {
+    var _eye_on = _meta.hidden || (_ui.scene_eye_idx == _idx && current_time <= _ui.scene_eye_till);
+
+    if (__poly_imgui_eye(_meta.hidden, !_eye_on, "hier|eye|" + string(_node.name))) __poly_hidden_set(_ed, _node, !_meta.hidden);
+
+    if (ImGui.IsItemHovered()) {
+      _over_btn = true;
+      __poly_scene_row_reveal(_ui, _idx);
+    }
+
+    ImGui.SameLine(0, 0);
+    var _lock_on = _meta.locked || (_ui.scene_eye_idx == _idx && current_time <= _ui.scene_eye_till);
+
+    if (__poly_imgui_lock(_meta.locked, !_lock_on, "hier|lock|" + string(_node.name))) __poly_locked_set(_ed, _node, !_meta.locked);
+
+    if (ImGui.IsItemHovered()) {
+      _over_btn = true;
+      __poly_scene_row_reveal(_ui, _idx);
+    }
+
+    ImGui.SameLine();
+  }
+
+  __poly_imgui_kind_icon(_ed, _node, _kind, _hidden, _is_root ? _idx : -1);
+  ImGui.SameLine();
+
+  if (_renaming) {
+    __poly_scene_row_rename(_ed, _meta);
+  } else if (_is_root) {
+    ImGui.TextUnformatted(__poly_short_name(_label));
+
+    if (ImGui.IsItemHovered()) {
+      __poly_scene_row_reveal(_ui, _idx);
+      __poly_imgui_tip_delayed("hier|name|" + string(_node.name), _label, true);
+    }
+  } else {
+    ImGui.TextUnformatted(__poly_short_name(_label));
+
+    if (ImGui.IsItemHovered()) __poly_imgui_tip_delayed("hier|name|" + string(_node.name), _label, true);
+  }
+
+  var _pitch = ImGui.GetCursorPosY() - _row_y;
+
+  if (_is_root && !_renaming && !_over_btn && _row_clicked) __poly_scene_click(_ed, _node, _idx, _ed.hier_rows);
+
+  if (_is_root && !_renaming) {
+    ImGui.SetNextWindowBgAlpha(1);
+    __poly_scene_row_menu(_ed, _meta, _node, _idx, _pending);
+  }
+
+  if (_open) ImGui.TreePop();
+
+  ImGui.PopID();
+  return _pitch;
 }
 
 // Draws the right-click context menu for a row.
 function __poly_scene_row_menu(_ed, _meta, _node, _idx, _pending) {
-  if (!ImGui.BeginPopupContextItem("ctx##" + string(_idx))) return;
+  if (!ImGui.BeginPopupContextItem("ctx##" + string(_node.name))) return;
   if (!_meta.sel) __poly_scene_select(_ed, _node);
 
   if (array_length(_ed.sel) <= 1) {
@@ -458,66 +553,23 @@ function __poly_imgui_scene_list(_ed) {
     return;
   }
 
-  var _row_h = variable_struct_exists(_ui, "scene_row_height") ? _ui.scene_row_height : 0;
-  var _frame_h = ImGui.GetFrameHeight();
-
-  if (_row_h > 0 && variable_struct_exists(_ui, "scene_row_frame_height")
-  && _ui.scene_row_frame_height > 0 && _frame_h > 0 && _ui.scene_row_frame_height != _frame_h) {
-    _row_h = 0;
-    _ui.scene_row_height = 0;
-  }
-
-  if (_row_h <= 0) _row_h = ImGui.GetFrameHeightWithSpacing();
-  var _first = 0;
-  var _last = _n;
-  var _virtualized = false;
-
-  if (_row_h > 0 && _n > 0) {
-    var _scroll_y = max(0, ImGui.GetScrollY());
-    var _child_h = max(0, ImGui.GetWindowHeight());
-    _first = min(_n, max(0, floor(_scroll_y / _row_h) - 1));
-    _last = max(_first, min(_n, ceil((_scroll_y + _child_h) / _row_h) + 1));
-
-    // Stand-in for the skipped head rows (exact: each row advances _row_h).
-    if (_first > 0) ImGui.Dummy(1, _first * _row_h);
-    _virtualized = (_first > 0 || _last < _n);
-  }
-
   ImGui.PushStyleColor(ImGuiCol.Button, c_black, 0);
   ImGui.PushStyleColor(ImGuiCol.ButtonHovered, make_colour_rgb(47, 111, 237), 0.35);
   ImGui.PushStyleColor(ImGuiCol.ButtonActive, make_colour_rgb(47, 111, 237), 0.5);
 
   _ed.hier_rows = _rows;
   _ed.hier_row_y = {};
+  var _row_h = _ed.hier_row_h;
 
-  for (var _i = _first; _i < _last; _i++) {
-    var _row_y = ImGui.GetCursorPosY();
-    _ed.hier_row_y[$ string(_i)] = ImGui.GetCursorScreenPosY();
-    ImGui.PushID(_i);
+  if (!is_real(_row_h) || _row_h <= 0) _row_h = ImGui.GetFrameHeightWithSpacing();
 
-    if (_ed.rename_name != undefined && _rows[_i].display == _ed.rename_name && _rows[_i].node != undefined && _rows[_i].node.name == _ed.rename_id) {
-      __poly_scene_row_rename(_ed, _rows[_i]);
-    } else {
-      __poly_scene_row(_ed, _ui, _rows[_i], _i);
-    }
+  for (var _i = 0; _i < _n; _i++) {
+    var _meta = _rows[_i];
+    var _pitch = __poly_scene_tree_row(_ed, _ui, _meta.node, true, _i, _meta, _meta.hidden, _pending);
 
-    ImGui.PopID();
-    ImGui.SetNextWindowBgAlpha(1);
-    __poly_scene_row_menu(_ed, _rows[_i], _rows[_i].node, _i, _pending);
-
-    // Self-calibrate: measure the real row pitch (row + trailing spacing,
-    // present here because a following row exists). The initial estimate
-    // drifts with row count (376 rows x 1px = 15 missing rows at the end),
-    // which used to swallow the last items.
-    if (_i == _first && _first + 1 < _last) {
-      var _measured = ImGui.GetCursorPosY() - _row_y;
-
-      if (_measured > 0) {
-        _row_h = _measured;
-        _ui.scene_row_height = _measured;
-        _ui.scene_row_frame_height = _frame_h;
-      }
-    }
+    // Root rows share one pitch: calibrate the rubber-band height from the
+    // first one instead of relying on a hard-coded row estimate.
+    if (_i == 0 && is_real(_pitch) && _pitch > 0) _row_h = _pitch;
   }
 
   __poly_imgui_pop(3);
@@ -525,13 +577,7 @@ function __poly_imgui_scene_list(_ed) {
   _ed.hier_row_h = _row_h;
   __poly_hier_rect_step(_ed);
 
-  if (_virtualized && _row_h > 0 && _last < _n) {
-    var _tail_h = (_n - _last) * _row_h;
-
-    if (_tail_h > 0) ImGui.Dummy(1, _tail_h);
-  }
-
   ImGui.EndChild();
   __poly_hier_status(_ed, _n, _total);
-  __poly_scene_list_commit(_ed, _pending.ren, _pending.foc, _pending.dup, _pending.del);
+  __poly_scene_list_commit(_ed, _pending.ren, _pending.foc, _pending.dup, _pending.del, _pending.cop, _pending.cut, _pending.pas);
 }

@@ -389,8 +389,9 @@ toolbar → FPS → animation preview → modals.
   toggle + grid/size popup, Unlit/Shaded, Home, AA combo
   (`AA Off/FXAA/SMAA/SSAA`), visibility eye menu (hidden objects,
   sky, outline).
-- Hierarchy (`poly_imgui_scene.gml`): virtualized rows (self-
-  calibrating pitch), eye/lock buttons, kind icons, filter text +
+- Hierarchy (`poly_imgui_scene.gml`): scene tree of tracked roots with
+  expandable child nodes (not virtualized; roots own selection, child
+  rows are display-only), eye/lock buttons, kind icons, filter text +
   kind filters, F2 inline rename, rubber-band select, right-click
   menu (Focus/Rename/Duplicate/Copy/Cut/Paste/Delete), item counter.
 - Inspector (`poly_imgui_inspector` + `insp_*`): per-kind sections

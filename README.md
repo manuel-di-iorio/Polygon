@@ -241,13 +241,6 @@ Notes:
 - The toolbar **Pivot/Center** toggle moves the gizmo handles between the node positions (Pivot, the default) and the center of the selection bounds (Center).
 - Scale needs a uniform handle (center) or an axis handle; environment nodes cannot be transformed.
 
-### Panels
-
-- **Models**: filterable list or cards of your library. Drag into the viewport to place. Select one to edit its spawn defaults.
-- **Hierarchy**: eye = hide, hand = lock (locked objects cannot be selected). Ctrl+click selects a range, right-click opens the context menu, rubber-band selects rows. The filter button limits types (models, lights, cameras, environment).
-- **Eye menu** (toolbar, next to AA): toggle hidden-objects visibility, skybox and selection outline.
-- **Inspector**: Transform, Physics, Light / Camera / Environment, Shadows, Materials, Animations. With no object or prefab selected it shows scene-wide Physics World settings. Prefab instances show an **Overrides** menu for supported instance overrides.
-
 ### Physics
 
 Select an instance and open **Physics** in the Inspector to choose `static`, `kinematic`, `dynamic`, or `character`, configure its shape and body/controller properties, fit a collider to the model bounds, or clear physics. An instance with no `physics` block is non-physical. Prefab **Physics Defaults** are stored in the top-level `assets` map and affect new spawns and duplicates; duplicating, copying/pasting or tracking an existing instance keeps that instance's own physics instead of re-applying the prefab default.
