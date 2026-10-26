@@ -34,6 +34,8 @@ function demo_create() {
   demo_player = undefined;
   demo_player_controller = undefined;
   demo_player_vertical_speed = 0.0;
+  demo_coyote_time = 0.15;
+  demo_coyote_timer = 0.0;
   // Face the trees at the north side of the platform from the initial spawn.
   demo_player_facing = 0.0;
   demo_player_turn_speed = 180.0;
@@ -115,7 +117,10 @@ function demo_step() {
   if (demo_player_visual != undefined) demo_player_visual.setLocalRotation(demo_yaw_quat(demo_player_facing + 180.0));
 
   if (_grounded && demo_player_vertical_speed < 0.0) demo_player_vertical_speed = 0.0;
-  if (_grounded && _jump_requested) demo_player_vertical_speed = demo_jump_speed;
+  // Coyote time: grace window after leaving ground where jump is still allowed.
+  if (_grounded) demo_coyote_timer = demo_coyote_time; else demo_coyote_timer = max(0.0, demo_coyote_timer - _dt);
+  var _can_jump = (_grounded || demo_coyote_timer > 0.0) && _jump_requested;
+  if (_can_jump) { demo_player_vertical_speed = demo_jump_speed; demo_coyote_timer = 0.0; }
   if (!_grounded) demo_player_vertical_speed -= demo_jump_gravity * _dt;
 
   demo_physics.setCharacterVelocity(demo_player, new GM3D_Vec3(
@@ -503,7 +508,7 @@ function demo_build_player() {
   demo_player_controller.setRadius(0.3);
   demo_player_controller.setHalfHeight(0.55);
   demo_player_controller.setStepHeight(0.35);
-  demo_player_controller.setMaxSlopeAngle(degtorad(55.0));
+  demo_player_controller.setMaxSlopeAngle(degtorad(35.0));
   demo_player_controller.setLayer(GM3D_EPhysicsLayer.Character);
   demo_player_controller.setMass(70.0);
   demo_player_controller.setMaxStrength(140.0);
