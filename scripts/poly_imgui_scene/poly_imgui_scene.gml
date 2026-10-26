@@ -517,21 +517,23 @@ function __poly_imgui_scene_list(_ed) {
   ImGui.Dummy(2, 0);
 
   if (ImGui.BeginPopup("##scenecreatepopup")) {
+    if (ImGui.MenuItem("Cube")) __poly_create_primitive(_ed, "cube");
+    if (ImGui.MenuItem("Sphere")) __poly_create_primitive(_ed, "sphere");
+    ImGui.Separator();
     if (__poly_light_count(_ed) >= 8) {
       ImGui.TextDisabled("Lights (8 max reached)");
     } else {
       if (ImGui.MenuItem("Directional Light")) __poly_create_light(_ed, "directional");
       if (ImGui.MenuItem("Point Light")) __poly_create_light(_ed, "point");
     }
-    ImGui.Separator();
-    if (ImGui.MenuItem("Perspective Camera")) __poly_create_camera(_ed, "perspective");
-    if (ImGui.MenuItem("Ortho Camera")) __poly_create_camera(_ed, "ortho");
-    ImGui.Separator();
     if (__poly_env_node(_ed) == undefined) {
       if (ImGui.MenuItem("Environment")) __poly_create_env(_ed);
     } else {
       ImGui.TextDisabled("Environment (already in scene)");
     }
+    ImGui.Separator();
+    if (ImGui.MenuItem("Perspective Camera")) __poly_create_camera(_ed, "perspective");
+    if (ImGui.MenuItem("Ortho Camera")) __poly_create_camera(_ed, "ortho");
     ImGui.EndPopup();
   }
 

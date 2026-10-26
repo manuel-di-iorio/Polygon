@@ -646,7 +646,7 @@ function __poly_asset_cands(_ed, _name) {
   for (var _i = 0, _n = array_length(_ed.assets); _i < _n; _i++) {
     var _entry = _ed.assets[_i];
 
-    if (!is_struct(_entry) || !is_string(_entry.name) || _entry.name == "") continue;
+    if (!is_struct(_entry) || !variable_struct_exists(_entry, "name") || !is_string(_entry.name) || _entry.name == "") continue;
     if (_entry.name == _name && is_string(_entry.key) && _entry.key != "") array_push(_out, _entry);
   }
 

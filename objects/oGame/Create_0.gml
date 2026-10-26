@@ -16,6 +16,8 @@ var config = {
     "kenney_platformer-kit/rocks.glb",
     "kenney_mini-characters/character-female-b.glb",
     "kenney_cube-pets_1.0/animal-fox.glb",
+    "__PolygonEditor__/models/cube.glb",
+    "__PolygonEditor__/models/sphere.glb",
   ]),
 };
 

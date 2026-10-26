@@ -6,6 +6,8 @@
 
 // Checks if an entry matches the lowercase filter (key or file name).
 function __poly_asset_visible(_entry, _flt) {
+  if (!is_struct(_entry)) return false;
+  if (variable_struct_exists(_entry, "primitive") && _entry.primitive == true) return false;
   if (_flt == "") return true;
   if (string_pos(_flt, string_lower(_entry.key)) > 0) return true;
   return string_pos(_flt, string_lower(__poly_display_from_key(_entry.key))) > 0;

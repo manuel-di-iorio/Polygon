@@ -26,6 +26,13 @@ function poly_asset_add(_model, _kind = "prefab", _path = undefined, _on_create 
   var _entry = { key: _key, model: _model, kind: _kind };
 
   if (is_string(_root) && _root != "") _entry.name = _root;
+  else if (is_string(_key) && _key != "") {
+    var _slash = string_last_pos("/", _key);
+    var _base = (_slash > 0) ? string_copy(_key, _slash + 1, string_length(_key) - _slash) : _key;
+    var _dot = string_last_pos(".", _base);
+    if (_dot > 1) _base = string_copy(_base, 1, _dot - 1);
+    if (_base != "") _entry.name = _base;
+  }
   if (is_method(_on_create)) _entry.on_create = _on_create;
   array_push(_ed.assets, _entry);
   return _key;
