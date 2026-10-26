@@ -52,6 +52,7 @@ function __poly_over_diffs(_ed, _node, _en, _entry) {
   var _defaults = is_struct(_entry[$ "physics_default"]) ? _entry.physics_default
     : (is_struct(_ed.asset_meta) && is_struct(_ed.asset_meta[$ _entry.key]) && is_struct(_ed.asset_meta[$ _entry.key][$ "physics"])
       ? _ed.asset_meta[$ _entry.key].physics : undefined);
+
   if (_defaults != undefined && is_struct(_en.data) && is_struct(_en.data[$ "physics"])) {
     if (json_stringify(__poly_physics_data(_defaults)) != json_stringify(__poly_physics_data(_en.data.physics))) array_push(_diffs, { kind: "physics", label: "Physics" });
   }

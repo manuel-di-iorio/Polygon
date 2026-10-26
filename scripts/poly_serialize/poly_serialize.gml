@@ -354,37 +354,41 @@ function __poly_validate_asset_desc(_desc) {
     if (variable_struct_exists(_p, "mode") && !is_string(_p.mode)) return false;
     if (variable_struct_exists(_p, "shape") && !is_string(_p.shape)) return false;
     if (variable_struct_exists(_p, "layer") && !is_string(_p.layer)) return false;
-    var _vecs = ["halfExtents", "offset"];
+    var _vecs = [ "halfExtents", "offset" ];
     for (var _v = 0; _v < array_length(_vecs); _v++) if (variable_struct_exists(_p, _vecs[_v]) && !__poly_is_num3(_p, _vecs[_v])) return false;
-    var _nums = ["mass", "linearDamping", "angularDamping", "gravityFactor", "friction", "restitution"];
+    var _nums = [ "mass", "linearDamping", "angularDamping", "gravityFactor", "friction", "restitution" ];
     for (var _n = 0; _n < array_length(_nums); _n++) if (variable_struct_exists(_p, _nums[_n]) && !is_real(_p[$ _nums[_n]])) return false;
     if (variable_struct_exists(_p, "isSensor") && !is_bool(_p.isSensor)) return false;
     if (variable_struct_exists(_p, "shapes") && !is_array(_p.shapes)) return false;
+
     if (variable_struct_exists(_p, "constraint")) {
       if (!is_struct(_p.constraint)) return false;
       if (variable_struct_exists(_p.constraint, "type") && !is_string(_p.constraint.type)) return false;
       if (variable_struct_exists(_p.constraint, "nodeB") && !is_string(_p.constraint.nodeB)) return false;
-      var _cvecs = ["pivotA", "pivotB", "axisA"];
+      var _cvecs = [ "pivotA", "pivotB", "axisA" ];
       for (var _cv = 0; _cv < array_length(_cvecs); _cv++) if (variable_struct_exists(_p.constraint, _cvecs[_cv]) && !__poly_is_num3(_p.constraint, _cvecs[_cv])) return false;
-      var _cnums = ["minLimit", "maxLimit", "motorVelocity", "motorMaxForce"];
+      var _cnums = [ "minLimit", "maxLimit", "motorVelocity", "motorMaxForce" ];
       for (var _cn = 0; _cn < array_length(_cnums); _cn++) if (variable_struct_exists(_p.constraint, _cnums[_cn]) && !is_real(_p.constraint[$ _cnums[_cn]])) return false;
       if (variable_struct_exists(_p.constraint, "motorEnabled") && !is_bool(_p.constraint.motorEnabled)) return false;
     }
+
     if (variable_struct_exists(_p, "vehicle")) {
       if (!is_struct(_p.vehicle)) return false;
       if (variable_struct_exists(_p.vehicle, "enabled") && !is_bool(_p.vehicle.enabled)) return false;
       if (variable_struct_exists(_p.vehicle, "automatic") && !is_bool(_p.vehicle.automatic)) return false;
-      var _vnums = ["mass", "linearDamping", "angularDamping", "friction", "wheelRadius", "wheelWidth", "maxSteerAngle", "maxTorque", "minRPM", "maxRPM", "shiftUpRPM", "shiftDownRPM", "finalDriveRatio", "reverseGearRatio", "clutchStrength", "antiRollStiffness"];
+      var _vnums = [ "mass", "linearDamping", "angularDamping", "friction", "wheelRadius", "wheelWidth", "maxSteerAngle", "maxTorque", "minRPM", "maxRPM", "shiftUpRPM", "shiftDownRPM", "finalDriveRatio", "reverseGearRatio", "clutchStrength", "antiRollStiffness" ];
       for (var _vn = 0; _vn < array_length(_vnums); _vn++) if (variable_struct_exists(_p.vehicle, _vnums[_vn]) && !is_real(_p.vehicle[$ _vnums[_vn]])) return false;
       if (variable_struct_exists(_p.vehicle, "wheelCount") && !is_real(_p.vehicle.wheelCount)) return false;
       if (variable_struct_exists(_p.vehicle, "gearCount") && !is_real(_p.vehicle.gearCount)) return false;
     }
+
     if (variable_struct_exists(_p, "triggerEnter") && !is_bool(_p.triggerEnter)) return false;
     if (variable_struct_exists(_p, "triggerStay") && !is_bool(_p.triggerStay)) return false;
     if (variable_struct_exists(_p, "triggerExit") && !is_bool(_p.triggerExit)) return false;
+
     if (variable_struct_exists(_p, "character")) {
       if (!is_struct(_p.character)) return false;
-      var _cn = ["radius", "halfHeight", "stepHeight", "maxSlopeAngle", "mass", "maxStrength"];
+      var _cn = [ "radius", "halfHeight", "stepHeight", "maxSlopeAngle", "mass", "maxStrength" ];
       for (var _c = 0; _c < array_length(_cn); _c++) if (variable_struct_exists(_p.character, _cn[_c]) && !is_real(_p.character[$ _cn[_c]])) return false;
       if (variable_struct_exists(_p.character, "stickToGround") && !is_bool(_p.character.stickToGround)) return false;
       if (variable_struct_exists(_p.character, "visualOffset") && !__poly_is_num3(_p.character, "visualOffset")) return false;
@@ -441,6 +445,7 @@ function __poly_rebuild_place_asset(_ed, _p, _key) {
   if (variable_struct_exists(_p, "shadows") && is_struct(_p.shadows)) {
     _flags = { castShadows: _p.shadows.cast == true, receiveShadows: _p.shadows.receive == true };
   }
+
   if (!is_struct(_flags)) _flags = {};
   if (variable_struct_exists(_p, "physics")) _flags.physics = __poly_physics_data(_p.physics);
 
@@ -759,6 +764,7 @@ function __poly_write_file_assets(_ed) {
       && is_string(_mv.actor[$ "object"]) && _mv.actor.object != "") {
         _dst.actor = _mv.actor;
       }
+
       if (is_struct(_mv[$ "physics"])) _dst.physics = __poly_physics_data(_mv.physics);
     }
   }

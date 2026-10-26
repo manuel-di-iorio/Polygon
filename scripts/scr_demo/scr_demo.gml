@@ -120,7 +120,9 @@ function demo_step() {
   // Coyote time: grace window after leaving ground where jump is still allowed.
   if (_grounded) demo_coyote_timer = demo_coyote_time; else demo_coyote_timer = max(0.0, demo_coyote_timer - _dt);
   var _can_jump = (_grounded || demo_coyote_timer > 0.0) && _jump_requested;
+
   if (_can_jump) { demo_player_vertical_speed = demo_jump_speed; demo_coyote_timer = 0.0; }
+
   if (!_grounded) demo_player_vertical_speed -= demo_jump_gravity * _dt;
 
   demo_physics.setCharacterVelocity(demo_player, new GM3D_Vec3(
@@ -138,16 +140,19 @@ function demo_step() {
   if (demo_player_anim != undefined) {
     var _moving = _move.lengthSq() > 0.000001;
     var _anim_target = demo_player_anim_idle;
+
     if (!_grounded) {
       _anim_target = (demo_player_vertical_speed > 0.0) ? demo_player_anim_jump : demo_player_anim_fall;
     } else if (_moving) {
       _anim_target = _sprinting ? demo_player_anim_run : demo_player_anim_walk;
     }
+
     if (_anim_target != demo_player_anim_current) {
       demo_player_anim.setTime(0.0);
       demo_player_anim.play(_anim_target, true);
       demo_player_anim_current = _anim_target;
     }
+
     demo_player_anim.setSpeed((_anim_target == demo_player_anim_walk) ? 1.25 : 1.0);
   }
 
@@ -222,13 +227,16 @@ function demo_build_skybox() {
 
   demo_skybox_node = demo_scene.createNode("DemoSkybox");
   var _model_root = _res.model.spawnInto(demo_scene, demo_skybox_node);
+
   if (_model_root == undefined) {
     demo_skybox_node.destroy();
     demo_skybox_node = undefined;
     return;
   }
+
   var _mesh = _model_root.getMeshComponent();
   if (_mesh != undefined) _mesh.setFlags(0);
+
   if (demo_skybox_material != undefined) {
     demo_skybox_material.setFloatArray("u_skyTop", [ 0.25, 0.5, 0.83 ]);
     demo_skybox_material.setFloatArray("u_skyHorizon", [ 0.84, 0.87, 0.91 ]);
@@ -236,6 +244,7 @@ function demo_build_skybox() {
     demo_skybox_material.setFloatArray("u_sunColor", [ 1.0, 1.0, 1.0 ]);
     demo_skybox_material.setFloat("u_sunGlow", 1.0);
   }
+
   demo_sync_skybox();
 }
 
@@ -246,15 +255,18 @@ function demo_sync_skybox() {
   var _cam_pos = demo_cam.getWorldPosition();
   demo_skybox_node.setLocalPosition(new GM3D_Vec3(_cam_pos.x, _cam_pos.y, _cam_pos.z));
   var _far = 10000.0;
+
   if (demo_cam_comp != undefined) {
     var _camera_far = demo_cam_comp.getFar();
     if (is_real(_camera_far) && _camera_far > 0.0) _far = _camera_far;
   }
+
   var _fit = clamp(_far * 0.5 / 4000.0, 0.001, 1.0);
   demo_skybox_node.setLocalScale(new GM3D_Vec3(_fit, _fit, _fit));
 
   if (demo_skybox_material != undefined && demo_sun_node != undefined) {
     var _sun_dir = demo_sun_node.getWorldForward();
+
     if (_sun_dir != undefined && _sun_dir.lengthSq() > 0.000001) {
       _sun_dir.normalize();
       demo_skybox_material.setFloatArray("u_sunDir", [ _sun_dir.x, _sun_dir.y, _sun_dir.z ]);
@@ -278,8 +290,10 @@ function demo_build_camera() {
 // Spawns all demo props.
 function demo_build_props() {
   var _terrain = demo_load_model("demo/terrain.glb");
+
   if (_terrain != undefined) {
     demo_terrain_visual = _terrain.model.spawnInto(demo_scene, undefined);
+
     if (demo_terrain_visual != undefined) {
       demo_terrain_visual.setLocalPosition(new GM3D_Vec3(0.0, -0.020, 0.0));
       demo_terrain_visual.setLocalScale(new GM3D_Vec3(1.0));
@@ -354,10 +368,12 @@ function demo_load_model(_path, _label = undefined, _shader_override = undefined
 
     if (_src == undefined) return undefined;
     demo_assign_shaders(_src);
+
     if (_shader_override != undefined) {
       var _materials = _src.getMaterials();
       for (var _i = 0, _nmat = array_length(_materials); _i < _nmat; _i++) _materials[_i].setShader(GM3D_ERenderPass.Forward, _shader_override);
     }
+
     _src.freeze();
     array_push(demo_models, _src);
     demo_cache[$ _path] = _src;
@@ -416,11 +432,13 @@ function demo_spawn_prop(_prop) {
 
   if (variable_struct_exists(_prop, "yaw") && is_real(_prop.yaw)) _node.setLocalRotation(demo_yaw_quat(_prop.yaw));
   demo_on_create(_node, _res.path, _res.model);
+
   if (variable_struct_exists(_prop, "collider") && _prop.collider) {
     var _kind = variable_struct_exists(_prop, "colliderKind") ? _prop.colliderKind : "box";
     var _yaw = (variable_struct_exists(_prop, "yaw") && is_real(_prop.yaw)) ? _prop.yaw : 0.0;
     demo_add_model_collider(_node, _res.model, demo_vec3(_prop.pos, [ 0, 0, 0 ]), demo_scale3(_prop), _kind, _yaw);
   }
+
   return _node;
 }
 
@@ -442,6 +460,7 @@ function demo_add_model_collider(_visual, _src, _position, _scale, _kind = "box"
     max(abs(_max.z - _min.z) * 0.5 * _scale.z, 0.08)
   );
   var _body_node = demo_scene.createNode("Collider_" + string(_visual.name));
+
   if (_kind == "wall") {
     // Tall invisible boxes use the model footprint but rise well above the
     // maximum jump, so trees and rocks cannot become platforms.
@@ -473,10 +492,12 @@ function demo_add_model_collider(_visual, _src, _position, _scale, _kind = "box"
   } else {
     _body_node.setLocalPosition(new GM3D_Vec3(_position.x + _center.x, _position.y + _center.y, _position.z + _center.z));
   }
+
   var _body = new GM3D_PhysicsBodyComponent();
   _body.setMotionType(GM3D_EPhysicsMotionType.Static);
   _body.setLayer(GM3D_EPhysicsLayer.Static);
   var _shape = new GM3D_PhysicsShapeComponent();
+
   if (_kind == "mesh") {
     _shape.setShapeType(GM3D_EPhysicsShapeType.Mesh);
   } else {
@@ -484,6 +505,7 @@ function demo_add_model_collider(_visual, _src, _position, _scale, _kind = "box"
     _shape.setHalfExtents(_half);
     if (_yaw != 0.0) _shape.setLocalRotation(demo_yaw_quat(_yaw));
   }
+
   _shape.setFriction(0.8);
   _body_node.addComponent(_body);
   _body_node.addComponent(_shape);
@@ -495,10 +517,12 @@ function demo_build_player() {
   // character/platform overlap while staying close to the surface.
   var _support_top = 0.0;
   var _platform = demo_load_model("kenney_platformer-kit/platform.glb");
+
   if (_platform != undefined) {
     var _bounds = _platform.model.getBoundingBox();
     if (_bounds != undefined) _support_top = max(_support_top, -0.15 + _bounds.max.y * 2.4);
   }
+
   var _spawn_y = _support_top + 0.3 + 0.55 + 0.35;
   // Keep the capsule fully inside the platform footprint at startup.
   var _spawn = new GM3D_Vec3(-0.55, _spawn_y, 0.0);
@@ -522,6 +546,7 @@ function demo_build_player() {
   demo_player_visual = undefined;
   demo_player_visual_offset_y = -(0.3 + 0.55);
   demo_player_anim = undefined;
+
   if (_character != undefined) {
     // Keep the gameplay pivot at the controller origin and offset the model
     // locally so turning cannot swing an off-centre asset around in an orbit.
@@ -529,6 +554,7 @@ function demo_build_player() {
     // so name this pivot after the source root instead of a custom label.
     var _visual_root_name = "PlayerVisualPivot";
     var _source_nodes = _character.model.getNodes();
+
     if (is_array(_source_nodes)) {
       for (var _i = 0, _n = array_length(_source_nodes); _i < _n; _i++) {
         if (_source_nodes[_i] == undefined || _source_nodes[_i].parent != undefined) continue;
@@ -536,22 +562,27 @@ function demo_build_player() {
         break;
       }
     }
+
     demo_player_visual = demo_scene.createNode(_visual_root_name);
     var _model_root = _character.model.spawnInto(demo_scene, demo_player_visual);
+
     if (_model_root != undefined) {
       var _character_bounds = _character.model.getBoundingBox();
       var _model_center_x = 0.0;
       var _model_center_z = 0.0;
+
       if (_character_bounds != undefined) {
         demo_player_visual_offset_y -= _character_bounds.min.y;
         _model_center_x = (_character_bounds.min.x + _character_bounds.max.x) * 0.5;
         _model_center_z = (_character_bounds.min.z + _character_bounds.max.z) * 0.5;
       }
+
       demo_player_visual.setLocalPosition(new GM3D_Vec3(_spawn.x, 0.250, _spawn.z));
       demo_player_visual.setLocalScale(new GM3D_Vec3(1.0));
       _model_root.setLocalPosition(new GM3D_Vec3(-_model_center_x, 0.0, -_model_center_z));
       demo_on_create(demo_player_visual, _character.path, _character.model);
       demo_player_anim = demo_find_anim(demo_player_visual);
+
       if (demo_player_anim != undefined && _character.model.animationCount > 0) {
         demo_player_anim_idle = demo_find_anim_index(_character.model, "idle");
         demo_player_anim_walk = demo_find_anim_index(_character.model, "walk");
@@ -560,6 +591,7 @@ function demo_build_player() {
         demo_player_anim_fall = demo_find_anim_index(_character.model, "fall");
         demo_player_anim_current = demo_player_anim_idle;
       }
+
       demo_player_visual.setLocalRotation(demo_yaw_quat(demo_player_facing + 180.0));
     }
   }
@@ -693,14 +725,6 @@ function demo_yaw_quat(_deg) {
   _quat.z = 0;
   _quat.w = cos(_half);
   return _quat;
-}
-
-// Computes a forward vector from yaw/pitch angles.
-function demo_forward(_yaw, _pitch) {
-  var _y = degtorad(_yaw);
-  var _p = degtorad(_pitch);
-  var _cp = cos(_p);
-  return new GM3D_Vec3(sin(_y) * _cp, sin(_p), -cos(_y) * _cp);
 }
 
 // Computes the character's heading using the same +Y yaw convention as

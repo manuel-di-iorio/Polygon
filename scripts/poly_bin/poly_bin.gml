@@ -18,10 +18,6 @@
 //       f32 fogStart, f32 fogEnd, u8 enabled
 //   v1 files omit all v2 fields and load with default world/no physics.
 
-// Returns the binary scene extension (with dot).
-function __poly_bin_ext() {
-  return ".bin";
-}
 
 // Checks if a path points to a binary scene (by extension).
 function __poly_bin_is_path(_path) {
@@ -131,6 +127,7 @@ function __poly_bin_save_descs(_path, _seq, _assets, _nodes, _world = undefined)
       var _layer = _meta.actor[$ "layer"];
       __poly_bin_w_str(_buf, is_string(_layer) && _layer != "" ? _layer : "Instances");
     }
+
     var _has_physics = is_struct(_meta[$ "physics"]);
     buffer_write(_buf, buffer_u8, _has_physics ? 1 : 0);
     if (_has_physics) __poly_bin_w_str(_buf, json_stringify(_meta.physics));
@@ -254,12 +251,14 @@ function __poly_bin_load_data(_path) {
 
   var _seq = buffer_read(_buf, buffer_s32);
   var _world = __poly_world_defaults();
+
   if (_ver >= 2) {
-    _world.gravity = [buffer_read(_buf, buffer_f32), buffer_read(_buf, buffer_f32), buffer_read(_buf, buffer_f32)];
+    _world.gravity = [ buffer_read(_buf, buffer_f32), buffer_read(_buf, buffer_f32), buffer_read(_buf, buffer_f32) ];
     _world.fixedTimeStep = buffer_read(_buf, buffer_f32);
     _world.maxSubSteps = buffer_read(_buf, buffer_u16);
     _world.maxBodies = buffer_read(_buf, buffer_u16);
   }
+
   var _assets = {};
   var _na = buffer_read(_buf, buffer_u16);
 
@@ -274,6 +273,7 @@ function __poly_bin_load_data(_path) {
 
       if (_obj != "") _entry.actor = { object: _obj, layer: _layer != "" ? _layer : "Instances" };
     }
+
     if (_ver >= 2 && buffer_read(_buf, buffer_u8) == 1) {
       var _asset_physics_text = buffer_read(_buf, buffer_string);
       var _asset_physics_data = json_parse(_asset_physics_text);
@@ -314,6 +314,7 @@ function __poly_bin_load_data(_path) {
       _desc.assetId = buffer_read(_buf, buffer_string);
       var _bits = buffer_read(_buf, buffer_u8);
       _desc.shadows = { cast: (_bits & 1) != 0, receive: (_bits & 2) != 0 };
+
       if (_ver >= 2 && buffer_read(_buf, buffer_u8) == 1) {
         var _node_physics_text = buffer_read(_buf, buffer_string);
         var _node_physics_data = json_parse(_node_physics_text);

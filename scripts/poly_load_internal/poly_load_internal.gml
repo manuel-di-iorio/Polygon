@@ -136,6 +136,7 @@ function __poly_load_node(_scene, _assets, _p, _meta = undefined) {
   if (variable_struct_exists(_p, "shadows") && is_struct(_p.shadows)) {
     _flags = { castShadows: _p.shadows[$ "cast"] == true, receiveShadows: _p.shadows[$ "receive"] == true };
   }
+
   if (!is_struct(_flags)) _flags = {};
   if (variable_struct_exists(_p, "physics")) _flags.physics = __poly_physics_data(_p.physics);
   else if (is_struct(_meta) && is_struct(_meta[$ _akey]) && is_struct(_meta[$ _akey][$ "physics"])) _flags.physics = __poly_physics_data(_meta[$ _akey].physics);

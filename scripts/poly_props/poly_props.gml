@@ -614,20 +614,25 @@ function __poly_create_primitive(_ed, _type) {
   static _cache = undefined;
   if (_cache == undefined) _cache = {};
   var _model = undefined;
+
   if (variable_struct_exists(_cache, _rel)) {
     _model = _cache[$ _rel];
   } else {
     var _path = working_directory + _rel;
+
     if (file_exists(_path)) {
       _model = GM3D_Scene.loadGltf(_path);
+
       if (_model != undefined) {
         var _mats = _model.getMaterials();
         for (var _mi = 0, _mn = array_length(_mats); _mi < _mn; _mi++) _mats[_mi].setShader(GM3D_ERenderPass.Forward, shPolygonEditorLit);
         _model.freeze();
       }
     }
+
     _cache[$ _rel] = _model;
   }
+
   if (_model == undefined) return undefined;
   var _before = __poly_history_snap(_ed);
   var _node = __poly_place(_ed, _asset, _model, [ 0, 0, 0 ], undefined, [ 1, 1, 1 ], undefined);
@@ -636,9 +641,7 @@ function __poly_create_primitive(_ed, _type) {
   var _shadow_data = { castShadows: true, receiveShadows: true };
   __poly_kind_register(_ed, _node, "instance", _asset, undefined, _shadow_data);
   var _en = __poly_registry_find(_ed, _node);
-  if (_en != undefined) {
-    _en.asset = _asset;
-  }
+  if (_en != undefined) _en.asset = _asset;
   _ed.sel = [ _node ];
   _ed.giz.drag = -1;
   __poly_history_commit(_ed, _before);

@@ -33,7 +33,7 @@ function __poly_draw_mode(_ed, _unlit) {
 // Draws gizmo tools and snap options toolbar.
 function __poly_imgui_toolbar(_ed) {
   if (!_ed.imgui.win_toolbar.open) return;
-var _cond = (_ed.imgui.reset_layout == true) ? ImGuiCond.Always : _ed.imgui.cond;
+  var _cond = (_ed.imgui.reset_layout == true) ? ImGuiCond.Always : _ed.imgui.cond;
   ImGui.SetNextWindowPos(350, 80, _cond);
   var _flags =
     ImGuiWindowFlags.NoTitleBar |
@@ -308,31 +308,6 @@ function __poly_menu_file(_ed) {
   return _pending;
 }
 
-// Draws the Create menu.
-function __poly_menu_create(_ed) {
-  if (!ImGui.BeginMenu("Create")) return;
-
-  if (__poly_light_count(_ed) >= 8) {
-    ImGui.TextDisabled("Lights (8 max reached)");
-  } else {
-    if (ImGui.MenuItem("Directional Light")) __poly_create_light(_ed, "directional");
-    if (ImGui.MenuItem("Point Light")) __poly_create_light(_ed, "point");
-  }
-
-  ImGui.Separator();
-
-  if (ImGui.MenuItem("Perspective Camera")) __poly_create_camera(_ed, "perspective");
-  if (ImGui.MenuItem("Ortho Camera")) __poly_create_camera(_ed, "ortho");
-  ImGui.Separator();
-
-  if (__poly_env_node(_ed) == undefined) {
-    if (ImGui.MenuItem("Environment")) __poly_create_env(_ed);
-  } else {
-    ImGui.TextDisabled("Environment (already in scene)");
-  }
-
-  ImGui.EndMenu();
-}
 
 // Toggles one window-visibility menu entry.
 function __poly_menu_win(_label, _win) {
@@ -394,17 +369,17 @@ function __poly_imgui_console_win(_ed) {
     ImGui.SetNextWindowPos(8, _ed.gh - 180, _ui.cond);
     ImGui.SetNextWindowSize(max(300, _ed.gw * 0.5), 160, _ui.cond);
   }
+
   if (!ImGui.Begin("Console", _ui.win_console, __poly_imgui_panel_flags(_ed, "console"))) {
     __poly_imgui_panel_save(_ed, "console");
     ImGui.End();
     return;
   }
+
   __poly_imgui_panel_save(_ed, "console");
   if (!variable_struct_exists(_ui, "console")) _ui.console = [];
   ImGui.BeginChild("##console_lines", 0, 0, ImGuiChildFlags.None);
-  for (var _i = 0, _n = array_length(_ui.console); _i < _n; _i++) {
-    ImGui.TextUnformatted(_ui.console[_i]);
-  }
+  for (var _i = 0, _n = array_length(_ui.console); _i < _n; _i++) ImGui.TextUnformatted(_ui.console[_i]);
   if (ImGui.GetScrollY() >= ImGui.GetScrollMaxY()) ImGui.SetScrollHereY(1.0);
   ImGui.EndChild();
   ImGui.End();

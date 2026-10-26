@@ -33,6 +33,7 @@ function poly_asset_add(_model, _kind = "prefab", _path = undefined, _on_create 
     if (_dot > 1) _base = string_copy(_base, 1, _dot - 1);
     if (_base != "") _entry.name = _base;
   }
+
   if (is_method(_on_create)) _entry.on_create = _on_create;
   array_push(_ed.assets, _entry);
   return _key;

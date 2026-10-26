@@ -427,11 +427,13 @@ function __poly_step_hotkeys(_ed, _input) {
   if (__poly_bind_pressed(_keys, "snap")) _ed.snap_on = !_ed.snap_on;
   if (__poly_bind_pressed(_keys, "pivot")) __poly_toggle_pivot(_ed);
   if (__poly_bind_pressed(_keys, "orient")) __poly_toggle_orient(_ed);
+
   if (__poly_bind_pressed(_keys, "colliders")) {
     _ed.show_colliders = !_ed.show_colliders;
     if (_ed.show_colliders) __poly_physics_debug_rebuild(_ed); else __poly_physics_debug_destroy(_ed);
     _ed.view_dirty = true;
   }
+
   if (__poly_bind_pressed(_keys, "rename") && array_length(_ed.sel) > 0) __poly_rename_begin(_ed, _ed.sel[0]);
   __poly_step_nudge(_ed, _keys);
 

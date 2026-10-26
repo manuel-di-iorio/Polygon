@@ -152,6 +152,7 @@ function __poly_ai_step(_ed) {
   if (_ai.sock == undefined) {
     if (current_time >= _ai.retry_at) {
       if (_ai.ever) __poly_console_log(_ed, "MCP reconnecting...");
+
       if (__poly_ai_connect(_ed)) {
         // Wait for the async result; failures go through __poly_ai_failed.
         _ai.retry_at = current_time + 30000;
@@ -185,9 +186,10 @@ function __poly_ai_step(_ed) {
     var _res = undefined;
 
     if (is_struct(_msg) && variable_struct_exists(_msg, "op")) {
-    __poly_ai_log("op " + string(_msg.op) + " " + string(_msg.id));
-    __poly_console_log(_ed, "MCP called tool '" + string(_msg.op) + "' (id: " + string(_msg.id) + ")");
-  }
+      __poly_ai_log("op " + string(_msg.op) + " " + string(_msg.id));
+      __poly_console_log(_ed, "MCP called tool '" + string(_msg.op) + "' (id: " + string(_msg.id) + ")");
+    }
+
     _res = __poly_ai_exec(_ed, _msg);
 
     if (is_struct(_res) && variable_struct_exists(_res, "ok") && _res.ok == false) {
@@ -985,6 +987,7 @@ function __poly_ai_op_create(_ed, _p, _commit) {
 
   if (_node == undefined) return __poly_ai_err("failed", "spawn failed for asset: " + _p.asset);
   __poly_spawn_shadow_apply(_ed, _entry, _node);
+
   if (variable_struct_exists(_p, "physics")) {
     var _physics_en = __poly_registry_find(_ed, _node);
     var _physics_data = __poly_physics_data_auto(_ed, _node, _p.physics);
@@ -992,6 +995,7 @@ function __poly_ai_op_create(_ed, _p, _commit) {
     __poly_physics_debug_destroy(_ed);
     __poly_physics_apply(_node, _physics_data);
   }
+
   _ed.rt.scene.update(0);
 
   // Resting correction (measured, not guessed).
@@ -1408,6 +1412,7 @@ function __poly_ai_op_transform(_ed, _p, _commit) {
     __poly_physics_debug_destroy(_ed);
     __poly_physics_apply(_node, _physics_data);
   }
+
   _ed.rt.scene.update(0);
   __poly_physics_debug_rebuild(_ed);
 

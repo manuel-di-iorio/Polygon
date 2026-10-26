@@ -232,14 +232,6 @@ function __poly_imgui_panel_save(_ed, _key) {
   _ed.imgui._winrect[$ _key] = { x: _x, y: _y, w: _w, h: _h, t: _title_h };
 }
 
-// Returns the runtime imgui.ini path (next to the build exe).
-function __poly_rt_ini_path() {
-  var _dir = program_directory;
-  if (!is_string(_dir) || _dir == "") return "";
-  var _sep = "\\";
-  if (string_char_at(_dir, string_length(_dir)) == "\\" || string_char_at(_dir, string_length(_dir)) == "/") _sep = "";
-  return _dir + _sep + "imgui.ini";
-}
 
 // Reloads the runtime ini through the binding (native side, the GML
 // sandbox is not involved).

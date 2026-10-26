@@ -493,6 +493,7 @@ function __poly_spawn(_ed, _opt) {
 
   if (_is_inst) {
     var _physics = undefined;
+
     if (is_struct(_data) && variable_struct_exists(_data, "physics")) {
       _physics = __poly_physics_data(_data.physics);
       var _instance_character = _data[$ "physics"][$ "character"];
@@ -500,25 +501,31 @@ function __poly_spawn(_ed, _opt) {
     }
     else if (_is_ed && _data == undefined) {
       var _meta = is_struct(_ed.asset_meta) ? _ed.asset_meta[$ _asset] : undefined;
+
       if (is_struct(_meta) && is_struct(_meta[$ "physics"])) {
         _physics = __poly_physics_data(_meta.physics);
         var _meta_character = _meta[$ "physics"][$ "character"];
         if (_physics.mode == "character" && (!is_struct(_meta_character) || !variable_struct_exists(_meta_character, "visualOffset"))) _physics = __poly_physics_fit_visual(_model, _physics);
       }
+
       var _lib_entry = __poly_asset_get(_ed, _asset);
+
       if (_physics == undefined && _lib_entry != undefined && is_struct(_lib_entry[$ "physics_default"])) {
         _physics = __poly_physics_data(_lib_entry.physics_default);
         var _default_character = _lib_entry[$ "physics_default"][$ "character"];
         if (_physics.mode == "character" && (!is_struct(_default_character) || !variable_struct_exists(_default_character, "visualOffset"))) _physics = __poly_physics_fit_visual(_model, _physics);
       }
     }
+
     if (_physics != undefined && _physics.mode != "none") __poly_physics_apply(_wrap, _physics);
+
     if (is_struct(_data)) {
       if (_physics != undefined) _data.physics = _physics;
       else if (variable_struct_exists(_data, "physics")) _data.physics = __poly_physics_data(_data.physics);
     } else if (_physics != undefined) {
       _data = { castShadows: true, receiveShadows: true, physics: _physics };
     }
+
     if (_is_ed) {
       __poly_magenta_fix(_ed, _wrap);
     } else {
