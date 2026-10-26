@@ -57,6 +57,7 @@ function __poly_imgui_draw(_ed) {
   __poly_imgui_inspector(_ed);
   __poly_imgui_scene_panel(_ed);
   __poly_imgui_toolbar(_ed);
+  __poly_imgui_console_win(_ed);
   __poly_imgui_fps(_ed);
   __poly_anim_ui_window(_ed);
   __poly_imgui_modals(_ed);

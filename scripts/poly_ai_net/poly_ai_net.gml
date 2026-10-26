@@ -18,6 +18,7 @@ function poly_ai_net() {
       _ai.retry_delay = 2;
       _ai.retry_tries = 0;
       __poly_ai_log("connected to relay 127.0.0.1:" + string(_ai.port));
+      __poly_console_log(_ed, "MCP connected to relay 127.0.0.1:" + string(_ai.port));
       __poly_ai_send(_ed, { v: 1, hello: "poly-ai" });
     } else {
       __poly_ai_disconnect(_ed);

@@ -56,6 +56,8 @@ function __poly_ai_enable(_on = true, _port = 5192) {
 
   if (is_real(_port) && _port > 0 && _port < 65536) _ai.port = floor(_port);
   __poly_ai_log(_ai.on ? ("bridge on (port " + string(_ai.port) + ")") : "bridge off");
+  if (_ai.on) __poly_console_log(_ed, "MCP connection requested on port " + string(_ai.port) + "...");
+  else __poly_console_log(_ed, "MCP disconnected (bridge off)");
 
   if (_ai.on) {
     // Fresh toggle-on: immediate first attempt, backoff from 2s.
@@ -114,11 +116,13 @@ function __poly_ai_failed(_ed, _why) {
     _ai.notice = "AI Server not available";
     _ai.notice_until = current_time + 10000;
     __poly_ai_log("relay unavailable after 3 attempts");
+    __poly_console_log(_ed, "MCP unavailable (relay unreachable after 3 attempts)");
     return;
   }
 
   _ai.retry_at = current_time + _ai.retry_delay * 1000;
   __poly_ai_log(_why + ", retry in " + string(_ai.retry_delay) + "s");
+  __poly_console_log(_ed, "MCP " + string(_why) + ", retry in " + string(_ai.retry_delay) + "s");
   _ai.retry_delay = min(_ai.retry_delay + 2, 30);
 }
 
@@ -147,6 +151,7 @@ function __poly_ai_step(_ed) {
 
   if (_ai.sock == undefined) {
     if (current_time >= _ai.retry_at) {
+      if (_ai.ever) __poly_console_log(_ed, "MCP reconnecting...");
       if (__poly_ai_connect(_ed)) {
         // Wait for the async result; failures go through __poly_ai_failed.
         _ai.retry_at = current_time + 30000;
@@ -179,8 +184,16 @@ function __poly_ai_step(_ed) {
     var _msg = array_shift(_ai.inbox);
     var _res = undefined;
 
-    if (is_struct(_msg) && variable_struct_exists(_msg, "op")) __poly_ai_log("op " + string(_msg.op) + " " + string(_msg.id));
+    if (is_struct(_msg) && variable_struct_exists(_msg, "op")) {
+    __poly_ai_log("op " + string(_msg.op) + " " + string(_msg.id));
+    __poly_console_log(_ed, "MCP called tool '" + string(_msg.op) + "' (id: " + string(_msg.id) + ")");
+  }
     _res = __poly_ai_exec(_ed, _msg);
+
+    if (is_struct(_res) && variable_struct_exists(_res, "ok") && _res.ok == false) {
+      var _err = variable_struct_exists(_res, "error") ? _res.error : "unknown error";
+      __poly_console_log(_ed, "MCP error on '" + string(_msg.op) + "': " + string(_err));
+    }
 
     if (_res != undefined) {
       var _id = is_struct(_msg) && variable_struct_exists(_msg, "id") ? _msg.id : undefined;
@@ -239,6 +252,7 @@ function __poly_ai_disconnect(_ed) {
 
   if (_ai.sock != undefined) {
     __poly_ai_log("disconnected");
+    __poly_console_log(_ed, "MCP disconnected");
     network_destroy(_ai.sock);
     _ai.sock = undefined;
   }

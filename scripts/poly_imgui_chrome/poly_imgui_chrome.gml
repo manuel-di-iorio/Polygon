@@ -350,6 +350,7 @@ function __poly_menu_view(_ed) {
   __poly_menu_win("Toolbar", _ui.win_toolbar);
   __poly_menu_win("View Cube", _ui.win_cube);
   __poly_menu_win("Scene", _ui.win_scene);
+  __poly_menu_win("Console", _ui.win_console);
 
   if (ImGui.MenuItem(_ed.show_grid ? "[x] Grid" : "[  ] Grid")) {
     _ed.show_grid = !_ed.show_grid;
@@ -369,7 +370,45 @@ function __poly_menu_view(_ed) {
   ImGui.EndMenu();
 }
 
-// Draws the non-clickable brand label at the start of the menu bar.
+
+// --------------------------------------------------------------------------- 
+// Console window
+// ---------------------------------------------------------------------------
+
+// Appends a line to the console output.
+function __poly_console_log(_ed, _text) {
+  if (!is_struct(_ed) || !variable_struct_exists(_ed, "imgui")) return;
+  if (!variable_struct_exists(_ed.imgui, "console")) _ed.imgui.console = [];
+  array_push(_ed.imgui.console, string(_text));
+  // Keep last 500 lines.
+  while (array_length(_ed.imgui.console) > 500) array_delete(_ed.imgui.console, 0, 1);
+}
+
+// Draws the Console window (read-only output).
+function __poly_imgui_console_win(_ed) {
+  var _ui = _ed.imgui;
+  if (!_ui.win_console.open) return;
+  var _place = __poly_imgui_place(_ed).hier;
+  // Use a default position if no place; reuse hier place roughly.
+  if (!__poly_imgui_dock_fresh(_ed)) {
+    ImGui.SetNextWindowPos(8, _ed.gh - 180, _ui.cond);
+    ImGui.SetNextWindowSize(max(300, _ed.gw * 0.5), 160, _ui.cond);
+  }
+  if (!ImGui.Begin("Console", _ui.win_console, __poly_imgui_panel_flags(_ed, "console"))) {
+    __poly_imgui_panel_save(_ed, "console");
+    ImGui.End();
+    return;
+  }
+  __poly_imgui_panel_save(_ed, "console");
+  if (!variable_struct_exists(_ui, "console")) _ui.console = [];
+  ImGui.BeginChild("##console_lines", 0, 0, ImGuiChildFlags.None);
+  for (var _i = 0, _n = array_length(_ui.console); _i < _n; _i++) {
+    ImGui.TextUnformatted(_ui.console[_i]);
+  }
+  if (ImGui.GetScrollY() >= ImGui.GetScrollMaxY()) ImGui.SetScrollHereY(1.0);
+  ImGui.EndChild();
+  ImGui.End();
+}
 function __poly_menu_brand() {
   static _logo = -2;
 
