@@ -302,7 +302,7 @@ function demo_build_props() {
     { path: "kenney_platformer-kit/tree-pine.glb", pos: [ 3.4, 0, -3.2 ], scale: 1.1, collider: true, colliderKind: "wall" },
     { path: "kenney_platformer-kit/flowers.glb", pos: [ -1.6, 0, -1.8 ] },
     { path: "kenney_platformer-kit/grass.glb", pos: [ 1.8, 0, -1.6 ] },
-    { path: "kenney_platformer-kit/rocks.glb", pos: [ 0, 0, -2.8 ], yaw: 20, scale: 1.1, collider: true, colliderKind: "wall" },
+    { path: "kenney_platformer-kit/rocks.glb", pos: [ 0, 0, -2.8 ], yaw: 20, scale: 2, collider: true, colliderKind: "mesh" },
     { path: "kenney_cube-pets_1.0/animal-fox.glb", pos: [ 0.95, 0.3, 0.55 ], yaw: -25, scale: 0.3, collider: true, colliderKind: "blocker" },
   ];
 
@@ -459,9 +459,12 @@ function demo_add_model_collider(_visual, _src, _position, _scale, _kind = "box"
       _blocker_bottom + _blocker_half_height,
       _position.z + _center.z
     ));
-    _half.x = max(_half.x, 0.55);
+    _half.x = max(_half.x, 0.25);
     _half.y = _blocker_half_height;
-    _half.z = max(_half.z, 0.55);
+    _half.z = max(_half.z, 0.25);
+  } else if (_kind == "mesh") {
+    // Use the model's own mesh as the collider (static bodies only).
+    _body_node = _visual;
   } else {
     _body_node.setLocalPosition(new GM3D_Vec3(_position.x + _center.x, _position.y + _center.y, _position.z + _center.z));
   }
@@ -469,9 +472,13 @@ function demo_add_model_collider(_visual, _src, _position, _scale, _kind = "box"
   _body.setMotionType(GM3D_EPhysicsMotionType.Static);
   _body.setLayer(GM3D_EPhysicsLayer.Static);
   var _shape = new GM3D_PhysicsShapeComponent();
-  _shape.setShapeType(GM3D_EPhysicsShapeType.Box);
-  _shape.setHalfExtents(_half);
-  if (_yaw != 0.0) _shape.setLocalRotation(demo_yaw_quat(_yaw));
+  if (_kind == "mesh") {
+    _shape.setShapeType(GM3D_EPhysicsShapeType.Mesh);
+  } else {
+    _shape.setShapeType(GM3D_EPhysicsShapeType.Box);
+    _shape.setHalfExtents(_half);
+    if (_yaw != 0.0) _shape.setLocalRotation(demo_yaw_quat(_yaw));
+  }
   _shape.setFriction(0.8);
   _body_node.addComponent(_body);
   _body_node.addComponent(_shape);
