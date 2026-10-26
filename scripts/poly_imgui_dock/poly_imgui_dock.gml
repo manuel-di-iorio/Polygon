@@ -6,7 +6,7 @@
 
 // Default panel layout metrics.
 function __poly_layout() {
-  static _layout = { top: 30, gap: 8, side: 8, left_w: 250, right_w: 300 };
+  static _layout = { top: 30, gap: 8, side: 8, left_w: 320, right_w: 300 };
   return _layout;
 }
 

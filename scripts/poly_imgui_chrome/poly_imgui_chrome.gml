@@ -33,7 +33,8 @@ function __poly_draw_mode(_ed, _unlit) {
 // Draws gizmo tools and snap options toolbar.
 function __poly_imgui_toolbar(_ed) {
   if (!_ed.imgui.win_toolbar.open) return;
-  ImGui.SetNextWindowPos(300, 34, _ed.imgui.cond);
+var _cond = (_ed.imgui.reset_layout == true) ? ImGuiCond.Always : _ed.imgui.cond;
+  ImGui.SetNextWindowPos(350, 80, _cond);
   var _flags =
     ImGuiWindowFlags.NoTitleBar |
   ImGuiWindowFlags.NoResize |

@@ -366,6 +366,10 @@ function __poly_scene_tree_row(_ed, _ui, _node, _is_root, _idx, _meta, _hidden, 
   var _open = ImGui.TreeNodeEx("##node", _flags);
   var _row_clicked = ImGui.IsItemClicked();
   ImGui.PopStyleVar();
+  if (_is_root && !_renaming) {
+    ImGui.SetNextWindowBgAlpha(1);
+    __poly_scene_row_menu(_ed, _meta, _node, _idx, _pending);
+  }
   ImGui.SameLine(0, 0);
 
   // Clicks on the eye/lock buttons must not also select the row.
@@ -415,11 +419,6 @@ function __poly_scene_tree_row(_ed, _ui, _node, _is_root, _idx, _meta, _hidden, 
   var _pitch = ImGui.GetCursorPosY() - _row_y;
 
   if (_is_root && !_renaming && !_over_btn && _row_clicked) __poly_scene_click(_ed, _node, _idx, _ed.hier_rows);
-
-  if (_is_root && !_renaming) {
-    ImGui.SetNextWindowBgAlpha(1);
-    __poly_scene_row_menu(_ed, _meta, _node, _idx, _pending);
-  }
 
   if (_open) ImGui.TreePop();
 
