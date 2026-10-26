@@ -152,6 +152,12 @@ function __poly_imgui_physics_sec(_ed, _node, _en) {
     __poly_imgui_physics_float(_ed, _node, _en, _d, "halfHeight", "Half height", 0.01, 0.01, 100, "character", "Half of the capsule's cylindrical section height; total capsule height also includes both rounded ends.");
     __poly_imgui_physics_float(_ed, _node, _en, _d, "stepHeight", "Step height", 0.01, 0, 20, "character", "Maximum height of a step the controller can climb.");
     __poly_imgui_physics_float(_ed, _node, _en, _d, "maxSlopeAngle", "Max slope", 0.5, 0, 89, "character", "Steepest slope, in degrees, the controller can stand on.");
+  var _stg = ImGui.Checkbox("Stick to ground##char", _d.character.stickToGround == true);
+  __poly_imgui_physics_tip("Keeps the controller snapped to the ground on small steps and bumps.");
+  if (_stg != (_d.character.stickToGround == true)) {
+    __poly_physics_ui_change(_ed, _node, _en, _d, "stickToGround", _stg, "character");
+    _d = _en.data.physics;
+  }
     __poly_imgui_physics_float(_ed, _node, _en, _d, "mass", "Mass", 0.5, 0.001, 100000, "character", "Character controller mass used by GM3D's character movement and contacts.");
     __poly_imgui_physics_float(_ed, _node, _en, _d, "maxStrength", "Max strength", 1, 0.001, 100000, "character", "Maximum force the controller can apply to push other bodies.");
     for (var _a = 0; _a < 3; _a++) {
@@ -756,7 +762,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
   if (!is_struct(_entry[$ "physics_default"])) _entry.physics_default = is_struct(_meta) && is_struct(_meta[$ "physics"]) ? __poly_physics_data(_meta.physics) : __poly_physics_defaults();
   var _d = __poly_physics_data(_entry.physics_default);
   var _enabled = _d.mode != "none";
-  var _next = ImGui.Checkbox("Spawn with physics", _enabled);
+  var _next = ImGui.Checkbox("Physical", _enabled);
   __poly_imgui_physics_tip("Applies these physics defaults to newly spawned instances of this prefab.");
   if (_next != _enabled) {
     var _before = __poly_history_snap(_ed);
@@ -950,7 +956,16 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
         if (_before != undefined) __poly_history_commit(_ed, _before);
       }
     }
-    // Recenter visual button.
+    // Stick to ground toggle (prefab default).
+  var _stg_p = ImGui.Checkbox("Stick to ground##prefab", _d.character.stickToGround == true);
+  if (_stg_p != (_d.character.stickToGround == true)) {
+    var _before = __poly_history_snap(_ed);
+    _d.character.stickToGround = _stg_p;
+    _entry.physics_default = _d;
+    if (!is_struct(_meta)) _meta = { type: "model" };
+    _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
+    if (_before != undefined) __poly_history_commit(_ed, _before);
+  }
     if (ImGui.Button("Recenter visual##prefab")) {
       var _bb = _entry.model != undefined ? _entry.model.getBoundingBox() : undefined;
       if (is_struct(_bb) && _bb.min != undefined && _bb.max != undefined) {

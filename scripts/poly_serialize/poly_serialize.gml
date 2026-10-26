@@ -386,6 +386,7 @@ function __poly_validate_asset_desc(_desc) {
       if (!is_struct(_p.character)) return false;
       var _cn = ["radius", "halfHeight", "stepHeight", "maxSlopeAngle", "mass", "maxStrength"];
       for (var _c = 0; _c < array_length(_cn); _c++) if (variable_struct_exists(_p.character, _cn[_c]) && !is_real(_p.character[$ _cn[_c]])) return false;
+      if (variable_struct_exists(_p.character, "stickToGround") && !is_bool(_p.character.stickToGround)) return false;
       if (variable_struct_exists(_p.character, "visualOffset") && !__poly_is_num3(_p.character, "visualOffset")) return false;
     }
   }

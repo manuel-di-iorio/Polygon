@@ -25,6 +25,7 @@ function __poly_physics_defaults() {
       halfHeight: 0.92,
       stepHeight: 0.3,
       maxSlopeAngle: 55.0,
+      stickToGround: true,
       mass: 80.0,
       maxStrength: 160.0,
       visualOffset: [0.0, -0.92, 0.0],
@@ -134,6 +135,7 @@ function __poly_physics_data(_source) {
     var _ck = ["radius", "halfHeight", "stepHeight", "maxSlopeAngle", "mass", "maxStrength"];
     for (var _c = 0; _c < array_length(_ck); _c++) if (variable_struct_exists(_source.character, _ck[_c])) _out.character[$ _ck[_c]] = _source.character[$ _ck[_c]];
     if (is_array(_source.character[$ "visualOffset"]) && array_length(_source.character.visualOffset) == 3) _out.character.visualOffset = __poly_physics_copy3(_source.character.visualOffset);
+  if (variable_struct_exists(_source.character, "stickToGround")) _out.character.stickToGround = (_source.character.stickToGround == true);
   }
   if (!__poly_physics_mode_valid(_out.mode)) _out.mode = "none";
   if (_out.shape != "Box" && _out.shape != "Sphere" && _out.shape != "Capsule" && _out.shape != "Cylinder" && _out.shape != "Mesh" && _out.shape != "ConvexHull") { _out.shape = "Box"; _out.mode = "none"; }

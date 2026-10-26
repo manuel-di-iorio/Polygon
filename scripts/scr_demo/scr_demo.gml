@@ -503,7 +503,7 @@ function demo_build_player() {
   demo_player_controller.setRadius(0.3);
   demo_player_controller.setHalfHeight(0.55);
   demo_player_controller.setStepHeight(0.35);
-  demo_player_controller.setMaxSlopeAngle(degtorad(50.0));
+  demo_player_controller.setMaxSlopeAngle(degtorad(55.0));
   demo_player_controller.setLayer(GM3D_EPhysicsLayer.Character);
   demo_player_controller.setMass(70.0);
   demo_player_controller.setMaxStrength(140.0);
@@ -511,6 +511,7 @@ function demo_build_player() {
   demo_player.addComponent(demo_player_controller);
   demo_physics.addCharacter(demo_player);
   demo_physics.setCharacterVelocity(demo_player, new GM3D_Vec3());
+  demo_physics.setCharacterStickToGroundEnabled(demo_player, false);
 
   var _character = demo_load_model("kenney_mini-characters/character-female-b.glb");
   demo_player_visual = undefined;
