@@ -26,8 +26,12 @@
   ],
   "ForcedPrefabProjectReferences":[],
   "IncludedFiles":[
+    {"$GMIncludedFile":"","%Name":"capsule.glb","CopyToMask":-1,"filePath":"datafiles/__PolygonEditor__/models","name":"capsule.glb","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"cube.glb","CopyToMask":-1,"filePath":"datafiles/__PolygonEditor__/models","name":"cube.glb","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
+    {"$GMIncludedFile":"","%Name":"cylinder.glb","CopyToMask":-1,"filePath":"datafiles/__PolygonEditor__/models","name":"cylinder.glb","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"grid.glb","CopyToMask":-1,"filePath":"datafiles/__PolygonEditor__/models","name":"grid.glb","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
+    {"$GMIncludedFile":"","%Name":"plane.glb","CopyToMask":-1,"filePath":"datafiles/__PolygonEditor__/models","name":"plane.glb","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
+    {"$GMIncludedFile":"","%Name":"quad.glb","CopyToMask":-1,"filePath":"datafiles/__PolygonEditor__/models","name":"quad.glb","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"skybox.glb","CopyToMask":-1,"filePath":"datafiles/__PolygonEditor__/models","name":"skybox.glb","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"sphere.glb","CopyToMask":-1,"filePath":"datafiles/__PolygonEditor__/models","name":"sphere.glb","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"triangle.glb","CopyToMask":-1,"filePath":"datafiles/__PolygonEditor__/models","name":"triangle.glb","resourceType":"GMIncludedFile","resourceVersion":"2.0",},

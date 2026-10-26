@@ -519,6 +519,10 @@ function __poly_imgui_scene_list(_ed) {
   if (ImGui.BeginPopup("##scenecreatepopup")) {
     if (ImGui.MenuItem("Cube")) __poly_create_primitive(_ed, "cube");
     if (ImGui.MenuItem("Sphere")) __poly_create_primitive(_ed, "sphere");
+    if (ImGui.MenuItem("Plane")) __poly_create_primitive(_ed, "plane");
+    if (ImGui.MenuItem("Quad")) __poly_create_primitive(_ed, "quad");
+    if (ImGui.MenuItem("Cylinder")) __poly_create_primitive(_ed, "cylinder");
+    if (ImGui.MenuItem("Capsule")) __poly_create_primitive(_ed, "capsule");
     ImGui.Separator();
     if (__poly_light_count(_ed) >= 8) {
       ImGui.TextDisabled("Lights (8 max reached)");

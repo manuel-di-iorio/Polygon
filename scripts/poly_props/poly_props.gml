@@ -602,8 +602,13 @@ function __poly_create_camera(_ed, _proj) {
 
 // Creates a primitive (cube/sphere) instance at origin.
 function __poly_create_primitive(_ed, _type) {
-  if (_type != "sphere") _type = "cube";
-  var _rel = (_type == "sphere") ? "__PolygonEditor__/models/sphere.glb" : "__PolygonEditor__/models/cube.glb";
+  var _rel = "";
+  if (_type == "sphere") _rel = "__PolygonEditor__/models/sphere.glb";
+  else if (_type == "plane") _rel = "__PolygonEditor__/models/plane.glb";
+  else if (_type == "quad") _rel = "__PolygonEditor__/models/quad.glb";
+  else if (_type == "cylinder") _rel = "__PolygonEditor__/models/cylinder.glb";
+  else if (_type == "capsule") _rel = "__PolygonEditor__/models/capsule.glb";
+  else _rel = "__PolygonEditor__/models/cube.glb";
   var _asset = _rel;
   // Cache loaded models in a static struct.
   static _cache = undefined;
@@ -617,7 +622,7 @@ function __poly_create_primitive(_ed, _type) {
       _model = GM3D_Scene.loadGltf(_path);
       if (_model != undefined) {
         var _mats = _model.getMaterials();
-        for (var _mi = 0, _mn = array_length(_mats); _mi < _mn; _mi++) _mats[_mi].setShader(GM3D_ERenderPass.Forward, shPolygonEditorForward);
+        for (var _mi = 0, _mn = array_length(_mats); _mi < _mn; _mi++) _mats[_mi].setShader(GM3D_ERenderPass.Forward, shPolygonEditorLit);
         _model.freeze();
       }
     }
