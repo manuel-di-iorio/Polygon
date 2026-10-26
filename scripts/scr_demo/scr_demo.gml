@@ -276,7 +276,7 @@ function demo_build_props() {
   if (_terrain != undefined) {
     demo_terrain_visual = _terrain.model.spawnInto(demo_scene, undefined);
     if (demo_terrain_visual != undefined) {
-      demo_terrain_visual.setLocalPosition(new GM3D_Vec3(0.0, 0.005, 0.0));
+      demo_terrain_visual.setLocalPosition(new GM3D_Vec3(0.0, -0.020, 0.0));
       demo_terrain_visual.setLocalScale(new GM3D_Vec3(1.0));
       demo_on_create(demo_terrain_visual, _terrain.path, _terrain.model);
     }
@@ -534,7 +534,7 @@ function demo_build_player() {
         _model_center_x = (_character_bounds.min.x + _character_bounds.max.x) * 0.5;
         _model_center_z = (_character_bounds.min.z + _character_bounds.max.z) * 0.5;
       }
-      demo_player_visual.setLocalPosition(new GM3D_Vec3(_spawn.x, _spawn.y + demo_player_visual_offset_y, _spawn.z));
+      demo_player_visual.setLocalPosition(new GM3D_Vec3(_spawn.x, 0.250, _spawn.z));
       demo_player_visual.setLocalScale(new GM3D_Vec3(1.0));
       _model_root.setLocalPosition(new GM3D_Vec3(-_model_center_x, 0.0, -_model_center_z));
       demo_on_create(demo_player_visual, _character.path, _character.model);

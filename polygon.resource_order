@@ -109,6 +109,7 @@
     {"name":"sprPolygonEditorIconHandpointDisabled","order":9,"path":"sprites/sprPolygonEditorIconHandpointDisabled/sprPolygonEditorIconHandpointDisabled.yy",},
     {"name":"sprPolygonEditorIconMove","order":10,"path":"sprites/sprPolygonEditorIconMove/sprPolygonEditorIconMove.yy",},
     {"name":"sprPolygonEditorIconObject","order":3,"path":"sprites/sprPolygonEditorIconObject/sprPolygonEditorIconObject.yy",},
+    {"name":"sprPolygonEditorIconPlus","order":22,"path":"sprites/sprPolygonEditorIconPlus/sprPolygonEditorIconPlus.yy",},
     {"name":"sprPolygonEditorIconPointLight","order":4,"path":"sprites/sprPolygonEditorIconPointLight/sprPolygonEditorIconPointLight.yy",},
     {"name":"sprPolygonEditorIconPointLightVec","order":20,"path":"sprites/sprPolygonEditorIconPointLightVec/sprPolygonEditorIconPointLightVec.yy",},
     {"name":"sprPolygonEditorIconRotate","order":11,"path":"sprites/sprPolygonEditorIconRotate/sprPolygonEditorIconRotate.yy",},

@@ -466,7 +466,6 @@ function __poly_imgui_menu(_ed) {
   ImGui.SetNextWindowBgAlpha(1);
   __poly_menu_brand();
   var _file = __poly_menu_file(_ed);
-  __poly_menu_create(_ed);
   __poly_menu_view(_ed);
   __poly_menu_help(_ed);
   __poly_menu_ai(_ed);

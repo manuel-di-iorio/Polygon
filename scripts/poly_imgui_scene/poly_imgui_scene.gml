@@ -502,7 +502,7 @@ function __poly_imgui_scene_list(_ed) {
     _ui.scene_eye_till = 0;
   }
 
-  ImGui.SetNextItemWidth(max(80, ImGui.GetContentRegionAvailX() - 32));
+  ImGui.SetNextItemWidth(max(80, ImGui.GetContentRegionAvailX() - 60));
   if (!variable_struct_exists(_ui, "scene_focus_search")) _ui.scene_focus_search = false;
   var _want_search = _ui.scene_focus_search == true;
   _ui.scene_focus_search = false;
@@ -510,6 +510,31 @@ function __poly_imgui_scene_list(_ed) {
   ImGui.SameLine();
 
   if (__poly_imgui_icon_btn("##scenefilters", "Filter asset types", false, "Fl", "sprPolygonEditorIconFilters", 13, 13)) ImGui.OpenPopup("##scenekindfilters");
+
+  ImGui.SameLine();
+  if (__poly_imgui_icon_btn("##scenecreate", "Create", false, "Cr", "sprPolygonEditorIconPlus", 13, 13)) ImGui.OpenPopup("##scenecreatepopup");
+
+  ImGui.SameLine(0, 6);
+  ImGui.Dummy(2, 0);
+
+  if (ImGui.BeginPopup("##scenecreatepopup")) {
+    if (__poly_light_count(_ed) >= 8) {
+      ImGui.TextDisabled("Lights (8 max reached)");
+    } else {
+      if (ImGui.MenuItem("Directional Light")) __poly_create_light(_ed, "directional");
+      if (ImGui.MenuItem("Point Light")) __poly_create_light(_ed, "point");
+    }
+    ImGui.Separator();
+    if (ImGui.MenuItem("Perspective Camera")) __poly_create_camera(_ed, "perspective");
+    if (ImGui.MenuItem("Ortho Camera")) __poly_create_camera(_ed, "ortho");
+    ImGui.Separator();
+    if (__poly_env_node(_ed) == undefined) {
+      if (ImGui.MenuItem("Environment")) __poly_create_env(_ed);
+    } else {
+      ImGui.TextDisabled("Environment (already in scene)");
+    }
+    ImGui.EndPopup();
+  }
 
   if (ImGui.BeginPopup("##scenekindfilters")) {
     _ui.show_kind.m = ImGui.Checkbox("Models", _ui.show_kind.m);

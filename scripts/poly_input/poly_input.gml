@@ -422,7 +422,7 @@ function __poly_step_hotkeys(_ed, _input) {
 
   for (var _t = 0, _nt = array_length(_tools); _t < _nt; _t++) if (!_flying && __poly_bind_pressed(_keys, _tools[_t][0])) _ed.giz.tool = _tools[_t][1];
   if (__poly_bind_pressed(_keys, "del")) __poly_delete_ask(_ed);
-  if (__poly_bind_pressed(_keys, "deselect")) __poly_sel_clear(_ed);
+  if (!_flying && __poly_bind_pressed(_keys, "deselect")) __poly_sel_clear(_ed);
   if (__poly_bind_pressed(_keys, "focus")) __poly_focus_selection(_ed);
   if (__poly_bind_pressed(_keys, "snap")) _ed.snap_on = !_ed.snap_on;
   if (__poly_bind_pressed(_keys, "pivot")) __poly_toggle_pivot(_ed);
