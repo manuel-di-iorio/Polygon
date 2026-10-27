@@ -5,8 +5,10 @@ New-Item -ItemType Directory -Force -Path $OutputRoot | Out-Null
 function To-FloatBytes([single[]]$Values) { $m=[IO.MemoryStream]::new(); foreach($v in $Values){$b=[BitConverter]::GetBytes([single]$v);$m.Write($b,0,$b.Length)}; return ,$m.ToArray() }
 
 $segs=24; $r=0.25; $h=0.5; $hh=$h/2
+$vh=$hh+$r
 $positions=[Collections.Generic.List[single]]::new()
 $normals=[Collections.Generic.List[single]]::new()
+$texcoords=[Collections.Generic.List[single]]::new()
 
 for($i=0;$i -lt $segs;$i++){
   $a1=2.0*[Math]::PI*$i/$segs; $a2=2.0*[Math]::PI*($i+1)/$segs
@@ -14,18 +16,22 @@ for($i=0;$i -lt $segs;$i++){
   $x2=$r*[Math]::Cos($a2); $z2=$r*[Math]::Sin($a2)
   $n1x=[Math]::Cos($a1); $n1z=[Math]::Sin($a1)
   $n2x=[Math]::Cos($a2); $n2z=[Math]::Sin($a2)
+  $u1=$i/$segs; $u2=($i+1)/$segs
+  $vLo=($vh+$hh)/(2*$vh); $vHi=($vh-$hh)/(2*$vh)
   $positions.Add([single]$x1);$positions.Add([single](-$hh));$positions.Add([single]$z1)
   $positions.Add([single]$x2);$positions.Add([single](-$hh));$positions.Add([single]$z2)
   $positions.Add([single]$x1);$positions.Add([single]$hh);$positions.Add([single]$z1)
   $normals.Add([single]$n1x);$normals.Add([single]0);$normals.Add([single]$n1z)
   $normals.Add([single]$n2x);$normals.Add([single]0);$normals.Add([single]$n2z)
   $normals.Add([single]$n1x);$normals.Add([single]0);$normals.Add([single]$n1z)
+  $texcoords.Add([single]$u1);$texcoords.Add([single]$vLo);$texcoords.Add([single]$u2);$texcoords.Add([single]$vLo);$texcoords.Add([single]$u1);$texcoords.Add([single]$vHi)
   $positions.Add([single]$x2);$positions.Add([single](-$hh));$positions.Add([single]$z2)
   $positions.Add([single]$x2);$positions.Add([single]$hh);$positions.Add([single]$z2)
   $positions.Add([single]$x1);$positions.Add([single]$hh);$positions.Add([single]$z1)
   $normals.Add([single]$n2x);$normals.Add([single]0);$normals.Add([single]$n2z)
   $normals.Add([single]$n2x);$normals.Add([single]0);$normals.Add([single]$n2z)
   $normals.Add([single]$n1x);$normals.Add([single]0);$normals.Add([single]$n1z)
+  $texcoords.Add([single]$u2);$texcoords.Add([single]$vLo);$texcoords.Add([single]$u2);$texcoords.Add([single]$vHi);$texcoords.Add([single]$u1);$texcoords.Add([single]$vHi)
 }
 $latH=8
 for($i=0;$i -lt $latH;$i++){
@@ -46,12 +52,15 @@ for($i=0;$i -lt $latH;$i++){
     $normals.Add([single]($v00x/$r));$normals.Add([single](($v00y-$hh)/$r));$normals.Add([single]($v00z/$r))
     $normals.Add([single]($v10x/$r));$normals.Add([single](($v10y-$hh)/$r));$normals.Add([single]($v10z/$r))
     $normals.Add([single]($v01x/$r));$normals.Add([single](($v01y-$hh)/$r));$normals.Add([single]($v01z/$r))
+    $tu1=$j/$segs; $tu2=($j+1)/$segs
+    $texcoords.Add([single]$tu1);$texcoords.Add([single](($vh-$v00y)/(2*$vh)));$texcoords.Add([single]$tu1);$texcoords.Add([single](($vh-$v10y)/(2*$vh)));$texcoords.Add([single]$tu2);$texcoords.Add([single](($vh-$v01y)/(2*$vh)))
     $positions.Add([single]$v10x);$positions.Add([single]$v10y);$positions.Add([single]$v10z)
     $positions.Add([single]$v11x);$positions.Add([single]$v11y);$positions.Add([single]$v11z)
     $positions.Add([single]$v01x);$positions.Add([single]$v01y);$positions.Add([single]$v01z)
     $normals.Add([single]($v10x/$r));$normals.Add([single](($v10y-$hh)/$r));$normals.Add([single]($v10z/$r))
     $normals.Add([single]($v11x/$r));$normals.Add([single](($v11y-$hh)/$r));$normals.Add([single]($v11z/$r))
     $normals.Add([single]($v01x/$r));$normals.Add([single](($v01y-$hh)/$r));$normals.Add([single]($v01z/$r))
+    $texcoords.Add([single]$tu1);$texcoords.Add([single](($vh-$v10y)/(2*$vh)));$texcoords.Add([single]$tu2);$texcoords.Add([single](($vh-$v11y)/(2*$vh)));$texcoords.Add([single]$tu2);$texcoords.Add([single](($vh-$v01y)/(2*$vh)))
   }
 }
 # bottom hemisphere
@@ -73,23 +82,28 @@ for($i=0;$i -lt $latH;$i++){
     $normals.Add([single]($v00x/$r));$normals.Add([single](($v00y+$hh)/$r));$normals.Add([single]($v00z/$r))
     $normals.Add([single]($v10x/$r));$normals.Add([single](($v10y+$hh)/$r));$normals.Add([single]($v10z/$r))
     $normals.Add([single]($v01x/$r));$normals.Add([single](($v01y+$hh)/$r));$normals.Add([single]($v01z/$r))
+    $tu1=$j/$segs; $tu2=($j+1)/$segs
+    $texcoords.Add([single]$tu1);$texcoords.Add([single](($vh-$v00y)/(2*$vh)));$texcoords.Add([single]$tu1);$texcoords.Add([single](($vh-$v10y)/(2*$vh)));$texcoords.Add([single]$tu2);$texcoords.Add([single](($vh-$v01y)/(2*$vh)))
     $positions.Add([single]$v10x);$positions.Add([single]$v10y);$positions.Add([single]$v10z)
     $positions.Add([single]$v11x);$positions.Add([single]$v11y);$positions.Add([single]$v11z)
     $positions.Add([single]$v01x);$positions.Add([single]$v01y);$positions.Add([single]$v01z)
     $normals.Add([single]($v10x/$r));$normals.Add([single](($v10y+$hh)/$r));$normals.Add([single]($v10z/$r))
     $normals.Add([single]($v11x/$r));$normals.Add([single](($v11y+$hh)/$r));$normals.Add([single]($v11z/$r))
     $normals.Add([single]($v01x/$r));$normals.Add([single](($v01y+$hh)/$r));$normals.Add([single]($v01z/$r))
+    $texcoords.Add([single]$tu1);$texcoords.Add([single](($vh-$v10y)/(2*$vh)));$texcoords.Add([single]$tu2);$texcoords.Add([single](($vh-$v11y)/(2*$vh)));$texcoords.Add([single]$tu2);$texcoords.Add([single](($vh-$v01y)/(2*$vh)))
   }
 }
 $revPos=[Collections.Generic.List[single]]::new()
 $revNrm=[Collections.Generic.List[single]]::new()
+$revUV=[Collections.Generic.List[single]]::new()
 for($i=0;$i -lt $positions.Count; $i+=9){
   for($k=2;$k -ge 0;$k--){
     $revPos.Add($positions[$i+$k*3]); $revPos.Add($positions[$i+$k*3+1]); $revPos.Add($positions[$i+$k*3+2])
     $revNrm.Add($normals[$i+$k*3]); $revNrm.Add($normals[$i+$k*3+1]); $revNrm.Add($normals[$i+$k*3+2])
+    $uvBase=[int](($i/3)+$k)*2; $revUV.Add($texcoords[$uvBase]); $revUV.Add($texcoords[$uvBase+1])
   }
 }
-$positions=$revPos; $normals=$revNrm
+$positions=$revPos; $normals=$revNrm; $texcoords=$revUV
 $vc=$positions.Count/3
 
 $bin=[IO.MemoryStream]::new()
@@ -97,8 +111,9 @@ function Add-View([byte[]]$Bytes) { while(($bin.Position%4)-ne 0){$bin.WriteByte
 $views=[Collections.Generic.List[object]]::new()
 $views.Add((Add-View (To-FloatBytes $positions.ToArray())))
 $views.Add((Add-View (To-FloatBytes $normals.ToArray())))
+$views.Add((Add-View (To-FloatBytes $texcoords.ToArray())))
 while(($bin.Position%4)-ne 0){$bin.WriteByte(0)}
 
-$gltf=@{asset=@{version='2.0'};scene=0;scenes=@(@{nodes=@(0)});nodes=@(@{mesh=0});meshes=@(@{primitives=@(@{attributes=@{POSITION=0;NORMAL=1};material=0})});materials=@(@{name='CapsuleMaterial';pbrMetallicRoughness=@{baseColorFactor=@(0.8,0.8,0.8,1.0);metallicFactor=0.0;roughnessFactor=0.8};doubleSided=$true});accessors=@(@{bufferView=0;componentType=5126;count=$vc;type='VEC3';min=@(-0.5,-0.5,-0.5);max=@(0.5,0.5,0.5)},@{bufferView=1;componentType=5126;count=$vc;type='VEC3'});bufferViews=$views.ToArray();buffers=@(@{byteLength=[int]$bin.Length})}
+$gltf=@{asset=@{version='2.0'};scene=0;scenes=@(@{nodes=@(0)});nodes=@(@{mesh=0});meshes=@(@{primitives=@(@{attributes=@{POSITION=0;NORMAL=1;TEXCOORD_0=2};material=0})});materials=@(@{name='CapsuleMaterial';pbrMetallicRoughness=@{baseColorFactor=@(0.8,0.8,0.8,1.0);metallicFactor=0.0;roughnessFactor=0.8};doubleSided=$true});accessors=@(@{bufferView=0;componentType=5126;count=$vc;type='VEC3';min=@(-0.5,-0.5,-0.5);max=@(0.5,0.5,0.5)},@{bufferView=1;componentType=5126;count=$vc;type='VEC3'},@{bufferView=2;componentType=5126;count=$vc;type='VEC2'});bufferViews=$views.ToArray();buffers=@(@{byteLength=[int]$bin.Length})}
 
 $json=[Text.Encoding]::UTF8.GetBytes(($gltf|ConvertTo-Json -Depth 20 -Compress));while(($json.Length%4)-ne 0){$json+=0x20};$binary=$bin.ToArray();$total=12+8+$json.Length+8+$binary.Length;$out=[IO.MemoryStream]::new();$w=[IO.BinaryWriter]::new($out);$w.Write([uint32]0x46546C67);$w.Write([uint32]2);$w.Write([uint32]$total);$w.Write([uint32]$json.Length);$w.Write([uint32]0x4E4F534A);$out.Write([byte[]]$json,0,$json.Length);$w.Write([uint32]$binary.Length);$w.Write([uint32]0x004E4942);$out.Write([byte[]]$binary,0,$binary.Length);[IO.File]::WriteAllBytes((Join-Path $OutputRoot 'capsule.glb'),$out.ToArray());Write-Output "Created capsule GLB $($out.Length) bytes"

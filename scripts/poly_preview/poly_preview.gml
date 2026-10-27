@@ -178,13 +178,14 @@ function __poly_thumb_frame(_cam, _model) {
   __poly_aim_cam(_cam, _ctr, _back, _dist);
 }
 
-// Frames the unit preview sphere tightly (exact r=1 at origin: the
+// Frames the editor preview sphere tightly (exact r=0.5 at origin: the
 // model bounds are AABB-based and would leave the sphere at ~60%).
 function __poly_thumb_frame_tight(_cam) {
   var _back = new GM3D_Vec3(1, 0.55, 1.25);
   _back.normalize();
   var _tan = max(tan(degtorad(20)), 0.001);
-  var _dist = max(1.0 * 1.25 * sqrt(1 + _tan * _tan) / _tan, 1.5);
+  var _radius = 0.5;
+  var _dist = max(_radius * 1.25 * sqrt(1 + _tan * _tan) / _tan, 1.5);
   __poly_aim_cam(_cam, new GM3D_Vec3(0, 0, 0), _back, _dist);
 }
 
@@ -264,6 +265,8 @@ function __poly_preview_src(_ed, _slot, _rel_path, _warn_tag) {
 }
 
 // Loads the editor sphere mesh for material previews (once).
+// The GLB must carry TEXCOORD_0 (see other/tools/gen_sphere.ps1): without UVs
+// every vertex samples the same texel and textured materials look flat.
 function __poly_mat_sphere_src(_ed) {
   return __poly_preview_src(_ed, "mat_sphere", "__PolygonEditor__/models/sphere.glb", "mat_thumb");
 }
