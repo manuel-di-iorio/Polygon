@@ -76,12 +76,6 @@
           <div>
             <h2>Everything you need<br />to ship levels.</h2>
           </div>
-          <p class="sec-desc">
-            Polygon gives you the essential tools to build and manage 3D levels
-            directly inside your game. No external editor, no complex setup:
-            just a clean integration with GameMaker and a simple file format
-            your game already understands.
-          </p>
         </header>
 
         <div class="value reveal">
@@ -135,10 +129,6 @@
             <div>
               <h2>From game to level<br />in three steps.</h2>
             </div>
-            <p class="sec-desc">
-              A simple flow: integrate the adapter, build your scene in-game,
-              and save it as JSON or binary.
-            </p>
           </header>
 
           <ol class="steps-grid">
@@ -199,14 +189,6 @@ poly_enable(); // opens with F1 (default)</code></pre>
                     ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8l4 4v13H6z"/><path d="M14 3.5v4h4"/></svg></span
                   >
                   <span class="save-name">level1.json</span>
-                  <span class="save-path">JSON &middot; editable</span>
-                </div>
-                <div class="save-file">
-                  <span class="doc" aria-hidden="true"
-                    ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8l4 4v13H6z"/><path d="M14 3.5v4h4"/></svg></span
-                  >
-                  <span class="save-name">level1.bin</span>
-                  <span class="save-path">Binary &middot; PLYB v2</span>
                 </div>
               </div>
             </li>
@@ -229,9 +211,7 @@ poly_enable(); // opens with F1 (default)</code></pre>
             </div>
             <p class="ref-desc">
               Save from a single dialog, with a <strong>JSON / Binary</strong>
-              radio. One JSON descriptor per node; the binary variant
-              (<code>.bin</code>, magic <code>PLYB</code> v2) stores values with
-              buffer types and reads old files back.
+              radio.
             </p>
             <div class="mini-card">
               <div class="mini-bar"><span></span><span></span><span></span><em>level1.json</em></div>
@@ -333,7 +313,6 @@ poly_load_step(); // call every Step, spawns ~48 nodes per frame</code></pre>
           <a href="#shortcuts">Controls</a>
           <a href="https://github.com/manuel-di-iorio/Polygon">GitHub</a>
         </nav>
-        <span class="foot-tag">Made for GameMaker</span>
       </div>
       <div class="wrap foot-legal">
         <p>
