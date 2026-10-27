@@ -1,4 +1,4 @@
-// poly_viewport — matrices, projection, rays, bounding boxes.
+// poly_viewport - matrices, projection, rays, bounding boxes.
 
 // ---------------------------------------------------------------------------
 // Matrices and projection

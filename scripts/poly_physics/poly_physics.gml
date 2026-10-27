@@ -1,4 +1,4 @@
-// poly_physics — editor physics data, GM3D components and static debug view.
+// poly_physics - editor physics data, GM3D components and static debug view.
 
 function __poly_physics_defaults() {
   return {

@@ -1,4 +1,4 @@
-// poly_imgui — shell: setup, draw orchestrator, Models window.
+// poly_imgui - shell: setup, draw orchestrator, Models window.
 
 // Draws all editor ImGui windows and menus.
 function __poly_imgui_draw(_ed) {

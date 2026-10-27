@@ -1,11 +1,11 @@
-// poly_imgui_viewport — Scene viewport panel + render to surface.
+// poly_imgui_viewport - Scene viewport panel + render to surface.
 
 // ---------------------------------------------------------------------------
 // Surface lifetime
 // ---------------------------------------------------------------------------
 
 // Shared surface lifetime for ImGui-displayed surfaces (viewport, anim preview):
-// never surface_free() a texture ImGui may have recorded this frame — retire
+// never surface_free() a texture ImGui may have recorded this frame - retire
 // it instead; the graveyard frees it once no submit can reference it.
 // TTL 16 frames: mode switches retire several large surfaces at once while
 // the backend still drains deep queues, and short TTLs freed textures

@@ -1,4 +1,4 @@
-// poly_serialize — descriptors, validation, rebuild, scene file IO.
+// poly_serialize - descriptors, validation, rebuild, scene file IO.
 
 // ---------------------------------------------------------------------------
 // Paths

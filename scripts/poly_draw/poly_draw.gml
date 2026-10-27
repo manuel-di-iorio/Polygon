@@ -1,4 +1,4 @@
-// poly_draw — public API.
+// poly_draw - public API.
 
 // Single call for the Draw event: shader warmup, then outline mask,
 // GPU picking and scene panel render.
@@ -47,7 +47,7 @@ function poly_draw() {
 
   __poly_graveyard_step(_ed[$ "thumb_graveyard"], __poly_thumb_graveyard_free);
   // Pick first: it applies pending clicks/rects to the selection, and the
-  // outline capture must see the post-pick state — otherwise a deselect
+  // outline capture must see the post-pick state - otherwise a deselect
   // re-renders the main surface with the stale mask and nothing ever
   // invalidates it again.
   __poly_gpupick_execute(_ed);

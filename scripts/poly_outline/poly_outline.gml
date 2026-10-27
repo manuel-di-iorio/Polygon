@@ -1,4 +1,4 @@
-// poly_outline — selection outline mask capture and glow composite.
+// poly_outline - selection outline mask capture and glow composite.
 
 // ---------------------------------------------------------------------------
 // State and materials
@@ -451,7 +451,7 @@ function __poly_outline_capture(_ed) {
   // Cheap gate: transient states always re-render; view_dirty (set by every
   // editor mutation: history, props, hide, serializers) forces a refresh;
   // otherwise a plain-numbers snapshot decides. No string building, no
-  // subtree walks on this path — that was the orbit bottleneck.
+  // subtree walks on this path - that was the orbit bottleneck.
   var _dragging = variable_struct_exists(_ed, "giz") && is_struct(_ed.giz) && _ed.giz.drag != -1;
 
   if (!_dragging && _ed.view_dirty != true) {

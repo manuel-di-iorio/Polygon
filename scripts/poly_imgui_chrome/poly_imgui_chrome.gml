@@ -1,4 +1,4 @@
-// poly_imgui_chrome — toolbar, menu, dialogs, UI persistence.
+// poly_imgui_chrome - toolbar, menu, dialogs, UI persistence.
 
 // ---------------------------------------------------------------------------
 // Toolbar

@@ -1,4 +1,4 @@
-// poly_selection — selection set, visibility/lock state, gizmo tool gating.
+// poly_selection - selection set, visibility/lock state, gizmo tool gating.
 
 // ---------------------------------------------------------------------------
 // Queries

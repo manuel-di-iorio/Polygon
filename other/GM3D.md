@@ -269,7 +269,7 @@ Hierarchy:
 parent.addChild(child);
 var children = parent.getChildren();
 child.removeFromParent();
-node.destroy(); // destroy(recursive?) — true destroys subtree,
+node.destroy(); // destroy(recursive?) - true destroys subtree,
 // false reparents children to own parent
 node.forEachNode(function (_n) {
   /* depth-first self + descendants */
@@ -538,7 +538,7 @@ material.setInt("u_mode", 0);
 Grouped inventory (every setter has a `get*` counterpart, verified against `notes/GM3D_API.md` in GM3D-Samples `develop`):
 
 - identity: constructor with name, `getName`/`setName`, `clone()` (independent handle), `destroy()`;
-- shaders: `getShader(pass)` / `setShader(pass, shader)`, pass in `[0, 255]` (`GM3D_ERenderPass.Shadow = 0`, `Forward = 1`, `Custom = 2 + N`). `getShader` returns `undefined` when the pass is unassigned — documented behavior, treat it as "engine default". Passing `undefined` to `setShader` clears a non-forward pass or restores the default forward shader;
+- shaders: `getShader(pass)` / `setShader(pass, shader)`, pass in `[0, 255]` (`GM3D_ERenderPass.Shadow = 0`, `Forward = 1`, `Custom = 2 + N`). `getShader` returns `undefined` when the pass is unassigned - documented behavior, treat it as "engine default". Passing `undefined` to `setShader` clears a non-forward pass or restores the default forward shader;
 - textures: `getTexture(name): int32` / `setTexture(name, texture)`. There is **no enumeration API**: bindings are name-addressed, so the caller must know the uniform names. glTF import populates the `gm_*` bindings consumed by the sample shaders (`gm_BaseTexture` + `gm_BaseColorFactor` vec4, `gm_AlphaMode` int with `0 = Opaque / 1 = Mask / 2 = Blend`, UV transform `gm_BaseTexture_Offset/Scale/Rotation`);
 - uniforms: `get/setFloat`, `get/setFloatArray`, `get/setInt`, `get/setIntArray` by name;
 - blend: `BlendEnable`, `BlendMode` (plus `Ext`/`SepAlpha` factor variants), `BlendEquation` (plus `SepAlpha`), source/destination factors (color + alpha), `ColorWriteEnable` as `[red, green, blue, alpha]`;
@@ -546,7 +546,7 @@ Grouped inventory (every setter has a `get*` counterpart, verified against `note
 - stencil: `StencilEnable/Func/Ref/ReadMask/WriteMask/Fail/Pass/DepthFail`;
 - misc: `CullMode`, `AlphaTestEnable/Ref`, `FogEnable`, `LightingEnable`.
 
-Texture ids are opaque `int32` handles: they can only be rebound (`setTexture`, `setGlobalTexture`) or tuned through `GM3D_Texture` sampler state. There is no CPU readback and no conversion to GameMaker surfaces/sprites — a `getTexture` id is not directly drawable in 2D.
+Texture ids are opaque `int32` handles: they can only be rebound (`setTexture`, `setGlobalTexture`) or tuned through `GM3D_Texture` sampler state. There is no CPU readback and no conversion to GameMaker surfaces/sprites - a `getTexture` id is not directly drawable in 2D.
 
 `setMaterial()` on scene swaps a slot by name/index.
 
@@ -631,7 +631,7 @@ animator.setSpeed(1.0);
 animator.play(idx, true);
 ```
 
-The forest sample desynchronizes 2000 foxes with random `setSpeed(0.85–1.15)` and `setTime(random(10))` per instance. `GM3D_Scene.applyAnimation(nameOrIndexOrStruct, time)` poses a scene without a component — useful for thumbnails/debris.
+The forest sample desynchronizes 2000 foxes with random `setSpeed(0.85–1.15)` and `setTime(random(10))` per instance. `GM3D_Scene.applyAnimation(nameOrIndexOrStruct, time)` poses a scene without a component - useful for thumbnails/debris.
 
 ## Camera and rendering
 
@@ -670,7 +670,7 @@ right_camera.setOrder(1);
 
 ### Free-look controller
 
-The samples store position, yaw, and pitch in the application, then apply the result to the camera node — canonically with `updateMouselook` under right mouse button:
+The samples store position, yaw, and pitch in the application, then apply the result to the camera node - canonically with `updateMouselook` under right mouse button:
 
 ```gml
 if (mouse_check_button(mb_right)) {
@@ -717,7 +717,7 @@ function loadScene(_fileName) {
 }
 ```
 
-`freeze()` completes preparation of the source scene (uploads meshes to GPU — call once after shader assignment). Call it after changes to materials that must be shared by instances and before `spawnInto()`.
+`freeze()` completes preparation of the source scene (uploads meshes to GPU - call once after shader assignment). Call it after changes to materials that must be shared by instances and before `spawnInto()`.
 
 The included assets are `.glb`, that is, binary glTF with meshes, materials, skinning, and animations. The repository does not demonstrate OBJ or FBX import. Physics `Mesh`, `ConvexHull` and `ConvexDecomposition` shape types approximate meshes, but there is no asset-pipeline physics import.
 
@@ -755,7 +755,7 @@ body.setAllowSleeping(true);
 
 var shape = new GM3D_PhysicsShapeComponent();
 shape.setShapeType(GM3D_EPhysicsShapeType.Box); // Box Sphere Capsule Cylinder Mesh ConvexHull ConvexDecomposition
-// NOTE: the API index declares the setter range as [0,5], which would exclude ConvexDecomposition=6 — verify at runtime
+// NOTE: the API index declares the setter range as [0,5], which would exclude ConvexDecomposition=6 - verify at runtime
 shape.setHalfExtents(new GM3D_Vec3(hx, hy, hz)); // sphere/capsule/cylinder: x=radius y=half-height
 shape.setLocalOffset(offset);
 shape.setLocalRotation(rot);
@@ -1110,11 +1110,11 @@ GM3D_EPhysicsTrackSide.Left / Right
 
 ## Documentation limits
 
-- The upstream index lists signatures + one-line descriptions, not semantics, units (mostly metres / seconds / radians — verify per method), or error cases.
-- Constraint, motorcycle, tracked, overlap, and shape-cast APIs are indexed but have no sample coverage — behavior unverified here.
+- The upstream index lists signatures + one-line descriptions, not semantics, units (mostly metres / seconds / radians - verify per method), or error cases.
+- Constraint, motorcycle, tracked, overlap, and shape-cast APIs are indexed but have no sample coverage - behavior unverified here.
 - `.glb` is the only format demonstrated; physics `Mesh` shape fidelity, skinning limits, and platform performance are not documented upstream.
 - Textures: no binding enumeration (`getTexture` needs exact uniform names; unknown names return `undefined`), ids are opaque `int32` (sampler state only, no CPU readback or GM surface/sprite conversion), and `getShader` returning `undefined` is documented behavior rather than an error.
 
 ## Sources
 
-- `https://github.com/YoYoGames/GM3D-Samples` (`scripts/`, `objects/`, `shaders/`, `notes/GM3D_API.md` — the API index is the authority for signatures; verified here against branch `develop`).
+- `https://github.com/YoYoGames/GM3D-Samples` (`scripts/`, `objects/`, `shaders/`, `notes/GM3D_API.md` - the API index is the authority for signatures; verified here against branch `develop`).

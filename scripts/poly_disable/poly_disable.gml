@@ -1,4 +1,4 @@
-// poly_disable — public API.
+// poly_disable - public API.
 
 // Disables the 3D editor.
 function poly_disable() {

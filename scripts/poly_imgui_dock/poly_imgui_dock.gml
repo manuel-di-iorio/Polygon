@@ -1,4 +1,4 @@
-// poly_imgui_dock — dock layout, placement, panel flags.
+// poly_imgui_dock - dock layout, placement, panel flags.
 
 // ---------------------------------------------------------------------------
 // Placement
@@ -40,7 +40,7 @@ function __poly_imgui_dock_fresh(_ed) {
 // ImGui alone owns the layout: the default dock is built on the very
 // first run and on Reset Layout only. Later sessions skip the build and
 // trust the runtime ini (reloaded explicitly on the first frame).
-// NOTE: never probe the ini file from GML — the sandbox forbids file
+// NOTE: never probe the ini file from GML - the sandbox forbids file
 // ops outside working_directory. Our own flag lives in polygon_ui.json.
 function __poly_dock_needs_build(_ed) {
   var _rebuild = (variable_struct_exists(_ed.imgui, "dock_rebuild") && _ed.imgui.dock_rebuild == true)

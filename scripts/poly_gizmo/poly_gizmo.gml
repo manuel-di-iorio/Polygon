@@ -1,4 +1,4 @@
-// poly_gizmo — pivot, handles, hover, drag (translate/scale/rotate).
+// poly_gizmo - pivot, handles, hover, drag (translate/scale/rotate).
 
 // ---------------------------------------------------------------------------
 // Pivot, directions, sizes

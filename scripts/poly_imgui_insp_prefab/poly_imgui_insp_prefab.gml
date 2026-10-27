@@ -1,4 +1,4 @@
-// poly_imgui_insp_prefab — prefab overrides row.
+// poly_imgui_insp_prefab - prefab overrides row.
 
 // ---------------------------------------------------------------------------
 // Override detection

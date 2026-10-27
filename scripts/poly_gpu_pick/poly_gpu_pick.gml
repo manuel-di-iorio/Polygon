@@ -1,4 +1,4 @@
-// poly_gpu_pick — ID-buffer picking (click, rect, icons, cycling).
+// poly_gpu_pick - ID-buffer picking (click, rect, icons, cycling).
 
 // ---------------------------------------------------------------------------
 // State and ID codec

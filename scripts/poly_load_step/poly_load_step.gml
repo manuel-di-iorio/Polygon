@@ -1,4 +1,4 @@
-// poly_load_step — public API.
+// poly_load_step - public API.
 
 // Advances all pending poly_load jobs (up to _budget nodes each).
 // Call every Step while a job is alive; finished jobs fire on_finish

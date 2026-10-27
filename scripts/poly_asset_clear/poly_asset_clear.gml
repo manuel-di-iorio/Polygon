@@ -1,4 +1,4 @@
-// poly_asset_clear — public API.
+// poly_asset_clear - public API.
 
 // Clears all editor library assets.
 function poly_asset_clear() {

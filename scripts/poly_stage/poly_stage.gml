@@ -1,4 +1,4 @@
-// poly_stage — editor grid, skybox dome, chrome checks.
+// poly_stage - editor grid, skybox dome, chrome checks.
 
 // ---------------------------------------------------------------------------
 // Chrome checks

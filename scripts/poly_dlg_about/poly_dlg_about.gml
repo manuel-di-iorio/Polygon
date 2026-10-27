@@ -1,4 +1,4 @@
-// poly_dlg_about — about dialog.
+// poly_dlg_about - about dialog.
 
 // Shows about dialog.
 function __poly_imgui_about(_ed) {

@@ -1,4 +1,4 @@
-// poly_imgui_scene — Hierarchy window (rows, filter, rubber band).
+// poly_imgui_scene - Hierarchy window (rows, filter, rubber band).
 
 // ---------------------------------------------------------------------------
 // Window

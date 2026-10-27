@@ -1,4 +1,4 @@
-// poly_actor_destroy — public API.
+// poly_actor_destroy - public API.
 
 // Destroys a companion actor and its bound scene node together. Accepts
 // the companion instance id, the scene node, or the creation struct.

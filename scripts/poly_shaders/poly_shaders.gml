@@ -1,4 +1,4 @@
-// poly_shaders — shader providers, unlit preview mode, magenta fallbacks.
+// poly_shaders - shader providers, unlit preview mode, magenta fallbacks.
 
 // ---------------------------------------------------------------------------
 // Providers

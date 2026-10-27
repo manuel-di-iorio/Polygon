@@ -1,4 +1,4 @@
-// poly_overlay — light/camera/environment viewport overlays.
+// poly_overlay - light/camera/environment viewport overlays.
 
 // ---------------------------------------------------------------------------
 // Clipping and projection

@@ -1,4 +1,4 @@
-// poly_registry — tracked node registry (struct by id, wrapper roots).
+// poly_registry - tracked node registry (struct by id, wrapper roots).
 //
 // Invariant: every tracked root is a wrapper.
 // Assets are wrapper (empty) -> model root; lights/cameras/envs are a

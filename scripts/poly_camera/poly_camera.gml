@@ -1,4 +1,4 @@
-// poly_camera — viewport camera, orbit/fly/pan/zoom, smooth transitions.
+// poly_camera - viewport camera, orbit/fly/pan/zoom, smooth transitions.
 
 // ---------------------------------------------------------------------------
 // Forward and home

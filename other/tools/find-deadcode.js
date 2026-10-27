@@ -13,7 +13,7 @@
 // Naming convention: `__poly_*` (leading double underscore) is internal,
 // everything else (`poly_*`, `demo_*`, `ImGui*`, ...) is public API or
 // binding surface. Public names with no internal callers are reported
-// separately — they may be called by the game project, so they are NOT
+// separately - they may be called by the game project, so they are NOT
 // necessarily dead code. Only "dead internal" entries are safe-ish removal
 // candidates (still verify: dynamic access by name string is invisible).
 //
@@ -528,7 +528,7 @@ function printReport(r) {
   printSection("Dead internal enums", r.deadInternal.enum, function (d) {
     return d.file + ":" + d.line + "  " + d.name;
   });
-  process.stdout.write("Public API with no internal callers (may be called by the game project or binding users — do not delete blindly):\n");
+  process.stdout.write("Public API with no internal callers (may be called by the game project or binding users - do not delete blindly):\n");
   printSection("  functions", r.publicUnused["function"], function (d) {
     return d.file + ":" + d.line + "  " + d.name + "()";
   });

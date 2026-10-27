@@ -1,4 +1,4 @@
-// poly_bin — optimized binary scene format (PLYB v2), buffer-based.
+// poly_bin - optimized binary scene format (PLYB v2), buffer-based.
 // Layout (little-endian, alignment 1, strings = buffer_string):
 //   u8[4] magic "PLYB", u16 bin_version (=2), s32 seq
 //   v2: 3x f32 gravity, f32 fixedTimeStep, u16 maxSubSteps, u16 maxBodies

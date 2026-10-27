@@ -1,4 +1,4 @@
-// poly_files — scene file dialogs, save/load, confirm actions.
+// poly_files - scene file dialogs, save/load, confirm actions.
 
 // ---------------------------------------------------------------------------
 // Paths and names

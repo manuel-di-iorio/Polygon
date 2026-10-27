@@ -1,4 +1,4 @@
-// poly_viewcube — orientation widget geometry, picking, drawing.
+// poly_viewcube - orientation widget geometry, picking, drawing.
 
 // ---------------------------------------------------------------------------
 // Geometry

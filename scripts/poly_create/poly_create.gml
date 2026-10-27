@@ -1,4 +1,4 @@
-// poly_create — public API.
+// poly_create - public API.
 
 // Applies user shortcut overrides over the default binding table.
 // Each entry is an array of elements { key, mouse?, modifier? }:

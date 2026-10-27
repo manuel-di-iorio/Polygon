@@ -1,4 +1,4 @@
-// poly_library — asset library + spawn defaults (rotation/scale, shadow flags).
+// poly_library - asset library + spawn defaults (rotation/scale, shadow flags).
 
 // ---------------------------------------------------------------------------
 // Identity

@@ -53,7 +53,7 @@ Public API (`poly_create`, `poly_enable`, `poly_disable`,
 
 - `poly_create(config)` (`poly_create.gml`): wraps the adapter into `rt`
   (`__poly_create_rt` copies only `scene→live_scene`, `cam`, `assets`,
-  `on_create/on_close/on_compose` — never instances), builds the `_ed`
+  `on_create/on_close/on_compose` - never instances), builds the `_ed`
   state, registers library assets, applies `keys` shortcut overrides
   (`__poly_keys_apply`), seeds the view camera.
 - `poly_enable/disable` → `__poly_set_active` (`poly_core.gml`):
@@ -127,7 +127,7 @@ single wrapper carrying the component.
 - Import (`__poly_track_adopt_auto`): non-roots skipped; component
   nodes become light/camera/env adoptions (live wrapper id preserved);
   other nodes match the library **by model-root name, only on a unique
-  candidate** — unmatched/ambiguous live nodes are skipped. Nothing
+  candidate** - unmatched/ambiguous live nodes are skipped. Nothing
   starts hidden; scene cameras are muted while editing
   (only the viewcam renders).
 
@@ -247,7 +247,7 @@ id. History is cleared on activate/new/load/discard. Creation snapshots
   `PLYB`, u16 version 1, s32 seq, u16 asset table (key + optional actor
   binding), u32 node table (kind byte, strings via `buffer_string`,
   f32 transforms, u8 colors, packed flag bits). Same content as JSON,
-  field-by-field binary — never JSON-in-a-buffer. `buffer_save/load`
+  field-by-field binary - never JSON-in-a-buffer. `buffer_save/load`
   with `try/catch`.
 - Loading is always chunked (`begin` parses now, `pump` places ~48 nodes/step so the
   `load_job` (`begin` parses now, `pump` places ~48 nodes/step so the
@@ -289,7 +289,7 @@ companion. Configured per model in the Inspector Actor section
 - Surfaces: `scene_surf` (display size, clamped 160–1920 × 90–1080),
   `scene_hi` (scratch at pass size), `scene_smaa_e/w` (1x SMAA
   edges/weights). Surfaces are never freed while ImGui may reference
-  them — a 16-frame graveyard retires them; resizes keep the old
+  them - a 16-frame graveyard retires them; resizes keep the old
   surface one frame and report "not ready" so the frame falls back to
   direct rendering.
 - The view re-renders only when needed (`view_dirty`, gestures,
@@ -312,7 +312,7 @@ companion. Configured per model in the Inspector Actor section
 - `__poly_compose_viewport` (`poly_core.gml`) runs on `scene_surf`:
   optional `on_compose(surf, w, h)` dev post-processing first (raw 3D
   only), then outline composite, gizmo, prop overlays, ViewCube,
-  rect/selection art and notices — all 2D at display res, hence sharp
+  rect/selection art and notices - all 2D at display res, hence sharp
   under any AA mode.
 
 ---
@@ -344,7 +344,7 @@ from pick/outline/serialize):
   per-pixel lines from world XZ at 1:5:25 pitches, `fwidth` 1px lines,
   per-scale LOD + distance + horizon fades, opaque. The quad (scale 6
   → ±1800 m) is recentered under the camera every frame while lines
-  stay world-anchored — feels infinite; the edge dissolves before it
+  stay world-anchored - feels infinite; the edge dissolves before it
   is ever visible. Step comes live from the toolbar (`u_grid_step`).
 - Sky: `skybox.glb` dome following the camera, scaled to stay inside
   the far plane; gradient + sun disk from the first directional light
@@ -487,12 +487,12 @@ Optional local link so an AI client can drive the editor
 - Undo = whole-scene JSON snapshots (cap 100); gizmo drags coalesce.
 - One offscreen scale per frame for all 3D passes; overlays compose
   after AA at display res.
-- Never `surface_free` a live ImGui texture — retire with TTL.
+- Never `surface_free` a live ImGui texture - retire with TTL.
 - GLSL ES style shaders (`attribute/varying/texture2D`); extra
   samplers via `shader_get_sampler_index` + `texture_set_stage`.
 - Struct-member reads that may be missing must use
   `variable_struct_exists` first (GM throws `ReferenceError`).
-- Runtime LUT/sprite textures must outlive their queued submits —
+- Runtime LUT/sprite textures must outlive their queued submits -
   keep decoded sprites alive, never delete right after blitting.
 
 ---
@@ -507,6 +507,6 @@ Editor** folder (scripts, sprites, shaders) plus the Included Files under
 `datafiles/__PolygonEditor__`; the demo datafiles are removed with
 `POSTREMOVALS`. Because the `.yymps` zip embeds timestamps, a fresh export
 almost always differs byte-for-byte, so freshness is decided by comparing the
-entries (name + MD5) — never by file hash or `git status`. The hook never
+entries (name + MD5) - never by file hash or `git status`. The hook never
 blocks a push: a rebuild that is stale lands in its own commit for the next
 push.

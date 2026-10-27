@@ -1,4 +1,4 @@
-// poly_imgui_insp_anim — animation lists + click-to-open preview window.
+// poly_imgui_insp_anim - animation lists + click-to-open preview window.
 
 // ---------------------------------------------------------------------------
 // Model lookup and counts
@@ -174,8 +174,8 @@ function __poly_anim_ui_window(_ed) {
 
   // Closed by clicking outside: drop the state so the preview stops.
   // The click itself is NOT eaten (non-modal window), it already reached
-  // its target this frame — row switches set _row_clicked, window controls
-  // are covered by _hv — so this only clears the preview.
+  // its target this frame - row switches set _row_clicked, window controls
+  // are covered by _hv - so this only clears the preview.
   if (!_row_clicked && !_hovered && (mouse_check_button_pressed(mb_left) || mouse_check_button_pressed(mb_right))) _ed.anim_ui = undefined;
 }
 

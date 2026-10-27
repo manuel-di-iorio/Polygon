@@ -89,7 +89,7 @@ float gridLine(vec2 _p, float _step) {
 
 // Distance fade per scale: each level melts away progressively with view
 // depth, further than the previous, so near field stays crisp while the far
-// field dissolves smoothly — including high top-down views, where the super
+// field dissolves smoothly - including high top-down views, where the super
 // scale keeps lines readable. Smoothstep over a long range: no visible band
 // edge, ever.
 // Calibrated for 1m cells; the main() scales the bands with u_grid_step so

@@ -1,4 +1,4 @@
-// poly_core — init, frame entry points, render queues, state, cleanup.
+// poly_core - init, frame entry points, render queues, state, cleanup.
 
 enum PolygonEditorTool {
   View = 0,
@@ -437,7 +437,7 @@ function __poly_set_active(_ed, _on) {
 // ---------------------------------------------------------------------------
 
 // Sub-state constructors (split of the former __poly_create_state literal;
-// same fields, same defaults — only grouped for readability).
+// same fields, same defaults - only grouped for readability).
 function __poly_state_giz() {
   return {
     tool: PolygonEditorTool.Translate,

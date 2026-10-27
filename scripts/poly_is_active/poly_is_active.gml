@@ -1,4 +1,4 @@
-// poly_is_active — public API.
+// poly_is_active - public API.
 
 // Checks if editor is active.
 function poly_is_active() {

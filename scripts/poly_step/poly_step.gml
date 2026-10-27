@@ -1,4 +1,4 @@
-// poly_step — public API.
+// poly_step - public API.
 
 // Updates editor logic and draws UI.
 function poly_step() {

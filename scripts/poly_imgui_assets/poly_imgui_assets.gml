@@ -1,4 +1,4 @@
-// poly_imgui_assets — Models panel (list/cards), filter, drag source.
+// poly_imgui_assets - Models panel (list/cards), filter, drag source.
 
 // ---------------------------------------------------------------------------
 // Shared row bits

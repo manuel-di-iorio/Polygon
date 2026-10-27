@@ -1,4 +1,4 @@
-// poly_actor_of — public API.
+// poly_actor_of - public API.
 
 // Finds the live companion instance bound to a node id (or node struct),
 // or undefined. Stale entries never leak: dead instances read as missing.

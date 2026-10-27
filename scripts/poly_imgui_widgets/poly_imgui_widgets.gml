@@ -1,4 +1,4 @@
-// poly_imgui_widgets — primitive widgets, buttons, style helpers.
+// poly_imgui_widgets - primitive widgets, buttons, style helpers.
 // Pads string with spaces to fixed length.
 function __poly_imgui_pad(_base) {
   if (!is_string(_base)) _base = "";

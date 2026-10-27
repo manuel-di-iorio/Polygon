@@ -1,4 +1,4 @@
-// poly_imgui_inspector — shell: Inspector window dispatcher.
+// poly_imgui_inspector - shell: Inspector window dispatcher.
 
 // ---------------------------------------------------------------------------
 // Material/texture sub-inspectors

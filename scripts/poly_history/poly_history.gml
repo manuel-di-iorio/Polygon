@@ -1,4 +1,4 @@
-// poly_history — undo/redo snapshots of scene + selection.
+// poly_history - undo/redo snapshots of scene + selection.
 
 // ---------------------------------------------------------------------------
 // Stacks and snapshots

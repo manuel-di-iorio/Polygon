@@ -1,4 +1,4 @@
-// poly_draw_ui — public API.
+// poly_draw_ui - public API.
 
 // Draws window-level editor hints and tooltips.
 function poly_draw_ui() {

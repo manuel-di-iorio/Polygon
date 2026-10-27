@@ -1,4 +1,4 @@
-// poly_imgui_insp_sections — per-kind sections (light, camera, env, asset, spawn).
+// poly_imgui_insp_sections - per-kind sections (light, camera, env, asset, spawn).
 
 // ---------------------------------------------------------------------------
 // Generic edit wrappers (snap, mutate, apply, commit)

@@ -1,4 +1,4 @@
-// poly_gizmo_draw — transform gizmo handles, sweep, trails, selboxes.
+// poly_gizmo_draw - transform gizmo handles, sweep, trails, selboxes.
 
 // ---------------------------------------------------------------------------
 // Main

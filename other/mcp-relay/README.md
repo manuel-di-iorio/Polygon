@@ -212,5 +212,5 @@ Bump `BRIDGE_PROTOCOL_VERSION` (relay) and the `v` checks (game) together.
 ## Limits
 
 - One editor instance at a time (a new connection replaces the previous).
-- Loopback only; no auth (any local process can connect — by design).
+- Loopback only; no auth (any local process can connect - by design).
 - The game cannot receive while the editor is closed or the bridge is off.

@@ -1,4 +1,4 @@
-// poly_scene_ops — drop point, destroy/new, delete/duplicate, focus, selection.
+// poly_scene_ops - drop point, destroy/new, delete/duplicate, focus, selection.
 
 // ---------------------------------------------------------------------------
 // Drop point and rect

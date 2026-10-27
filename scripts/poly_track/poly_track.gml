@@ -1,4 +1,4 @@
-// poly_track — public API.
+// poly_track - public API.
 
 // Imports a live game node into the editor scene (copy) for editing.
 // The game world is never touched: assets respawn from the library by

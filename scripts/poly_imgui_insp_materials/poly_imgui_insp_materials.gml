@@ -1,4 +1,4 @@
-// poly_imgui_insp_materials — material collection + preview rows.
+// poly_imgui_insp_materials - material collection + preview rows.
 
 // ---------------------------------------------------------------------------
 // Collection and naming

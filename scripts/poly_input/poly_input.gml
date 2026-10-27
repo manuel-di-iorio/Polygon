@@ -1,4 +1,4 @@
-// poly_input — owners, hotkeys, gizmo/library/rect/hover steps, mouse wrap.
+// poly_input - owners, hotkeys, gizmo/library/rect/hover steps, mouse wrap.
 
 // ---------------------------------------------------------------------------
 // Owners and context

@@ -1,4 +1,4 @@
-# Revisione confermata — 2026-10-22
+# Revisione confermata - 2026-10-22
 
 Questa revisione sostituisce le decisioni incompatibili nelle sezioni successive del piano. I dettagli architetturali restano validi solo dove non contraddicono questa sezione.
 
@@ -38,18 +38,18 @@ Il capsule character è centrato sull'origine del wrapper. Il modello visuale vi
 
 ## Fasi aggiornate
 
-1. **Fase 0 — spike API (da completare):** verificare che `setDebugDrawEnabled` renda i collider senza simulazione; verificare il rapporto tra scala del nodo e half-extents; verificare Mesh/ConvexHull con mesh figlia del wrapper. Annotare risultati e limiti prima di esporre le shape sperimentali.
-2. **Fase 1 — dati e runtime comune (implementata, da validare):** `poly_physics` per apply/read/validate/fit/default World; `physics` nei descrittori istanza e `world` al top-level; JSON v1 e PLYB v2 con lettura v1; caricamento runtime e report physics.
-3. **Fase 1 — UI e debug editor (implementata, da validare):** Inspector Body/Shape, toolbar e scorciatoia `P`, debug world statico; impostazioni World nello stato Inspector senza selezione. La sezione prefab conserva la precedenza.
-4. **Fase 2 — character e prefab (implementata, da validare):** controller, capsule centrata sul wrapper, `visualOffset` automatico/modificabile con Recenter, default fisici applicati alle nuove istanze e helper runtime.
-5. **Fase 3 — integrazioni (implementata, da validare a runtime):** physics mantenuta in duplicate, copy/cut/paste e bridge AI; adozione della fisica anche nel track manuale e automatico; tooltip aggiunti a controlli Physics, Physics World, default prefab e flag Shadows. Restano le verifiche runtime e l'eventuale spike Mesh/ConvexHull.
-6. **Fase 5 — Shape Mesh e ConvexHull (implementata):** Mesh e ConvexHull validate a runtime con mesh figlia del wrapper; abilitate nelle shape selezionabili (Inspector singolo e prefab) senza etichetta sperimentale. Mesh usa la geometria della mesh (ideale per statici), ConvexHull l'involucro convesso (adatto anche a dinamici).
-7. **Fase 4 — Trigger di gioco (parzialmente implementata):** il sensore è già rappresentato come body sensore (`isSensor` + layer `Trigger`); aggiunti i flag evento `triggerEnter`/`triggerStay`/`triggerExit` ai dati physics, all'Inspector e alla validazione; documentato il contratto runtime (payload `GM3D_ContactEvent`, callback dopo `step()`, cleanup). Resta la verifica runtime di più sensori, ordine eventi, distruzione/rimozione e rebuild.
-8. **Fase 6 — Collider composti (parzialmente implementata):** aggiunto il campo opzionale `shapes` (array di shape locali con tipo, dimensioni, offset e rotazione) ai dati physics, alla normalizzazione e alla validazione; backward-compatible con la shape singola V1. Restano UI lista/add/remove, apply multi-shape e verifica runtime dei limiti GM3D.
-9. **Fase 7 — Vincoli/giunti (parzialmente implementata):** aggiunto campo opzionale `constraint` ai dati physics (tipo, nodeB, pivotA/B, axisA, limiti, motore), normalizzazione, validazione, UI nell'Inspector (tipo + target id) e rimozione componente su re-apply. Il gioco crea il giunto dal payload dopo `syncScene()` via `world.createXConstraintBetween`/`addConstraint`. Restano pivot/assi/limiti/motore nell'UI, validazione riferimenti mancanti, duplicazione e rebuild.
-10. **Fase 8 — Veicoli (parzialmente implementata):** aggiunto campo opzionale `vehicle` ai dati physics (mass, damping, friction, ruote, powertrain, gears, clutch, anti-roll), normalizzazione, validazione e UI nell'Inspector (sezione Vehicle per body dinamici). Il gioco costruisce il veicolo dai dati dopo `syncScene()` (convex hull, ruote, powertrain, differenziali, anti-roll). Restano UI avanzata (curve sterzo, collision tester, pitch/roll) e verifica runtime.
-11. **Fase 10 — Matrice collisioni (implementata):** aggiunta matrice layer-layer 5x5 ai dati World, normalizzazione, applicazione nel debug world e UI nel pannello Physics World (checkbox per ogni coppia). Resta la verifica runtime che `setLayerCollision` venga applicato anche al world di gioco.
-12. **Fase 9 — Ragdoll (non implementata):** resta nella roadmap documentata; richiede validazione runtime (bone mapping, blend animazione/fisica).
+1. **Fase 0 - spike API (da completare):** verificare che `setDebugDrawEnabled` renda i collider senza simulazione; verificare il rapporto tra scala del nodo e half-extents; verificare Mesh/ConvexHull con mesh figlia del wrapper. Annotare risultati e limiti prima di esporre le shape sperimentali.
+2. **Fase 1 - dati e runtime comune (implementata, da validare):** `poly_physics` per apply/read/validate/fit/default World; `physics` nei descrittori istanza e `world` al top-level; JSON v1 e PLYB v2 con lettura v1; caricamento runtime e report physics.
+3. **Fase 1 - UI e debug editor (implementata, da validare):** Inspector Body/Shape, toolbar e scorciatoia `P`, debug world statico; impostazioni World nello stato Inspector senza selezione. La sezione prefab conserva la precedenza.
+4. **Fase 2 - character e prefab (implementata, da validare):** controller, capsule centrata sul wrapper, `visualOffset` automatico/modificabile con Recenter, default fisici applicati alle nuove istanze e helper runtime.
+5. **Fase 3 - integrazioni (implementata, da validare a runtime):** physics mantenuta in duplicate, copy/cut/paste e bridge AI; adozione della fisica anche nel track manuale e automatico; tooltip aggiunti a controlli Physics, Physics World, default prefab e flag Shadows. Restano le verifiche runtime e l'eventuale spike Mesh/ConvexHull.
+6. **Fase 5 - Shape Mesh e ConvexHull (implementata):** Mesh e ConvexHull validate a runtime con mesh figlia del wrapper; abilitate nelle shape selezionabili (Inspector singolo e prefab) senza etichetta sperimentale. Mesh usa la geometria della mesh (ideale per statici), ConvexHull l'involucro convesso (adatto anche a dinamici).
+7. **Fase 4 - Trigger di gioco (parzialmente implementata):** il sensore è già rappresentato come body sensore (`isSensor` + layer `Trigger`); aggiunti i flag evento `triggerEnter`/`triggerStay`/`triggerExit` ai dati physics, all'Inspector e alla validazione; documentato il contratto runtime (payload `GM3D_ContactEvent`, callback dopo `step()`, cleanup). Resta la verifica runtime di più sensori, ordine eventi, distruzione/rimozione e rebuild.
+8. **Fase 6 - Collider composti (parzialmente implementata):** aggiunto il campo opzionale `shapes` (array di shape locali con tipo, dimensioni, offset e rotazione) ai dati physics, alla normalizzazione e alla validazione; backward-compatible con la shape singola V1. Restano UI lista/add/remove, apply multi-shape e verifica runtime dei limiti GM3D.
+9. **Fase 7 - Vincoli/giunti (parzialmente implementata):** aggiunto campo opzionale `constraint` ai dati physics (tipo, nodeB, pivotA/B, axisA, limiti, motore), normalizzazione, validazione, UI nell'Inspector (tipo + target id) e rimozione componente su re-apply. Il gioco crea il giunto dal payload dopo `syncScene()` via `world.createXConstraintBetween`/`addConstraint`. Restano pivot/assi/limiti/motore nell'UI, validazione riferimenti mancanti, duplicazione e rebuild.
+10. **Fase 8 - Veicoli (parzialmente implementata):** aggiunto campo opzionale `vehicle` ai dati physics (mass, damping, friction, ruote, powertrain, gears, clutch, anti-roll), normalizzazione, validazione e UI nell'Inspector (sezione Vehicle per body dinamici). Il gioco costruisce il veicolo dai dati dopo `syncScene()` (convex hull, ruote, powertrain, differenziali, anti-roll). Restano UI avanzata (curve sterzo, collision tester, pitch/roll) e verifica runtime.
+11. **Fase 10 - Matrice collisioni (implementata):** aggiunta matrice layer-layer 5x5 ai dati World, normalizzazione, applicazione nel debug world e UI nel pannello Physics World (checkbox per ogni coppia). Resta la verifica runtime che `setLayerCollision` venga applicato anche al world di gioco.
+12. **Fase 9 - Ragdoll (non implementata):** resta nella roadmap documentata; richiede validazione runtime (bone mapping, blend animazione/fisica).
 
 ### Lavoro svolto in questa implementazione
 
@@ -88,11 +88,11 @@ La validazione runtime resta bloccata da una dipendenza esterna: il progetto usa
 4. Provare Mesh/ConvexHull con mesh figlia del wrapper. Tenerle fuori dalle shape selezionabili se lo spike non conferma supporto corretto.
 5. Completare la verifica di duplicate/copy/paste, badge gerarchia, multiselezione e round-trip di undo/redo e salvataggio JSON/PLYB; annotare gli esiti qui prima di chiudere le fasi.
 
-### Roadmap successiva — dopo la validazione V1
+### Roadmap successiva - dopo la validazione V1
 
 Le fasi sotto sono proposte successive alla verifica runtime della V1 e vanno affrontate in ordine di dipendenza. I sistemi avanzati restano fuori dal perimetro V1 finché non viene approvata la relativa fase.
 
-#### Fase 4 — Trigger di gioco
+#### Fase 4 - Trigger di gioco
 
 La V1 rappresenta già il trigger come body sensore (`isSensor`), non come modalità fisica autonoma. Prima di ampliare l'editor, verificare che la scelta del layer `Trigger` e il flag `Sensor` producano un comportamento coerente; mantenere un'unica invariante chiara per il body sensore.
 
@@ -102,7 +102,7 @@ La V1 rappresenta già il trigger come body sensore (`isSensor`), non come modal
 - Verificare più sensori, distruzione/rimozione dei nodi, ordine degli eventi e compatibilità con load/rebuild.
 - Non aggiungere una modalità `trigger`: si configura un body sensore attraverso i dati physics esistenti.
 
-#### Fase 5 — Collider Mesh e Convex
+#### Fase 5 - Collider Mesh e Convex
 
 Abilitare le shape sperimentali solo dopo gli spike con mesh figlia del wrapper e la verifica di scala/rotazione.
 
@@ -111,21 +111,21 @@ Abilitare le shape sperimentali solo dopo gli spike con mesh figlia del wrapper 
 - Documentare limiti di precisione, costo di cooking/performance e casi non supportati.
 - Esporre nell'Inspector soltanto le shape validate; segnalare esplicitamente quelle che restano sperimentali.
 
-#### Fase 6 — Collider composti
+#### Fase 6 - Collider composti
 
 - Passare dal singolo `physics.shape` a una lista versionabile di shape locali per istanza, ciascuna con tipo, dimensioni, offset e rotazione.
 - Aggiungere nell'Inspector lista, aggiunta/rimozione, selezione e modifica delle shape; includere preview debug, undo/redo e duplicazione.
 - Aggiornare validazione, JSON, PLYB e caricamento runtime mantenendo la lettura dei dati V1 come singola shape.
 - Verificare quali combinazioni e limiti di numero componenti sono supportati da GM3D.
 
-#### Fase 7 — Vincoli e giunti
+#### Fase 7 - Vincoli e giunti
 
 - Definire il formato per joint tra due istanze: tipo, riferimenti stabili ai nodi, ancoraggi locali, assi, limiti e parametri opzionali di motore.
 - Implementare selezione dei corpi collegati e UI per configurazione/visualizzazione del joint.
 - Validare riferimenti mancanti, cancellazione o duplicazione di un corpo collegato, prefab e rebuild della scena.
 - Aggiornare undo/redo, serializzazione e helper runtime; i vincoli non entrano nei dati V1.
 
-#### Fase 8 — Veicoli
+#### Fase 8 - Veicoli
 
 - Modellare il veicolo come configurazione collegata al body: wheel nodes, assi/posizioni, raggio e larghezza, sospensione e sterzo.
 - Aggiungere configurazione di powertrain, cambio, differenziale e anti-roll; includere collision tester e validazione dei riferimenti alle ruote.
@@ -133,20 +133,20 @@ Abilitare le shape sperimentali solo dopo gli spike con mesh figlia del wrapper 
 - Esporre helper runtime per input (acceleratore, sterzo, freno, freno a mano) e lettura di velocità/stato ruote.
 - Provare veicoli a ruote e decidere separatamente se supportare moto o veicoli cingolati.
 
-#### Fase 9 — Ragdoll
+#### Fase 9 - Ragdoll
 
 - Mappare nodi/corpi ai bone di una mesh skinned e definire joint e collider per segmento.
 - Gestire passaggio tra animazione e controllo fisico, sincronizzazione dello scheletro e ritorno all'animazione.
 - Costruire una UI di setup scheletrico e uno strumento debug per collider e giunti.
 - Verificare costi, limiti di rig e serializzazione prima di definire un formato stabile.
 
-#### Fase 10 — Matrice collisioni e query
+#### Fase 10 - Matrice collisioni e query
 
 - Aggiungere una matrice layer-layer con regole di collisione modificabili e salvate a livello World.
 - Valutare strumenti editor non simulati per raycast/overlap di diagnostica e documentare la differenza rispetto alle query runtime.
 - Includere migrazione per scene esistenti e undo/redo delle regole World.
 
-#### Fase 11 — Eventuale anteprima di simulazione editoriale
+#### Fase 11 - Eventuale anteprima di simulazione editoriale
 
 Resta fuori scope finché non viene richiesta e progettata separatamente. Dovrà usare un world temporaneo isolato, controlli Play/Pause/Reset e ripristino deterministico dei transform, senza riusare o contaminare il world statico impiegato dal collider debug.
 

@@ -179,7 +179,7 @@ The binding exposes no `ConfigWindowsMoveFromTitleBarOnly`, so windows can
 be dragged from any empty area by default. To restrict moving to the
 titlebar, pass a dynamic `NoMove` flag instead: before each `Begin()`,
 compare the cached window rect from the previous frame against the mouse
-position — `NoMove` when the cursor is over the body, no flag on the
+position - `NoMove` when the cursor is over the body, no flag on the
 titlebar or outside. Latch the flags while the left button is held so a
 titlebar drag is never cancelled mid-gesture:
 
@@ -536,7 +536,7 @@ ImGui.DockSpace(dock_id);
   `Begin()` exactly.
 - `SetNodePos/Size` on the root can reserve room for the main menu bar;
   docked `SetNextWindowPos/Size` calls are ignored while docked, so keeping
-  them as floating fallbacks is harmless — undocked windows keep working.
+  them as floating fallbacks is harmless - undocked windows keep working.
 - A window with a dynamic `NoMove` flag (body locked, titlebar free) still
   undocks from its tab/titlebar drag, so titlebar-only moving composes with
   docking.
@@ -843,7 +843,7 @@ Combine flags with `|`. Use `None` when the family defines it, and do not replac
     later) with direct dot access: this runtime raises `ReferenceError`
     instead of returning `undefined`. Guard every such read with
     `variable_struct_exists()`, or use the `$` accessor which returns
-    `undefined` for missing keys. Writes are safe — they create the field.
+    `undefined` for missing keys. Writes are safe - they create the field.
 
 ### Performance
 

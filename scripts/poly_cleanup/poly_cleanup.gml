@@ -1,4 +1,4 @@
-// poly_cleanup — public API.
+// poly_cleanup - public API.
 
 // Releases editor resources and restores scene.
 function poly_cleanup(_ed = undefined) {

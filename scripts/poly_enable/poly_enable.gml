@@ -1,4 +1,4 @@
-// poly_enable — public API.
+// poly_enable - public API.
 
 // Enables the 3D editor.
 function poly_enable() {

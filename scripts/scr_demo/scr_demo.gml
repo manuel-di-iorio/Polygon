@@ -1,4 +1,4 @@
-// scr_demo — demo game world (instance state lives on oGame).
+// scr_demo - demo game world (instance state lives on oGame).
 //
 // State (demo_* instance vars, set up by demo_create):
 //   demo_scene, demo_renderer, demo_models, demo_cache,

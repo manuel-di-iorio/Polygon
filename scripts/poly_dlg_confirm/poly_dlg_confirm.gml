@@ -1,4 +1,4 @@
-// poly_dlg_confirm — confirm modal dialog.
+// poly_dlg_confirm - confirm modal dialog.
 
 // Shows unsaved changes confirmation dialog.
 function __poly_imgui_confirm(_ed) {

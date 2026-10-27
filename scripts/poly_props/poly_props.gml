@@ -1,4 +1,4 @@
-// poly_props — light/camera/environment defaults, read/apply, creation.
+// poly_props - light/camera/environment defaults, read/apply, creation.
 
 // ---------------------------------------------------------------------------
 // Defaults

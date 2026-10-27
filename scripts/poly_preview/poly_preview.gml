@@ -1,4 +1,4 @@
-// poly_preview — offscreen preview stages (thumbnails, material spheres, animation hover popups).
+// poly_preview - offscreen preview stages (thumbnails, material spheres, animation hover popups).
 
 // ---------------------------------------------------------------------------
 // Stage lifecycle

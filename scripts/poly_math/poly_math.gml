@@ -1,4 +1,4 @@
-// poly_math — camera vectors, quaternions, 2D picking, snap, sorting.
+// poly_math - camera vectors, quaternions, 2D picking, snap, sorting.
 
 // ---------------------------------------------------------------------------
 // Camera

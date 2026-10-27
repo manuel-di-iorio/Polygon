@@ -1,4 +1,4 @@
-// poly_load — public async API.
+// poly_load - public async API.
 
 // Starts loading a scene file into a runtime scene (JSON v1 or PLYB .bin,
 // auto-detected by extension with magic fallback, so mislabeled files

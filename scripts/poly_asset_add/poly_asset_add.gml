@@ -1,4 +1,4 @@
-// poly_asset_add — public API.
+// poly_asset_add - public API.
 
 // Adds model asset to editor library.
 // Identity is the load path (_path): models with duplicate root names can

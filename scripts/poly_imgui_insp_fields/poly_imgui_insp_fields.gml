@@ -1,4 +1,4 @@
-// poly_imgui_insp_fields — field editors (axis rows, floats, colors, section state).
+// poly_imgui_insp_fields - field editors (axis rows, floats, colors, section state).
 
 // ---------------------------------------------------------------------------
 // Axis cache
@@ -125,7 +125,7 @@ function __poly_axis_cell(_ed, _mode, _ax, _names, _speed) {
   if (_now) {
     _ed.imgui.ax_draft[$ _fkey] = _nv;
     // Live preview: apply to the nodes every frame while dragging.
-    // No history here — a single undo entry is committed on release.
+    // No history here - a single undo entry is committed on release.
     if (is_real(_nv) && _nv != _shown.val) __poly_apply_axis(_ed, _mode, _ax, _nv);
   } else {
     __poly_axis_release(_ed, _fkey, _nv, _shown.val, _was, _mode, _ax);

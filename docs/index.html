@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Polygon — 3D level editor for GameMaker</title>
+    <title>Polygon , 3D level editor for GameMaker</title>
     <meta
       name="description"
-      content="Polygon is an in-game 3D editor for GameMaker on the GMRT runtime. Press F1, build your scene, save it as JSON and load it in your game."
+      content="Polygon is an in-game 3D editor for GameMaker on the GMRT runtime. Press F1, build your scene, save it as JSON or binary and load it in your game."
     />
     <link rel="stylesheet" href="styles.css" />
     <script>
@@ -16,27 +16,22 @@
     </script>
   </head>
   <body>
-    <div class="bg" aria-hidden="true">
-      <span class="orb orb-a"></span><span class="orb orb-b"></span
-      ><span class="grid"></span>
-    </div>
-
     <nav class="nav">
       <div class="wrap nav-inner">
         <a class="brand" href="#top"
-          ><img src="iconMinimal.svg" alt="" width="34" height="auto" /><span
+          ><img src="iconMinimal.svg" alt="" width="30" height="auto" /><span
             >Polygon</span
           ></a
         >
         <div class="nav-links">
-          <a href="#features">Features</a>
+          <a href="#features">Product</a>
           <a href="#workflow">Workflow</a>
-          <a href="#api">API</a>
-          <a href="#shortcuts">Shortcuts</a>
+          <a href="#api">Reference</a>
+          <a href="https://github.com/manuel-di-iorio/Polygon">GitHub</a>
           <a
             class="btn small primary"
-            href="https://github.com/manuel-di-iorio/Polygon"
-            >GitHub</a
+            href="https://github.com/manuel-di-iorio/Polygon#quick-start"
+            >Get started</a
           >
         </div>
       </div>
@@ -44,438 +39,203 @@
 
     <header class="hero" id="top">
       <canvas class="hero-gl" id="hero-gl" aria-hidden="true"></canvas>
+      <div class="hero-veil" aria-hidden="true"></div>
       <div class="wrap hero-grid">
-        <div class="hero-copy">
-          <img
-            src="iconMinimal.svg"
-            alt="Polygon icon"
-            class="logo reveal"
-            width="184"
-            height="auto"
-          />
-          <h1 class="reveal">
-            Build worlds <span class="grad">inside your game.</span>
-          </h1>
-          <p class="tagline reveal">
-            A 3D editor for GameMaker. Plug it into your project and build,
-            edit, and save your scenes without leaving your game.
+        <div class="hero-copy reveal">
+          <h1>Build worlds<br /><span class="accent">inside your game.</span></h1>
+          <p class="tagline">
+            A 3D level editor that runs inside your GameMaker game. Build
+            worlds, edit scenes and save levels as JSON or binary , with the
+            full power of your game&rsquo;s runtime.
           </p>
-          <p class="cta reveal">
+          <p class="cta-row">
             <a
               class="btn primary big"
-              href="https://github.com/manuel-di-iorio/Polygon"
-              >Get it on GitHub</a
+              href="https://github.com/manuel-di-iorio/Polygon#quick-start"
+              >Get started <span class="arr">&rarr;</span></a
             >
-            <a class="btn big" href="#workflow">Quick start</a>
+            <a class="btn big ghost" href="https://github.com/manuel-di-iorio/Polygon"
+              ><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.72-1.54-2.55-.29-5.23-1.28-5.23-5.68 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.76.11 3.05.74.8 1.18 1.83 1.18 3.08 0 4.41-2.69 5.38-5.25 5.67.41.35.78 1.05.78 2.12 0 1.53-.01 2.76-.01 3.14 0 .3.2.67.8.55A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+              View on GitHub</a
+            >
           </p>
         </div>
-        <!-- Replace screenshot.png with your editor screenshot (put the file in docs/) -->
         <figure class="shot reveal">
-          <img src="screenshot.png" alt="Polygon screenshot" />
+          <img
+            src="screenshot.png"
+            alt="The Polygon editor running inside a GameMaker game: Hierarchy and Models panels around a 3D viewport, with an instance selected in the Inspector."
+          />
         </figure>
       </div>
     </header>
 
     <main>
-      <!-- Features -->
-      <section class="wrap block" id="features">
-        <header class="shead reveal">
-          <p class="eyebrow">Features</p>
-          <h2>Everything you need to ship levels</h2>
-          <p class="sub">
-            No external tools. Press <kbd>F1</kbd> and edit right inside the
-            running game.
+      <!-- 01 · The basics -->
+      <section class="wrap section" id="features">
+        <header class="sec-head reveal">
+          <div>
+            <h2>Everything you need<br />to ship levels.</h2>
+          </div>
+          <p class="sec-desc">
+            Polygon gives you the essential tools to build and manage 3D levels
+            directly inside your game. No external editor, no complex setup:
+            just a clean integration with GameMaker and a simple file format
+            your game already understands.
           </p>
         </header>
 
-        <div class="cards">
-          <article class="card reveal">
-            <span class="ico" aria-hidden="true"
-              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="12.5" rx="2.5"/><path d="M9 20.5h6"/><path d="M13.2 9.2l4 1.6-1.7.8-.8 1.7z"/></svg></span
-            >
+        <div class="value reveal">
+          <article class="value-item">
+            <div class="value-top">
+              <span class="ico" aria-hidden="true"
+                ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.2" y="7.2" width="19.6" height="10.4" rx="4.2"/><path d="M6 11h0.02M10.2 10.8v3.2M8.6 12.4H11.8" /><path d="M15.4 11h.02M18 13.4h.02"/><path d="M6.6 7.2 5.4 4M13.8 7.2 15 4.6"/></svg></span
+              >
+            </div>
             <h3>In-game editing</h3>
             <p>
-              Toggle with <kbd>F1</kbd>. The gateway steps the live world while
-              the editor is closed.
+              The editor lives directly in your game. Build and modify levels
+              without leaving your runtime.
             </p>
           </article>
 
-          <article class="card reveal">
-            <span class="ico" aria-hidden="true"
-              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v17M3.5 12h17"/><path d="M12 3.5 9.6 6M12 3.5 14.4 6M12 20.5 9.6 18M12 20.5l2.4-2.5M3.5 12 6 9.6M3.5 12 6 14.4M20.5 12l-2.5-2.4M20.5 12l-2.5 2.4"/></svg></span
-            >
-            <h3>TRS gizmo</h3>
+          <article class="value-item">
+            <div class="value-top">
+              <span class="ico" aria-hidden="true"
+                ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6.5-5 5.5 5 5.5"/><path d="m15 6.5 5 5.5-5 5.5"/></svg></span
+              >
+            </div>
+            <h3>Native integration</h3>
             <p>
-              Translate, rotate and scale on world or local axes, with drag
-              planes.
+              Your game stays in control of its runtime. Polygon hooks in
+              through a small adapter: your scene, your camera, your models.
             </p>
           </article>
 
-          <article class="card reveal">
-            <span class="ico" aria-hidden="true"
-              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5h9M3.5 12h6M3.5 17.5h9"/><rect x="15" y="4.5" width="5.5" height="15" rx="1.6"/><path d="M17.2 8h1.1M17.2 11.5h1.1"/></svg></span
-            >
-            <h3>Outliner + Inspector</h3>
+          <article class="value-item">
+            <div class="value-top">
+              <span class="ico" aria-hidden="true"
+                ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8l4 4v13H6z"/><path d="M14 3.5v4h4"/><path d="M9.2 12.5h5.6M9.2 16h5.6"/></svg></span
+              >
+            </div>
+            <h3>Readable scene files</h3>
             <p>
-              Filter and rename (<kbd>F2</kbd>), focus (<kbd>F</kbd>), per-axis
-              transform rows.
-            </p>
-          </article>
-
-          <article class="card reveal">
-            <span class="ico" aria-hidden="true"
-              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 6.2 12 6.2 21.5 12 21.5 12 18 17.8 12 17.8 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg></span
-            >
-            <h3>Visibility menu</h3>
-            <p>Hidden objects, skybox and selection outline toggles.</p>
-          </article>
-
-          <article class="card reveal">
-            <span class="ico" aria-hidden="true"
-              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h9.5a5 5 0 0 1 0 10H8"/><path d="M7.5 6 4 9.5 7.5 13"/></svg></span
-            >
-            <h3>Undo / redo</h3>
-            <p>Snapshot history that restores the selection too.</p>
-          </article>
-
-          <article class="card reveal">
-            <span class="ico" aria-hidden="true"
-              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5c-2 0-2.6 1-2.6 2.6v2c0 1.6-.7 2.4-2.4 2.9 1.7.5 2.4 1.3 2.4 2.9v2c0 1.6.6 2.6 2.6 2.6"/><path d="M15 4.5c2 0 2.6 1 2.6 2.6v2c0 1.6.7 2.4 2.4 2.9-1.7.5-2.4 1.3-2.4 2.9v2c0 1.6-.6 2.6-2.6 2.6"/></svg></span
-            >
-            <h3>JSON scenes</h3>
-            <p>One descriptor per placement. Save, load, new.</p>
-          </article>
-
-          <article class="card reveal">
-            <span class="ico" aria-hidden="true"
-              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.8 14.2l4.4-4.4"/><path d="M11.4 7.8 12.6 6.6a3.4 3.4 0 0 1 4.8 4.8l-1.2 1.2"/><path d="M12.6 16.2l-1.2 1.2a3.4 3.4 0 0 1-4.8-4.8l1.2-1.2"/></svg></span
-            >
-            <h3>Actor companions</h3>
-            <p>
-              Bind a model to a GameMaker object: instances spawn companions
-              that drive their node.
-            </p>
-          </article>
-
-          <article class="card reveal">
-            <span class="ico" aria-hidden="true"
-              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="3.2"/><path d="M12 3.2v1.6M12 13.2v1.6M5.8 9H4.2M19.8 9h-1.6M7.6 4.6 6.5 3.5M16.4 4.6l1.1-1.1"/><path d="M3.5 19.5c2.6-1.5 14.4-1.5 17 0"/></svg></span
-            >
-            <h3>Directional shadows</h3>
-            <p>Per-light setup, coverage preview and a global toggle.</p>
-          </article>
-
-          <article class="card reveal">
-            <span class="ico" aria-hidden="true"
-              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4.5v7.5a6 6 0 0 0 12 0V4.5h-4v7.5a2 2 0 1 1-4 0V4.5z"/><path d="M6 8h4M14 8h4"/></svg></span
-            >
-            <h3>Snap + nudge</h3>
-            <p>
-              Position and rotation snap, arrow-key nudge, all undoable.
+              Levels are saved as JSON , human-readable, versionable and easy
+              to hand-edit, diff and reload , or shipped as compact binary
+              (<code>.bin</code>). Either file loads the same with
+              <code>poly_load</code>.
             </p>
           </article>
         </div>
       </section>
 
-      <!-- Workflow -->
-      <section class="wrap block" id="workflow">
-        <header class="shead reveal">
-          <p class="eyebrow">Workflow</p>
-          <h2>Three steps from clone to usable editor</h2>
-          <p class="sub">
-            Import the package, create one object, hand it your world. The
-            editor is editor-only: your game keeps shipping as it is.
-          </p>
-        </header>
-
-        <ol class="steps">
-          <li class="step reveal">
-            <span class="step-n">1</span>
-            <div class="step-body">
-              <h3>Import the editor package</h3>
-              <p>
-                Drag
-                <a
-                  href="https://github.com/manuel-di-iorio/Polygon/blob/main/editor.yymps"
-                  >editor.yymps</a
-                >
-                onto the GameMaker IDE to import the scripts. You also need
-                <strong>GMRT 0.22.4</strong> from the Package Manager, which
-                provides <code>GM3D_*</code> and <code>ImGui</code>.
-              </p>
+      <!-- 02 · Workflow -->
+      <section class="band band-workflow" id="workflow">
+        <div class="wrap section">
+          <header class="sec-head reveal">
+            <div>
+              <h2>From game to level<br />in three steps.</h2>
             </div>
-          </li>
+            <p class="sec-desc">
+              A simple flow: integrate the adapter, build your scene in-game,
+              and save it as JSON or binary.
+            </p>
+          </header>
 
-          <li class="step reveal">
-            <span class="step-n">2</span>
-            <div class="step-body">
-              <h3>Boot the editor from your game</h3>
-              <p>
-                Add the editor-only <code>oEditor</code> package object and give
-                it a runtime adapter: your scene, your camera, the models you
-                loaded. A full working example ships in
-                <code>objects/oGame</code>.
+          <ol class="steps-grid">
+            <li class="step reveal">
+              <div class="step-h">
+                <span class="step-n">1</span>
+                <h3>Integrate</h3>
+              </div>
+              <p class="step-p">
+                Add the editor package to your GameMaker project and hand the
+                editor your world. It takes just a few lines and a small setup.
               </p>
-              <div class="codeblock terminal">
-                <div class="term-bar">
-                  <span></span><span></span><span></span
-                  ><button class="copy" data-copy="qs2">Copy</button>
-                </div>
-                <pre id="qs2"><code class="lang-gml">// Game Create
-var assets = {};
-assets[$ "tree.glb"] = { model: my_load_model("tree.glb") };
-assets[$ "rock.glb"] = { model: my_load_model("rock.glb") };
-
-poly_create({
+              <div class="mini-card">
+                <div class="mini-bar"><span></span><span></span><span></span><em>Game Create</em></div>
+                <pre><code class="lang-gml">poly_create({
     scene: global.my_scene,
     assets,
     cam: global.my_camera,
-    on_create: my_on_create,  // assign shaders to freshly spawned nodes
 });
-
-// Game Step
-if (!poly_is_active()) my_game_step(); // live world only while closed
-
-// Game Draw
-if (!poly_is_active()) my_game_render(); // editor shows its own viewport
-
-// Game Clean Up
-my_game_destroy();</code></pre>
+poly_enable(); // opens with F1 (default)</code></pre>
               </div>
-            </div>
-          </li>
+            </li>
 
-          <li class="step reveal">
-            <span class="step-n">3</span>
-            <div class="step-body">
-              <h3>Edit, save, ship</h3>
-              <p>
-                While the editor is open it works on its own scene copy: what
-                you edit never touches the game world. Save to JSON and reload
-                it deterministically with <code>poly_load</code> whenever the
-                game wants it.
+            <li class="step reveal">
+              <div class="step-h">
+                <span class="step-n">2</span>
+                <h3>Build</h3>
+              </div>
+              <p class="step-p">
+                Use the in-game editor to create and arrange your 3D scene:
+                place instances, rotate, scale, name and adjust your level.
               </p>
-            </div>
-          </li>
-        </ol>
+              <figure class="step-shot">
+                <img
+                  src="screenshot.png"
+                  alt="Building a scene in the Polygon editor: instances placed around the 3D viewport."
+                />
+              </figure>
+            </li>
 
-        <ul class="strip reveal">
-          <li>
-            <strong>Owns its scene</strong
-            ><span
-              >Nothing you touch in the editor leaks into the live
-              world.</span
-            >
-          </li>
-          <li>
-            <strong>One object</strong
-            ><span
-              >Everything hangs off <code>poly_create</code> and three
-              per-frame calls.</span
-            >
-          </li>
-          <li>
-            <strong>Deterministic reload</strong
-            ><span
-              >Same JSON in, same level out, chunk-loaded in your Step.</span
-            >
-          </li>
-        </ul>
-      </section>
-
-      <!-- API -->
-      <section class="wrap block" id="api">
-        <header class="shead reveal">
-          <p class="eyebrow">Reference</p>
-          <h2>Public API</h2>
-          <p class="sub">
-            Nine entry points, grouped the way you use them. Signatures are
-            GML; optional arguments are marked with <code>?</code>.
-          </p>
-        </header>
-
-        <div class="api">
-          <div class="panel reveal">
-            <h3 class="panel-title">Lifecycle</h3>
-
-            <div class="api-row">
-              <code class="fn">poly_create(config)</code>
-              <p>
-                Boot the editor state from
-                <code
-                  >{ scene?, assets?, cam?, on_create?, on_close?, on_compose?,
-                  keys? }</code
-                >: the live <code>scene</code> is mirrored as copies on every
-                enable, otherwise camera / sun / env defaults spawn.
+            <li class="step reveal">
+              <div class="step-h">
+                <span class="step-n">3</span>
+                <h3>Save</h3>
+              </div>
+              <p class="step-p">
+                When you&rsquo;re done, export your level as JSON or binary and
+                load it in your game with <code>poly_load</code> , chunked in
+                the background, deterministically.
               </p>
-              <details>
-                <summary>Config in detail</summary>
-                <ul>
-                  <li>
-                    <code>assets</code> is
-                    <code>{ key: { model, on_create? } }</code>.
-                  </li>
-                  <li>
-                    <code>on_create(node, assetId, model, id)</code> fires first,
-                    then the per-model hook - walk the subtree for model
-                    content.
-                  </li>
-                  <li>
-                    <code>on_compose(surf, w, h)</code> previews your
-                    post-processing in the viewport, after the 3D render and
-                    before the overlays.
-                  </li>
-                </ul>
-              </details>
-            </div>
-
-            <div class="api-row">
-              <code class="fn">poly_step() / poly_draw() / poly_draw_ui()</code>
-              <p>
-                Per-frame update (Step), scene render (Draw) and window overlay
-                (Draw GUI).
-              </p>
-            </div>
-
-            <div class="api-row">
-              <code class="fn">poly_cleanup()</code>
-              <p>Autosave-if-dirty, destroy, cleanup.</p>
-            </div>
-
-            <div class="api-row">
-              <code class="fn">poly_ai_net()</code>
-              <p>AI bridge pump (Async Networking event, optional).</p>
-            </div>
-
-            <div class="api-row">
-              <code class="fn">poly_enable / disable / is_active()</code>
-              <p>Open and close the editor.</p>
-            </div>
-          </div>
-
-          <div class="panel reveal">
-            <h3 class="panel-title">Scenes &amp; assets</h3>
-
-            <div class="api-row">
-              <code class="fn"
-                >poly_load(scene, fname, assets, on_create?, on_finish?)</code
-              >
-              <p>
-                Load a saved scene into a live <code>GM3D_Scene</code> with no
-                editor involved. Always async: it parses now and spawns chunked
-                through <code>poly_load_step()</code>.
-              </p>
-              <details>
-                <summary>Return value and hooks</summary>
-                <ul>
-                  <li>
-                    Returns the job, or <code>undefined</code> when the file is
-                    missing or invalid.
-                  </li>
-                  <li>
-                    <code>assets</code> is
-                    <code>{ key: { model, on_create? } }</code> - the same shape
-                    as the init config.
-                  </li>
-                  <li>
-                    Per instance it calls the global
-                    <code>on_create(node, assetId, model, id)</code>, then the
-                    per-model hook, then the companion spawn for Actor-bound
-                    models.
-                  </li>
-                  <li>
-                    <code>on_finish(report)</code> fires once with
-                    <code
-                      >{ placed, failed, companions, warnings, placements }</code
-                    >.
-                  </li>
-                </ul>
-              </details>
-            </div>
-
-            <div class="api-row">
-              <code class="fn">poly_load_step(budget?)</code>
-              <p>
-                Advance every pending job (~48 nodes each). Call it every Step;
-                returns the pending job count.
-              </p>
-            </div>
-
-            <div class="api-row">
-              <code class="fn"
-                >poly_asset_add(model, kind?, path?, on_create?)</code
-              >
-              <span class="or">/</span>
-              <code class="fn">poly_asset_clear()</code>
-              <p>
-                Add a library entry, identified by its relative load
-                <code>path</code>, or drop the whole library.
-              </p>
-            </div>
-
-            <div class="api-row">
-              <code class="fn">poly_track(kind, assetId, node)</code>
-              <p>
-                Import one live game node into the editor scene as a copy
-                without touching the game world.
-              </p>
-              <details>
-                <summary>Arguments</summary>
-                <ul>
-                  <li>
-                    <code>assetId</code> is the model key,
-                    <code>kind</code> is <code>"instance"</code>,
-                    <code>"light"</code>, <code>"camera"</code> or
-                    <code>"environment"</code>.
-                  </li>
-                </ul>
-              </details>
-            </div>
-          </div>
-
-          <div class="panel reveal">
-            <h3 class="panel-title">Actors</h3>
-
-            <div class="api-row">
-              <code class="fn">poly_actor_destroy(ref)</code>
-              <span class="or">/</span>
-              <code class="fn">poly_actor_of(node)</code>
-              <p>
-                Kill a companion and its scene node together, or look up the
-                live companion bound to a node.
-              </p>
-              <details>
-                <summary>Arguments</summary>
-                <ul>
-                  <li>
-                    <code>poly_actor_destroy</code> accepts the instance id, the
-                    node, or the creation struct.
-                  </li>
-                </ul>
-              </details>
-            </div>
-          </div>
+              <div class="save-card">
+                <p class="save-title">File &rarr; Save scene</p>
+                <div class="save-row">
+                  <span class="check" aria-hidden="true">&#10003;</span> Scene saved
+                </div>
+                <div class="save-file">
+                  <span class="doc" aria-hidden="true"
+                    ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8l4 4v13H6z"/><path d="M14 3.5v4h4"/></svg></span
+                  >
+                  <span class="save-name">level1.json</span>
+                  <span class="save-path">JSON &middot; editable</span>
+                </div>
+                <div class="save-file">
+                  <span class="doc" aria-hidden="true"
+                    ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8l4 4v13H6z"/><path d="M14 3.5v4h4"/></svg></span
+                  >
+                  <span class="save-name">level1.bin</span>
+                  <span class="save-path">Binary &middot; PLYB v2</span>
+                </div>
+              </div>
+            </li>
+          </ol>
         </div>
       </section>
 
-      <!-- Scene format -->
-      <section class="wrap block" id="format">
-        <header class="shead reveal">
-          <p class="eyebrow">Data</p>
-          <h2>Scene files you can read</h2>
-          <p class="sub">
-            Plain JSON, one descriptor per node. Diffable, hand-editable, and
-            reloadable straight into a running game.
-          </p>
+      <!-- 03 · API & level files -->
+      <section class="wrap section" id="api">
+        <header class="sec-head reveal">
+          <div>
+            <h2>Your levels stay yours.</h2>
+          </div>
         </header>
 
-        <div class="split reveal">
-          <div class="codeblock terminal">
-            <div class="term-bar">
-              <span></span><span></span><span></span
-              ><button class="copy" data-copy="fmt">Copy</button>
+        <div class="ref reveal">
+          <div class="ref-card">
+            <div class="ref-head">
+              <h3>A. Scene files</h3>
             </div>
-            <pre id="fmt"><code class="lang-json">{
+            <p class="ref-desc">
+              Save from a single dialog, with a <strong>JSON / Binary</strong>
+              radio. One JSON descriptor per node; the binary variant
+              (<code>.bin</code>, magic <code>PLYB</code> v2) stores values with
+              buffer types and reads old files back.
+            </p>
+            <div class="mini-card">
+              <div class="mini-bar"><span></span><span></span><span></span><em>level1.json</em></div>
+              <pre><code class="lang-json">{
   "version": 1,
   "seq": 14,
   "assets": { },
@@ -494,325 +254,66 @@ my_game_destroy();</code></pre>
     }
   ]
 }</code></pre>
+            </div>
           </div>
 
-          <ul class="ticks">
-            <li>
-              <strong>Header</strong> - <code>version</code> and
-              <code>seq</code> keep old files loadable;
-              <code>assets</code> holds per-model metadata such as Actor
-              bindings.
-            </li>
-            <li>
-              <strong>Every node</strong> carries an <code>id</code>, and
-              instances an <code>assetId</code> linking the model, plus an
-              optional custom <code>label</code> set with <kbd>F2</kbd>.
-            </li>
-            <li>
-              <strong>Transforms</strong> are position, quaternion rotation and
-              scale, with per-node <code>shadows</code> flags.
-            </li>
-            <li>
-              <strong>Lights, cameras, environment</strong> carry their own
-              sub-struct: angles in degrees, colours as <code>[r, g, b]</code>
-              0-255.
-            </li>
-          </ul>
-        </div>
-
-        <div class="panels">
-          <article class="panel reveal">
-            <h3>Shadows</h3>
-            <p>
-              Directional lights support shadow mapping
-              (<code
-                >shadow: { enabled, resolution, distance, normalOffset
-                }</code
-              >), editable in the Inspector under Shadows. Selecting a shadowed
-              light draws its coverage box, and the toolbar button toggles the
-              preview without touching saved values.
-            </p>
-            <p class="note">
-              Every material needs a <strong>Forward</strong> and a
-              <strong>Shadow</strong> shader, assigned per live instance:
-              <code>spawnInto</code> clones do not inherit source assignments,
-              so assign them in your spawn hook (<code>sStatic</code> /
-              <code>sAnimated</code> + <code>Shadow</code>).
-            </p>
-          </article>
-
-          <article class="panel reveal">
-            <h3>In-game loading, no editor</h3>
-            <p>
-              Load and freeze each model once, then pass them as
-              <code>{ key: { model, on_create? } }</code> - the key is the
-              relative load path, e.g. <code>"models/tree.glb"</code>.
-            </p>
-            <div class="codeblock terminal">
-              <div class="term-bar">
-                <span></span><span></span><span></span
-                ><button class="copy" data-copy="fmt-load">Copy</button>
-              </div>
-              <pre id="fmt-load"><code class="lang-gml">var _assets = {};
-_assets[$ "models/tree.glb"] = { model: my_load_model("models/tree.glb") };
-_assets[$ "models/rock.glb"] = { model: my_load_model("models/rock.glb") };
-
-var _job = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", _assets, my_on_create, function(_rep) {
-  show_debug_message("placed: " + string(_rep.placed));
-});
-
-// Step event
-poly_load_step(); // ~48 nodes per job; returns the pending count
-
-// _rep = { placed, failed, companions, warnings, placements: [...] }
-// After loading, assign the Forward + Shadow shaders per spawned node.</code></pre>
+          <div class="ref-card">
+            <div class="ref-head">
+              <h3>B. Public API</h3>
             </div>
-            <p class="note">
-              A companion spawned for an Actor-bound model receives
-              <code>{ node, poly_id, poly_asset_id }</code>.
+            <p class="ref-desc">
+              Control the editor and manage scenes directly from your game.
+              Here are a few of the most useful functions.
             </p>
-          </article>
-
-          <article class="panel reveal">
-            <h3>Viewport post-processing</h3>
-            <p>
-              Pass <code>on_compose(surf, w, h)</code> to preview your
-              post-processing inside the editor viewport: it runs after the 3D
-              render (post-AA) and before the gizmo and outline overlays, so
-              those stay sharp. It runs on re-render, not every frame.
-            </p>
-            <div class="codeblock terminal">
-              <div class="term-bar">
-                <span></span><span></span><span></span
-                ><button class="copy" data-copy="fmt-compose">Copy</button>
-              </div>
-              <pre id="fmt-compose"><code class="lang-gml">on_compose: function(_surf, _w, _h) {
-  my_scratch = my_postfx_ensure(my_scratch, _w, _h);
-  surface_set_target(my_scratch);
-  draw_surface(_surf, 0, 0);
-  surface_reset_target();
-
-  surface_set_target(_surf);        // grade back onto surf
-  shader_set(shMyGrade);            // never sample a surface while targeting it
-  draw_surface(my_scratch, 0, 0);
-  shader_reset();
-}</code></pre>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <!-- Shortcuts -->
-      <section class="wrap block" id="shortcuts">
-        <header class="shead reveal">
-          <p class="eyebrow">Controls</p>
-          <h2>Every action on a key</h2>
-          <p class="sub">
-            Defaults only - remap any shortcut or camera control through the
-            <code>keys</code> config.
-          </p>
-        </header>
-
-        <div class="cards keys">
-          <article class="card reveal">
-            <h3>Camera</h3>
-            <p class="sc">
-              <span class="k"><kbd>Alt</kbd> + <kbd>drag</kbd></span
-              ><span class="what">Orbit around the current view point</span>
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>wheel</kbd></span
-              ><span class="what">Zoom (with <kbd>Alt</kbd> to keep orbiting)</span>
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>middle-drag</kbd></span
-              ><span class="what"
-                >Pan in screen space, around the selection if any</span
-              >
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>right-drag</kbd></span
-              ><span class="what"
-                >Fly: <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> +
-                <kbd>Q</kbd><kbd>E</kbd>, <kbd>Shift</kbd> to boost, wheel for
-                speed</span
-              >
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>F</kbd></span
-              ><span class="what"
-                >Focus selection (or double-click it in the Scene)</span
-              >
-            </p>
-          </article>
-
-          <article class="card reveal">
-            <h3>Tools</h3>
-            <p class="sc">
-              <span class="k"><kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd></span
-              ><span class="what">View / Move / Rotate / Scale</span>
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>X</kbd></span
-              ><span class="what">World or local axes</span>
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>Z</kbd></span
-              ><span class="what">Pivot or center handles</span>
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>\</kbd></span
-              ><span class="what"
-                >Snap on/off (<kbd>Ctrl</kbd> held while dragging snaps
-                temporarily)</span
-              >
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>Ctrl</kbd> + <kbd>\</kbd></span
-              ><span class="what">Push selection to the grid</span>
-            </p>
-          </article>
-
-          <article class="card reveal">
-            <h3>Selection</h3>
-            <p class="sc">
-              <span class="k"><kbd>click</kbd> / <kbd>drag</kbd></span
-              ><span class="what">Select, or add a rectangle</span>
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>Shift</kbd></span
-              ><span class="what">Add to the selection</span>
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>Ctrl</kbd></span
-              ><span class="what">Range select, and copy / paste / cut</span>
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>arrows</kbd></span
-              ><span class="what">Nudge on the ground plane</span>
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>Del</kbd><kbd>Ctrl+D</kbd></span
-              ><span class="what">Delete / duplicate</span>
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>F2</kbd><kbd>Esc</kbd></span
-              ><span class="what">Rename instance / cancel a gesture</span>
-            </p>
-          </article>
-
-          <article class="card reveal">
-            <h3>Files &amp; history</h3>
-            <p class="sc">
-              <span class="k"><kbd>Ctrl</kbd>+<kbd>S</kbd></span
-              ><span class="what">Save scene</span>
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>Ctrl</kbd>+<kbd>L</kbd></span
-              ><span class="what">Load scene</span>
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>Ctrl</kbd>+<kbd>N</kbd></span
-              ><span class="what">New scene</span>
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>Ctrl</kbd>+<kbd>Z</kbd></span
-              ><span class="what"
-                >Undo (<kbd>Ctrl</kbd>+<kbd>Y</kbd> or <kbd>Ctrl</kbd>+<kbd
-                  >Shift</kbd
-                >+<kbd>Z</kbd> redoes)</span
-              >
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>Ctrl</kbd>+<kbd>F</kbd></span
-              ><span class="what">Find object</span>
-            </p>
-            <p class="sc">
-              <span class="k"><kbd>Ctrl</kbd>+<kbd>W</kbd></span
-              ><span class="what">Close the editor</span>
-            </p>
-          </article>
-        </div>
-
-        <div class="split reveal" id="remapping">
-          <div class="panel">
-            <h3>Remapping shortcuts</h3>
-            <p>
-              Pass a <code>keys</code> field to the <code>poly_create</code>
-              config to remap any editor shortcut <strong>and camera control</strong>.
-              Each entry is an <strong>array of element structs</strong>
-              <code>{ key, mouse?, modifier? }</code>:
-            </p>
-            <ul class="ticks">
-              <li>
-                <strong>key</strong> - <code>vk_*</code> for special keys,
-                <code>ord("X")</code> for letters and digits, or
-                <code>mb_left</code> / <code>mb_right</code> /
-                <code>mb_middle</code> for mouse buttons.
-              </li>
-              <li>
-                <strong>mouse: true</strong> - marks the code as a mouse button
-                instead of a key, so the two can never be confused.
-              </li>
-              <li>
-                <strong>modifier: true</strong> - the element must be held.
-                Elements without it are triggers, several triggers are
-                alternatives.
-              </li>
-            </ul>
-            <p class="note">
-              A bare real or a single struct is shorthand for one keyboard
-              trigger, e.g. <code>pivot: ord("Z")</code>.
-            </p>
-          </div>
-
-          <div class="codeblock terminal">
-            <div class="term-bar">
-              <span></span><span></span><span></span
-              ><button class="copy" data-copy="keys-cfg">Copy</button>
-            </div>
-            <pre id="keys-cfg"><code class="lang-gml">poly_create({
+            <div class="mini-card">
+              <div class="mini-bar"><span></span><span></span><span></span><em>oGame</em></div>
+              <pre><code class="lang-gml">// Boot the editor with your world
+poly_create({
     scene: global.my_scene,
     assets,
-    keys: {
-        save:         [ { key: vk_control, modifier: true }, { key: ord("S") } ], // Ctrl+S
-        focus:        [ { key: ord("F") } ],                                      // F   (focus selection)
-        focus_search: [ { key: vk_control, modifier: true }, { key: ord("F") } ], // Ctrl+F (search panel)
-        deselect:     [ { key: vk_shift, modifier: true }, { key: ord("D") } ],   // Shift+D
-        del:          [ { key: vk_alt, modifier: true }, { key: vk_delete } ],    // Alt+Del
-        snap:         [ { key: 92 }, { key: 220 } ],                              // \ (either code), no modifier
-        pivot:        ord("Z"),                                                   // Z (short form)
+    cam: global.my_camera,
+});
 
-        // Mouse buttons are declared explicitly with mouse: true.
-        nudge_left:   [ { key: vk_left } ],                                       // Left arrow
-        select_add:   [ { key: vk_shift } ],                                      // Shift (Shift+click / rect add)
-        cam_fly:      [ { key: mb_right, mouse: true } ],                         // hold Right mouse to fly
-        cam_forward:  [ { key: ord("W") } ],                                      // W A S D while flying
-        cam_orbit:    [ { key: vk_alt, modifier: true }, { key: mb_left, mouse: true } ],  // Alt + Left mouse
-        cam_zoom:     [ { key: vk_alt, modifier: true }, { key: mb_right, mouse: true } ], // Alt + Right mouse
-        cam_pan:      [ { key: mb_middle, mouse: true } ],                        // Middle mouse
-        cam_boost:    [ { key: vk_shift } ],                                      // Shift = fly faster
-    },
-});</code></pre>
+// Load a saved level, no editor involved
+var _job = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", _assets, my_on_create, function (_rep) { show_debug_message("placed: " + string(_rep.placed)); });
+poly_load_step(); // call every Step, spawns ~48 nodes per frame</code></pre>
+            </div>
+            <ul class="ref-notes">
+              <li>
+                Per-frame calls: <code>poly_step()</code>, <code>poly_draw()</code>,
+                <code>poly_draw_ui()</code>; <code>poly_cleanup()</code> shuts
+                down (autosave-if-dirty).
+              </li>
+              <li>
+                Remap every shortcut and camera control through the
+                <code>keys</code> config of <code>poly_create</code>.
+              </li>
+            </ul>
+            <p class="ref-link">
+              <a href="https://github.com/manuel-di-iorio/Polygon#quick-start"
+                >View the complete API documentation <span class="arr">&rarr;</span></a
+              >
+            </p>
           </div>
         </div>
       </section>
 
-      <!-- CTA -->
-      <section class="cta-band reveal">
-        <div class="wrap">
-          <h2>Ready to build worlds?</h2>
-          <p class="sub">Grab the project, wire one object, press F1.</p>
-          <p class="cta">
+      <!-- 05 · Get started -->
+      <section class="wrap section cta" id="cta">
+        <div class="cta-inner reveal">
+          <h2>Build worlds inside your game.</h2>
+          <p class="cta-sub">
+            Start using Polygon today and bring your levels to life.
+          </p>
+          <p class="cta-row">
             <a
               class="btn primary big"
-              href="https://github.com/manuel-di-iorio/Polygon"
-              >Get it on GitHub</a
+              href="https://github.com/manuel-di-iorio/Polygon#quick-start"
+              >Get started <span class="arr">&rarr;</span></a
             >
-            <a
-              class="btn big"
-              href="https://github.com/manuel-di-iorio/Polygon/blob/main/editor.yymps"
-              >Download editor.yymps</a
+            <a class="btn big ghost" href="https://github.com/manuel-di-iorio/Polygon"
+              ><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.72-1.54-2.55-.29-5.23-1.28-5.23-5.68 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.06-2.25 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.76.11 3.05.74.8 1.18 1.83 1.18 3.08 0 4.41-2.69 5.38-5.25 5.67.41.35.78 1.05.78 2.12 0 1.53-.01 2.76-.01 3.14 0 .3.2.67.8.55A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+              View on GitHub</a
             >
           </p>
         </div>
@@ -821,25 +322,23 @@ poly_load_step(); // ~48 nodes per job; returns the pending count
 
     <footer class="site-footer">
       <div class="wrap foot">
-        <div class="foot-brand">
-          <img src="iconMinimal.svg" alt="" width="40" height="auto" />
-          <div>
-            <strong>Polygon</strong>
-            <p>A 3D editor for GameMaker, on the GMRT runtime.</p>
-          </div>
-        </div>
+        <a class="foot-brand" href="#top">
+          <img src="iconMinimal.svg" alt="" width="26" height="auto" />
+          <strong>Polygon</strong>
+        </a>
         <nav class="foot-links">
-          <a href="#features">Features</a>
-          <a href="#workflow">Quick start</a>
-          <a href="#api">API</a>
+          <a href="#features">Product</a>
+          <a href="#workflow">Workflow</a>
+          <a href="#api">Reference</a>
           <a href="#shortcuts">Controls</a>
           <a href="https://github.com/manuel-di-iorio/Polygon">GitHub</a>
         </nav>
+        <span class="foot-tag">Made for GameMaker</span>
       </div>
       <div class="wrap foot-legal">
         <p>
-          Developed by Emmanuel Di Iorio aka "Xeryan".
-          <br/>Demo models by <a href="https://kenney.nl">Kenney</a> (CC0).
+          Developed by Emmanuel Di Iorio aka &ldquo;Xeryan&rdquo;. Demo models
+          by <a href="https://kenney.nl">Kenney</a> (CC0).
         </p>
       </div>
     </footer>
@@ -938,7 +437,7 @@ poly_load_step(); // ~48 nodes per job; returns the pending count
           }, 1500);
         });
       });
-      // Scroll reveal
+      // Scroll reveal (disabled for prefers-reduced-motion in CSS)
       var revealEls = document.querySelectorAll(".reveal");
       if ("IntersectionObserver" in window) {
         var io = new IntersectionObserver(
@@ -999,6 +498,7 @@ poly_load_step(); // ~48 nodes per job; returns the pending count
         });
       }
     </script>
+
     <script type="module">
       /* Hero background: animated low-poly terrain (three.js, single self-contained
          module build, loaded from a CDN with a mirror fallback).
@@ -1566,5 +1066,6 @@ poly_load_step(); // ~48 nodes per job; returns the pending count
         schedule();
       })();
     </script>
+
   </body>
 </html>

@@ -1,4 +1,4 @@
-// poly_dlg_scene — scene save (name + format) / load (file list) dialog.
+// poly_dlg_scene - scene save (name + format) / load (file list) dialog.
 
 // Shows save/load scene dialog (fixed folder).
 function __poly_imgui_scene_dlg(_ed) {

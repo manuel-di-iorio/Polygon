@@ -1,4 +1,4 @@
-// poly_ai — AI bridge: local TCP client to the Polygon MCP relay.
+// poly_ai - AI bridge: local TCP client to the Polygon MCP relay.
 //
 // The relay (other/mcp-relay, Node) listens on 127.0.0.1:5192. The game
 // connects as a TCP client ONLY while the editor is active and the bridge

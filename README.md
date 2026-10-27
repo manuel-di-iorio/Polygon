@@ -128,7 +128,7 @@ Close it from the editor with **File → Close Editor** (Ctrl+W).
 | Reset camera | Home button in the toolbar |
 | Snap to axis | Click a cone on the **ViewCube** |
 
-The cursor wraps at window edges during camera and gizmo drags. Every input above is remappable through the `keys` config — see "Remapping shortcuts".
+The cursor wraps at window edges during camera and gizmo drags. Every input above is remappable through the `keys` config - see "Remapping shortcuts".
 
 ### Tools and shortcuts
 
@@ -156,17 +156,17 @@ The cursor wraps at window edges during camera and gizmo drags. Every input abov
 
 ### Remapping shortcuts
 
-Every editor shortcut **and camera control** is remappable through the `keys` field of the create config. Each entry is an **array of elements**, and every element is a struct that says exactly what it is — no value is ever guessed:
+Every editor shortcut **and camera control** is remappable through the `keys` field of the create config. Each entry is an **array of elements**, and every element is a struct that says exactly what it is - no value is ever guessed:
 
 ```gml
 { key: <code>, mouse: <bool>, modifier: <bool> }
 ```
 
-- **`key`** — the code: `vk_*` constants for special keys, `ord("X")` for letters/digits, or `mb_left` / `mb_right` / `mb_middle` / `mb_side1` / `mb_side2` for mouse buttons.
-- **`mouse: true`** — marks `key` as a **mouse button**. Without it the code is a keyboard key. This is what keeps a mouse button and a key with the same numeric value from ever being confused.
-- **`modifier: true`** — this element must be **held**. Elements without it are **triggers**; several triggers in one array are **alternatives**. For one-shot shortcuts, any keyboard modifier you do *not* list must be **up** (exact match), so `Ctrl+S` and `Ctrl+Shift+S` stay distinct. (The GameMaker constant is `vk_control`, not `vk_ctrl`.)
+- **`key`** - the code: `vk_*` constants for special keys, `ord("X")` for letters/digits, or `mb_left` / `mb_right` / `mb_middle` / `mb_side1` / `mb_side2` for mouse buttons.
+- **`mouse: true`** - marks `key` as a **mouse button**. Without it the code is a keyboard key. This is what keeps a mouse button and a key with the same numeric value from ever being confused.
+- **`modifier: true`** - this element must be **held**. Elements without it are **triggers**; several triggers in one array are **alternatives**. For one-shot shortcuts, any keyboard modifier you do *not* list must be **up** (exact match), so `Ctrl+S` and `Ctrl+Shift+S` stay distinct. (The GameMaker constant is `vk_control`, not `vk_ctrl`.)
 
-A bare real — or a single struct — is shorthand for one keyboard trigger: `pivot: ord("Z")` is the same as `pivot: [ { key: ord("Z") } ]`.
+A bare real - or a single struct - is shorthand for one keyboard trigger: `pivot: ord("Z")` is the same as `pivot: [ { key: ord("Z") } ]`.
 
 ```gml
 var config = {
@@ -288,7 +288,7 @@ on_compose: function(_surf, _w, _h) {
 Scenes are saved from **File → Save / Save As** into `working_directory/__PolygonEditor__/scenes/<name>.json` or `<name>.bin`. The save dialog has a **JSON / Binary** radio (no extra modal). JSON remains version 1 with optional physics/world fields. Binary uses `PLYB` v2 and reads v1 files; transforms and common fields use `buffer_*` values, while physics blocks are stored as optional JSON strings. **File → Load** shows a search + file list with one row per file (`scene.json` and `scene.bin` listed separately); `poly_load` opens either one.
 
 Load a scene in your game, without the editor, with (always async: parse
-now, spawn chunked — pump every Step, callback on completion):
+now, spawn chunked - pump every Step, callback on completion):
 
 ```gml
 // assets: same struct shape as the poly_create config
@@ -448,7 +448,7 @@ Details in [`other/mcp-relay/README.md`](other/mcp-relay/README.md).
 
 ## Rebuilding the asset package (maintainers)
 
-`editor.yymps` is the importable Local Asset Package. It is generated with GameMaker's **ProjectTool** (the same tool the IDE uses behind **Tools → Create Local Package**) and contains every resource of the **Polygon Editor** folder — scripts, sprites, shaders — plus the Included Files under `datafiles/__PolygonEditor__`. The demo datafiles are stripped from the package.
+`editor.yymps` is the importable Local Asset Package. It is generated with GameMaker's **ProjectTool** (the same tool the IDE uses behind **Tools → Create Local Package**) and contains every resource of the **Polygon Editor** folder - scripts, sprites, shaders - plus the Included Files under `datafiles/__PolygonEditor__`. The demo datafiles are stripped from the package.
 
 ```sh
 # one-time: enable the checked-in hooks (runs on any npm install)
@@ -458,7 +458,7 @@ npm install
 npm run pack
 ```
 
-The `pre-push` hook rebuilds the package automatically and **never blocks the push**: if GameMaker (or PowerShell) is unavailable it just pushes the previous package. When the package **content** changes it commits `editor.yymps` in its own commit so the next push ships it — a re-export always differs byte-for-byte because the zip stores timestamps, so the script compares the entries (name + MD5) rather than trusting `git status`. Skip the rebuild with `POLYGON_SKIP_PACK=1 git push`, or set `POLYGON_PROJECTTOOL` when ProjectTool is not in its default location.
+The `pre-push` hook rebuilds the package automatically and **never blocks the push**: if GameMaker (or PowerShell) is unavailable it just pushes the previous package. When the package **content** changes it commits `editor.yymps` in its own commit so the next push ships it - a re-export always differs byte-for-byte because the zip stores timestamps, so the script compares the entries (name + MD5) rather than trusting `git status`. Skip the rebuild with `POLYGON_SKIP_PACK=1 git push`, or set `POLYGON_PROJECTTOOL` when ProjectTool is not in its default location.
 
 ## Contributing
 

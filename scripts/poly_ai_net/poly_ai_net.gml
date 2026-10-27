@@ -1,4 +1,4 @@
-// poly_ai_net — public API.
+// poly_ai_net - public API.
 
 // Handles relay traffic: data chunks (framed lines) and link loss.
 // Public entry point, called from the oEditor Async Networking event.
