@@ -1,24 +1,23 @@
-// poly_bin - optimized binary scene format (PLYB v3), buffer-based.
+// poly_bin - optimized binary scene format (PLYB v1), buffer-based.
 // Layout (little-endian, alignment 1, strings = buffer_string):
-//   u8[4] magic "PLYB", u16 bin_version (=3), s32 seq
-//   v2: 3x f32 gravity, f32 fixedTimeStep, u16 maxSubSteps, u16 maxBodies
+//   u8[4] magic "PLYB", u16 bin_version (=1), s32 seq
+//   3x f32 gravity, f32 fixedTimeStep, u16 maxSubSteps, u16 maxBodies
 //   u16 asset_count, per asset: string key, u8 has_actor, [string obj, string layer],
-//     v2: u8 has_physics, [string physics_json]
+//     u8 has_physics, [string physics_json]
 //   u32 node_count, per node:
 //     u8 kind (0 instance, 1 light, 2 camera, 3 env, 4 audio)
 //     string id, string label ("" = none)
 //     3x f32 pos, 4x f32 rot, 3x f32 scale
 //     instance: string assetId, u8 shadow bits (1 cast, 2 receive),
-//       v2: u8 has_physics, [string physics_json]
+//       u8 has_physics, [string physics_json]
 //     light: u8 type (0 dir, 1 point, 2 spot), 3x u8 color,
 //       f32 intensity, range, inner, outer, u8 flags (1 enabled, 2 shadow),
 //       u16 shadowRes, f32 shadowDist, f32 shadowNormal
 //     camera: u8 proj (0 persp, 1 ortho), f32 fov, ow, oh, near, far, u8 enabled
 //     env: 3x f32 size, 3x u8 ambient, u8 fog, 3x u8 fogColor,
 //       f32 fogStart, f32 fogEnd, u8 enabled
-//     v3 audio: string sound, f32 gain, pitch, falloffRef, falloffMax,
+//     audio: string sound, f32 gain, pitch, falloffRef, falloffMax,
 //       falloffFactor, u8 flags (1 loop, 2 autoplay, 4 enabled)
-//   v1/v2 files omit newer fields and load with defaults.
 
 
 // Checks if a path points to a binary scene (by extension).
@@ -99,7 +98,7 @@ function __poly_bin_save_descs(_path, _seq, _assets, _nodes, _world = undefined)
   buffer_write(_buf, buffer_u8, 76); // L
   buffer_write(_buf, buffer_u8, 89); // Y
   buffer_write(_buf, buffer_u8, 66); // B
-  buffer_write(_buf, buffer_u16, 3);
+  buffer_write(_buf, buffer_u16, 1);
   buffer_write(_buf, buffer_s32, is_real(_seq) ? floor(_seq) : 1);
   var _wd = __poly_world_data(_world);
   __poly_bin_w_vec3(_buf, _wd.gravity, 0, -9.81, 0);
@@ -257,7 +256,7 @@ function __poly_bin_load_data(_path) {
 
   var _ver = buffer_read(_buf, buffer_u16);
 
-  if (_ver != 1 && _ver != 2 && _ver != 3) {
+  if (_ver != 1) {
     buffer_delete(_buf);
     return undefined;
   }
@@ -265,12 +264,10 @@ function __poly_bin_load_data(_path) {
   var _seq = buffer_read(_buf, buffer_s32);
   var _world = __poly_world_defaults();
 
-  if (_ver >= 2) {
-    _world.gravity = [ buffer_read(_buf, buffer_f32), buffer_read(_buf, buffer_f32), buffer_read(_buf, buffer_f32) ];
-    _world.fixedTimeStep = buffer_read(_buf, buffer_f32);
-    _world.maxSubSteps = buffer_read(_buf, buffer_u16);
-    _world.maxBodies = buffer_read(_buf, buffer_u16);
-  }
+  _world.gravity = [ buffer_read(_buf, buffer_f32), buffer_read(_buf, buffer_f32), buffer_read(_buf, buffer_f32) ];
+  _world.fixedTimeStep = buffer_read(_buf, buffer_f32);
+  _world.maxSubSteps = buffer_read(_buf, buffer_u16);
+  _world.maxBodies = buffer_read(_buf, buffer_u16);
 
   var _assets = {};
   var _na = buffer_read(_buf, buffer_u16);
@@ -287,7 +284,7 @@ function __poly_bin_load_data(_path) {
       if (_obj != "") _entry.actor = { object: _obj, layer: _layer != "" ? _layer : "Instances" };
     }
 
-    if (_ver >= 2 && buffer_read(_buf, buffer_u8) == 1) {
+    if (buffer_read(_buf, buffer_u8) == 1) {
       var _asset_physics_text = buffer_read(_buf, buffer_string);
       var _asset_physics_data = json_parse(_asset_physics_text);
       if (is_struct(_asset_physics_data)) _entry.physics = _asset_physics_data;
@@ -313,7 +310,7 @@ function __poly_bin_load_data(_path) {
     var _sx = buffer_read(_buf, buffer_f32);
     var _sy = buffer_read(_buf, buffer_f32);
     var _sz = buffer_read(_buf, buffer_f32);
-    var _kind = _kid == 1 ? "light" : (_kid == 2 ? "camera" : (_kid == 3 ? "environment" : ((_ver >= 3 && _kid == 4) ? "audio" : "instance")));
+    var _kind = _kid == 1 ? "light" : (_kid == 2 ? "camera" : (_kid == 3 ? "environment" : (_kid == 4 ? "audio" : "instance")));
     var _desc = {
       kind: _kind,
       id: _id,
@@ -328,7 +325,7 @@ function __poly_bin_load_data(_path) {
       var _bits = buffer_read(_buf, buffer_u8);
       _desc.shadows = { cast: (_bits & 1) != 0, receive: (_bits & 2) != 0 };
 
-      if (_ver >= 2 && buffer_read(_buf, buffer_u8) == 1) {
+      if (buffer_read(_buf, buffer_u8) == 1) {
         var _node_physics_text = buffer_read(_buf, buffer_string);
         var _node_physics_data = json_parse(_node_physics_text);
         if (is_struct(_node_physics_data)) _desc.physics = _node_physics_data;

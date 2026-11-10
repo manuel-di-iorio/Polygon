@@ -257,15 +257,13 @@ id. History is cleared on activate/new/load/discard. Creation snapshots
   pretty stringify; `seq` keeps editor id counters monotonic across
   save/load.
 - PLYB binary (`poly_bin.gml`, header documents the layout): magic
-  `PLYB`, u16 version 3, s32 seq, u16 asset table (key + optional actor
+  `PLYB`, u16 version 1, s32 seq, u16 asset table (key + optional actor
   binding), u32 node table (kind byte, strings via `buffer_string`,
   f32 transforms, u8 colors, packed flag bits). Kind bytes: 0 instance,
   1 light, 2 camera, 3 environment, 4 audio. Audio stores its string +
   five f32 falloff values and a packed flags byte (loop/autoplay/
   enabled). Same content as JSON, field-by-field binary - never
-  JSON-in-a-buffer. `buffer_save/load` with `try/catch`. Readers accept
-  v1/v2/v3; audio kind 4 is only interpreted for `_ver >= 3`, so old
-  readers reject the new version instead of misreading audio nodes.
+  JSON-in-a-buffer. `buffer_save/load` with `try/catch`.
 - Loading is always chunked (`begin` parses now, `pump` places ~48 nodes/step so the
   `load_job` (`begin` parses now, `pump` places ~48 nodes/step so the
   Load dialog shows progress instead of freezing, `finish` runs the

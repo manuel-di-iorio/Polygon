@@ -291,7 +291,7 @@ on_compose: function(_surf, _w, _h) {
 
 ## Saving and loading scenes
 
-Scenes are saved from **File → Save / Save As** into `working_directory/__PolygonEditor__/scenes/<name>.json` or `<name>.bin`. The save dialog has a **JSON / Binary** radio (no extra modal). JSON remains version 1 with optional physics/world fields. Binary uses `PLYB` v3 and reads v1/v2 files; transforms and common fields use `buffer_*` values, while physics blocks are stored as optional JSON strings. **File → Load** shows a search + file list with one row per file (`scene.json` and `scene.bin` listed separately); `poly_load` opens either one.
+Scenes are saved from **File → Save / Save As** into `working_directory/__PolygonEditor__/scenes/<name>.json` or `<name>.bin`.
 
 Load a scene in your game, without the editor, with (always async: parse
 now, spawn chunked - pump every Step, callback on completion):
@@ -433,7 +433,7 @@ poly_actor_of(node);       // companion instance id bound to a node, or undefine
 
 `kind` is one of `instance`, `light`, `camera`, `environment`, `audio` (the last four carry a `light` / `camera` / `environment` / `audio` sub-object). Audio sources are componentless editor markers; their `audio` sub-object stores `{ sound, gain, pitch, loop, autoplay, falloffRef, falloffMax, falloffFactor, enabled }`, where `sound` is a GameMaker sound asset name. The transform lives in `transform: { position, rotation, scale }` (rotation is a quaternion `[x, y, z, w]`). Instances link their model via `assetId`. `label` is an optional custom instance name (F2 in the Hierarchy); without it, the asset file name (or kind) + id number is shown. Node ids are stable and are what the AI bridge uses.
 
-The Binary variant (`.bin`, magic `PLYB`, version 3) stores scene/world values with `buffer_*` types and optional physics blocks as JSON strings. Version 1 and 2 binaries remain readable; audio nodes only exist in version 3. JSON scene files stay at `version: 1`; their optional `physics` and `world` fields preserve compatibility with older files.
+The Binary variant (`.bin`, magic `PLYB`, version 1) stores scene/world values with `buffer_*` types and optional physics blocks as JSON strings. JSON scene files stay at `version: 1`; their optional `physics` and `world` fields preserve compatibility with older files.
 
 ---
 
