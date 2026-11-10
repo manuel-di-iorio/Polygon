@@ -187,6 +187,7 @@ function __poly_ortho_basis(_dir) {
 
   var _v = new GM3D_Vec3();
   _v.crossVectors(_dir, _u);
+  _v.normalizeSafe(0.000001);
   return [ _u, _v ];
 }
 
@@ -371,7 +372,7 @@ function __poly_overlay_sphere_ring(_vp, _pts, _center, _camFwd, _wd, _col) {
     var _mz = (_a.z + _b.z) * 0.5 - _center.z;
     // Front-facing when the normal points toward the camera.
     var _dot = _mx * _camFwd.x + _my * _camFwd.y + _mz * _camFwd.z;
-    draw_set_alpha(_dot < 0 ? _frontAlpha : _backAlpha);
+    draw_set_alpha(_dot < 0 ? _backAlpha : _frontAlpha);
     __poly_overlay_seg(_vp, _a, _b, _wd, _col);
   }
 
@@ -391,25 +392,36 @@ function __poly_overlay_audio(_vp, _nd, _en, _wp, _sp, _sel) {
       var _u = new GM3D_Vec3(1, 0, 0);
       var _v = new GM3D_Vec3(0, 1, 0);
       var _w = new GM3D_Vec3(0, 0, 1);
-      var _pairs = [ [ _u, _v, _w ], [ _u, _w, _v ], [ _v, _w, _u ] ];
+      __poly_overlay_sphere_ring(_vp, __poly_basis_ring(_wp, _u, _v, _r, 64), _wp, _cf, 1.5, _col);
+      __poly_overlay_sphere_ring(_vp, __poly_basis_ring(_wp, _u, _w, _r, 64), _wp, _cf, 1.5, _col);
+      __poly_overlay_sphere_ring(_vp, __poly_basis_ring(_wp, _v, _w, _r, 64), _wp, _cf, 1.5, _col);
 
-      for (var _p = 0; _p < 3; _p++) {
-        var _a = _pairs[_p][0];
-        var _b = _pairs[_p][1];
-        var _n = _pairs[_p][2];
+      // Camera-facing silhouette circle: tangent plane to the sphere, so it
+      // matches the apparent silhouette (Unity-style), with stable basis.
+      if (is_struct(_vp) && variable_struct_exists(_vp, "camNode") && _vp.camNode != undefined) {
+        var _cam_pos = _vp.camNode.getWorldPosition();
+        var _forward = new GM3D_Vec3(_wp.x - _cam_pos.x, _wp.y - _cam_pos.y, _wp.z - _cam_pos.z);
+        var _dist = sqrt(_forward.x * _forward.x + _forward.y * _forward.y + _forward.z * _forward.z);
 
-        // Great circle.
-        __poly_overlay_sphere_ring(_vp, __poly_basis_ring(_wp, _a, _b, _r, 24), _wp, _cf, 1.5, _col);
+        if (_dist > _r) {
+          _forward.normalizeSafe(0.000001);
+          var _offset = _dist - sqrt(_dist * _dist - _r * _r);
+          var _circle_center = new GM3D_Vec3(_wp.x - _forward.x * _offset, _wp.y - _forward.y * _offset, _wp.z - _forward.z * _offset);
 
-        // Two parallels at +/- 0.5 * r along the normal.
-        for (var _h = -1; _h <= 1; _h += 2) {
-          var _hh = _h * _r * 0.5;
-          var _rr = sqrt(max(_r * _r - _hh * _hh, 0));
+          var _right = new GM3D_Vec3();
+          _right.crossVectors(_forward, _w);
 
-          if (_rr > 0.0001) {
-            var _center = new GM3D_Vec3(_wp.x + _n.x * _hh, _wp.y + _n.y * _hh, _wp.z + _n.z * _hh);
-            __poly_overlay_sphere_ring(_vp, __poly_basis_ring(_center, _a, _b, _rr, 24), _center, _cf, 1.5, _col);
+          if (_right.lengthSq() < 0.000001) {
+            _right = new GM3D_Vec3(1, 0, 0);
+          } else {
+            _right.normalizeSafe(0.000001);
           }
+
+          var _up = new GM3D_Vec3();
+          _up.crossVectors(_right, _forward);
+          _up.normalizeSafe(0.000001);
+
+          __poly_overlay_sphere_ring(_vp, __poly_basis_ring(_circle_center, _right, _up, _r, 64), _circle_center, _forward, 1.5, _col);
         }
       }
     }
