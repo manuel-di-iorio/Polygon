@@ -60,6 +60,8 @@ function __poly_inspector_titles(_ed, _n, _skind, _stype) {
     _type = "Camera";
   } else if (_skind == "environment") {
     _type = "Environment";
+  } else if (_skind == "audio") {
+    _type = "Audio Source";
   } else if (_skind == "light") {
     _type = is_string(_stype) ? "Light (" + _stype + ")" : "Light";
   }
@@ -119,6 +121,8 @@ function __poly_axis_visibility(_n, _skind, _stype) {
   if (_n == 1 && _skind != undefined && _skind != "instance") {
     if (_skind == "environment") {
       _show = [ false, false, false ];
+    } else if (_skind == "audio") {
+      _show = [ true, false, false ];
     } else if (_skind == "camera") {
       _show = [ true, true, false ];
     } else if (_skind == "light") {
@@ -143,7 +147,7 @@ function __poly_imgui_transform_sec(_ed, _show) {
 
 // Draws one collapsing section with a body function.
 
-// Draws light/camera/environment sections for a single selection.
+// Draws light/camera/environment/audio sections for a single selection.
 function __poly_imgui_prop_secs(_ed, _node, _en, _skind) {
   if (_skind == "light") {
     ImGui.Spacing();
@@ -167,6 +171,11 @@ function __poly_imgui_prop_secs(_ed, _node, _en, _skind) {
     __poly_imgui_sec_open();
 
     if (ImGui.CollapsingHeader("Environment")) __poly_imgui_env_sec(_ed, _node, _en);
+  } else if (_skind == "audio") {
+    ImGui.Spacing();
+    __poly_imgui_sec_open();
+
+    if (ImGui.CollapsingHeader("Audio Source")) __poly_imgui_audio_sec(_ed, _node, _en);
   }
 }
 

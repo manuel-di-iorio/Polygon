@@ -365,6 +365,7 @@ function __poly_kind_of(_ed, _node) {
 // pos, rot, scale, rotation, label, id, adopt_src, skip_hook, skip_register }.
 // kind: "prefab"/"primitive"/"instance" (model inside a wrapper),
 // "light"/"camera"/"environment" (component on the wrapper),
+// "audio" (componentless Polygon marker),
 // "chrome" (model at scene root, untracked: grid/sky).
 // Rotation is a quaternion object via _opt.rot, a [x,y,z,w] array via
 // _opt.rot/_opt.rotation, or quaternion components via rx,ry,rz,rw.
@@ -384,7 +385,7 @@ function __poly_spawn(_ed, _opt) {
   if (_kind == "prefab" || _kind == "primitive") _kind = "instance";
   var _is_chrome = (_kind == "chrome");
   var _is_inst = (_kind == "instance");
-  var _is_prop = (_kind == "light" || _kind == "camera" || _kind == "environment");
+  var _is_prop = (_kind == "light" || _kind == "camera" || _kind == "environment" || _kind == "audio");
 
   if (!_is_inst && !_is_prop && !_is_chrome) return undefined;
   var _model = _opt[$ "model"];
@@ -478,7 +479,7 @@ function __poly_spawn(_ed, _opt) {
     _wrap.addComponent(new GM3D_LightComponent());
   } else if (_kind == "camera") {
     _wrap.addComponent(new GM3D_CameraComponent());
-  } else {
+  } else if (_kind == "environment") {
     _wrap.addComponent(new GM3D_EnvironmentVolumeComponent());
   }
 
@@ -570,7 +571,7 @@ function __poly_spawn(_ed, _opt) {
       __poly_light_apply(_wrap, _data);
     } else if (_kind == "camera") {
       __poly_camera_apply(_wrap, _data);
-    } else {
+    } else if (_kind == "environment") {
       __poly_env_apply(_wrap, _data);
     }
   }

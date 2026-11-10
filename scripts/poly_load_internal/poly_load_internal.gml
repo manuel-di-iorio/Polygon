@@ -16,7 +16,37 @@ function __poly_load_place(_job, _p) {
   }
 
   _rep.placed++;
-  if (!is_struct(_pl) || _pl.kind != "instance") return;
+  if (!is_struct(_pl)) return;
+
+  if (_pl.kind == "audio") {
+    // __poly_load_node already parsed the descriptor; keep its values
+    // instead of re-parsing the flat data struct.
+    var _ad = is_struct(_pl.audio) ? _pl.audio : __poly_audio_defaults();
+
+    if (_ad.sound != "" && !__poly_audio_sound_ok(_ad.sound)) {
+      array_push(_rep.warnings, "sound asset '" + _ad.sound + "' not found for audio source '" + _pl.id + "'");
+    }
+
+    var _aentry = {
+      node: _pl.node,
+      id: _pl.id,
+      label: _pl.label,
+      sound: _ad.sound,
+      gain: _ad.gain,
+      pitch: _ad.pitch,
+      loop: _ad.loop,
+      autoplay: _ad.autoplay,
+      falloffRef: _ad.falloffRef,
+      falloffMax: _ad.falloffMax,
+      falloffFactor: _ad.falloffFactor,
+      enabled: _ad.enabled,
+    };
+    array_push(_rep.audio, _aentry);
+    if (is_method(_job.on_audio)) _job.on_audio(_pl.node, _aentry);
+    return;
+  }
+
+  if (_pl.kind != "instance") return;
   if (is_method(_job.on_create)) _job.on_create(_pl.node, _pl.asset, _pl.model, _pl.id);
   var _entry = _job.assets[$ _pl.asset];
   if (is_struct(_entry) && is_method(_entry[$ "on_create"])) _entry.on_create(_pl.node, _pl.asset, _pl.model, _pl.id);
@@ -116,10 +146,12 @@ function __poly_load_node(_scene, _assets, _p, _meta = undefined) {
     _id = _p.name;
   }
 
-  if (_kind == "light" || _kind == "camera" || _kind == "environment") {
+  if (_kind == "light" || _kind == "camera" || _kind == "environment" || _kind == "audio") {
     var _prop = __poly_load_prop(_scene, _p, _kind, _id);
     if (_prop == undefined) return undefined;
-    return { node: _prop, kind: _kind, asset: "", id: _id, label: _p[$ "label"], model: undefined };
+    var _out = { node: _prop, kind: _kind, asset: "", id: _id, label: _p[$ "label"], model: undefined };
+    if (_kind == "audio") _out.audio = __poly_load_audio_data(_p);
+    return _out;
   }
 
   if (_kind != "instance") return undefined;
@@ -159,7 +191,7 @@ function __poly_load_node(_scene, _assets, _p, _meta = undefined) {
   return { node: _node, kind: "instance", asset: _akey, id: _id, label: _p[$ "label"], model: _model, physics: is_struct(_flags[$ "physics"]) ? _flags.physics : undefined };
 }
 
-// Creates light camera environment from descriptor.
+// Creates light camera environment or audio source from descriptor.
 function __poly_load_prop(_scene, _p, _kind, _name) {
   var _node = _scene.createNode(_name);
 
@@ -241,8 +273,10 @@ function __poly_load_prop(_scene, _p, _kind, _name) {
 
     if (is_real(_fr) && _fr > 0) _cc.setFar(_fr);
     _cc.setEnabled(!variable_struct_exists(_c, "enabled") || _c.enabled == true);
+  } else if (_kind == "audio") {
+    // Componentless Polygon marker: the runtime creates the node and
+    // reports its settings; it never creates or owns an emitter.
   } else if (_kind == "environment") {
-
     var _ec = new GM3D_EnvironmentVolumeComponent();
     _node.addComponent(_ec);
     var _e = _sub;
@@ -271,6 +305,26 @@ function __poly_load_prop(_scene, _p, _kind, _name) {
   }
 
   return _node;
+}
+
+// Parses audio source settings from a descriptor with defaults and guards.
+function __poly_load_audio_data(_p) {
+  var _d = __poly_audio_defaults();
+  var _a = is_struct(_p) ? _p[$ "audio"] : undefined;
+
+  if (!is_struct(_a)) return _d;
+  var _snd = _a[$ "sound"];
+
+  if (is_string(_snd)) _d.sound = _snd;
+  _d.gain = clamp(__poly_read_num(_a, "gain", _d.gain), 0, 1);
+  _d.pitch = max(__poly_read_num(_a, "pitch", _d.pitch), 0.01);
+  _d.loop = (_a[$ "loop"] == true);
+  _d.autoplay = (_a[$ "autoplay"] != false);
+  _d.falloffRef = max(__poly_read_num(_a, "falloffRef", _d.falloffRef), 0);
+  _d.falloffMax = max(__poly_read_num(_a, "falloffMax", _d.falloffMax), 0);
+  _d.falloffFactor = max(__poly_read_num(_a, "falloffFactor", _d.falloffFactor), 0);
+  _d.enabled = (_a[$ "enabled"] != false);
+  return _d;
 }
 
 // Parses vector from descriptor with fallback.

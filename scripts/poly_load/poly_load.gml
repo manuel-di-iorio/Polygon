@@ -10,7 +10,13 @@
 // every spawned instance, before the per-model on_create. Model stays 3rd
 // so existing hooks keep working unchanged.
 // _on_finish (optional): function(report) called once when the last node
-// is placed. Report: { placed, failed, companions, warnings, placements }.
+// is placed. Report: { placed, failed, companions, warnings, placements,
+// audio, physics }. Audio sources are componentless Polygon markers: they
+// are created and reported (report.audio), but the loader never creates or
+// owns emitters.
+// _on_audio (optional): function(node, audio) called for every audio source
+// after placement. audio = { node, id, label, sound, gain, pitch, loop,
+// autoplay, falloffRef, falloffMax, falloffFactor, enabled }.
 // Actor bindings saved by the editor (top-level "assets" map:
 // { key: { type: "model", actor: { object, layer } } }) spawn a companion
 // GameMaker instance per bound model via instance_create_layer, receiving
@@ -18,7 +24,7 @@
 // layers never fail the load: they become report warnings.
 // Returns the job struct, or undefined when the file is missing/invalid.
 // The scene must outlive the load.
-function poly_load(_scene, _fname, _assets, _on_create = undefined, _on_finish = undefined) {
+function poly_load(_scene, _fname, _assets, _on_create = undefined, _on_finish = undefined, _on_audio = undefined) {
   if (_scene == undefined || _fname == undefined || _fname == "" || !is_struct(_assets)) return undefined;
   if (!file_exists(_fname)) return undefined;
   var _data = undefined;
@@ -52,8 +58,9 @@ function poly_load(_scene, _fname, _assets, _on_create = undefined, _on_finish =
     actors: __poly_file_assets(_data),
     on_create: _on_create,
     on_finish: _on_finish,
+    on_audio: _on_audio,
     physics: __poly_world_data(_data[$ "physics"]),
-    report: { placed: 0, failed: 0, companions: 0, warnings: [], placements: [], physics: __poly_world_data(_data[$ "physics"]) },
+    report: { placed: 0, failed: 0, companions: 0, warnings: [], placements: [], audio: [], physics: __poly_world_data(_data[$ "physics"]) },
   };
   __poly_load_jobs_push(_job);
   return _job;

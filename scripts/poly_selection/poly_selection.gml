@@ -107,6 +107,7 @@ function __poly_tool_allowed(_ed, _node, _tool) {
 
   if (_kind == undefined || _kind == "instance") return true;
   if (_kind == "environment") return false;
+  if (_kind == "audio") return _tool == PolygonEditorTool.Translate;
   if (_tool == PolygonEditorTool.Scale) return false;
   if (_kind == "camera") return true;
   if (_tool == PolygonEditorTool.Translate) return true;
@@ -132,8 +133,14 @@ function __poly_gizmo_allowed(_ed) {
 function __poly_sel_apply_tool(_ed) {
   if (_ed == undefined || !is_array(_ed.sel) || array_length(_ed.sel) != 1) return;
   var _node = _ed.sel[0];
+  var _kind = __poly_kind_of(_ed, _node);
 
-  if (__poly_kind_of(_ed, _node) != "light") return;
+  if (_kind == "audio") {
+    _ed.giz.tool = PolygonEditorTool.Translate;
+    return;
+  }
+
+  if (_kind != "light") return;
   var _type = __poly_sel_light_type(_ed, _node);
 
   if (_type == "directional") {

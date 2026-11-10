@@ -696,6 +696,66 @@ function __poly_edit_env_fog_end(_ed, _node, _d) {
 }
 
 // ---------------------------------------------------------------------------
+// Audio source section
+// ---------------------------------------------------------------------------
+
+// Edits audio source properties in Inspector. Audio has no GM3D component:
+// the registry data is the complete state, so every edit writes it directly.
+function __poly_imgui_audio_sec(_ed, _node, _en) {
+  var _d = _en.data;
+
+  if (!variable_struct_exists(_d, "sound")) _d.sound = "";
+  var _cur = (is_string(_d.sound) && _d.sound != "") ? _d.sound : "(none)";
+
+  ImGui.AlignTextToFramePadding();
+  ImGui.Text("Sound");
+  ImGui.SameLine(80);
+  ImGui.SetNextItemWidth(220);
+
+  if (ImGui.BeginCombo("##audio_sound", _cur)) {
+    if (!variable_struct_exists(_ed.imgui, "audio_filter")) _ed.imgui.audio_filter = "";
+    _ed.imgui.audio_filter = __poly_imgui_text_hint("##audio_find", "Search sounds...", _ed.imgui.audio_filter);
+
+    if (ImGui.Selectable("(none)", _cur == "(none)", 0, 0, 0)) {
+      __poly_edit_field(_ed, _node, _d, "sound", __poly_audio_apply, "");
+    }
+
+    var _ids = asset_get_ids(asset_sound);
+    var _flt = string_lower(_ed.imgui.audio_filter);
+    var _shown = 0;
+
+    for (var _i = 0, _n = array_length(_ids); _i < _n; _i++) {
+      var _nm = asset_get_name(_ids[_i]);
+
+      if (!is_string(_nm) || _nm == "") continue;
+      if (_flt != "" && string_pos(_flt, string_lower(_nm)) <= 0) continue;
+
+      if (ImGui.Selectable(_nm, _cur == _nm, 0, 0, 0)) {
+        __poly_edit_field(_ed, _node, _d, "sound", __poly_audio_apply, _nm);
+      }
+
+      _shown++;
+      if (_shown >= 200) break;
+    }
+
+    ImGui.EndCombo();
+  }
+
+  if (_cur != "(none)" && !__poly_audio_sound_ok(_cur)) {
+    ImGui.TextColored("sound not found (deleted?)", make_colour_rgb(235, 90, 90));
+  }
+
+  __poly_edit_float(_ed, _node, _d, "audio_gain", "Gain", "gain", __poly_audio_apply, 0, 1);
+  __poly_edit_float(_ed, _node, _d, "audio_pitch", "Pitch", "pitch", __poly_audio_apply, 0.01);
+  __poly_edit_bool(_ed, _node, _d, "loop", "Loop", __poly_audio_apply);
+  __poly_edit_bool(_ed, _node, _d, "autoplay", "Autoplay", __poly_audio_apply);
+  __poly_edit_float(_ed, _node, _d, "audio_ref", "Falloff reference", "falloffRef", __poly_audio_apply, 0);
+  __poly_edit_float(_ed, _node, _d, "audio_max", "Falloff max", "falloffMax", __poly_audio_apply, 0);
+  __poly_edit_float(_ed, _node, _d, "audio_factor", "Falloff factor", "falloffFactor", __poly_audio_apply, 0);
+  __poly_edit_bool(_ed, _node, _d, "enabled", "Enabled", __poly_audio_apply);
+}
+
+// ---------------------------------------------------------------------------
 // Spawn defaults section
 // ---------------------------------------------------------------------------
 

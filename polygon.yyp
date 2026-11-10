@@ -152,6 +152,7 @@
     {"id":{"name":"sStaticInstanced","path":"shaders/sStaticInstanced/sStaticInstanced.yy",},},
     {"id":{"name":"sStaticInstancedShadow","path":"shaders/sStaticInstancedShadow/sStaticInstancedShadow.yy",},},
     {"id":{"name":"sStaticShadow","path":"shaders/sStaticShadow/sStaticShadow.yy",},},
+    {"id":{"name":"sprPolygonEditorIconAudio","path":"sprites/sprPolygonEditorIconAudio/sprPolygonEditorIconAudio.yy",},},
     {"id":{"name":"sprPolygonEditorIconCamera","path":"sprites/sprPolygonEditorIconCamera/sprPolygonEditorIconCamera.yy",},},
     {"id":{"name":"sprPolygonEditorIconCameraVec","path":"sprites/sprPolygonEditorIconCameraVec/sprPolygonEditorIconCameraVec.yy",},},
     {"id":{"name":"sprPolygonEditorIconCenter","path":"sprites/sprPolygonEditorIconCenter/sprPolygonEditorIconCenter.yy",},},

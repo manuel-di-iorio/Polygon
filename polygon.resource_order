@@ -95,6 +95,7 @@
     {"name":"sStaticInstanced","order":2,"path":"shaders/sStaticInstanced/sStaticInstanced.yy",},
     {"name":"sStaticInstancedShadow","order":3,"path":"shaders/sStaticInstancedShadow/sStaticInstancedShadow.yy",},
     {"name":"sStaticShadow","order":1,"path":"shaders/sStaticShadow/sStaticShadow.yy",},
+    {"name":"sprPolygonEditorIconAudio","order":23,"path":"sprites/sprPolygonEditorIconAudio/sprPolygonEditorIconAudio.yy",},
     {"name":"sprPolygonEditorIconCamera","order":6,"path":"sprites/sprPolygonEditorIconCamera/sprPolygonEditorIconCamera.yy",},
     {"name":"sprPolygonEditorIconCameraVec","order":19,"path":"sprites/sprPolygonEditorIconCameraVec/sprPolygonEditorIconCameraVec.yy",},
     {"name":"sprPolygonEditorIconCenter","order":17,"path":"sprites/sprPolygonEditorIconCenter/sprPolygonEditorIconCenter.yy",},

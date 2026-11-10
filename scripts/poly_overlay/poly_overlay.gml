@@ -129,7 +129,15 @@ function __poly_overlay_icon_cone(_x, _y, _s, _wd, _col) {
   draw_circle_colour(_x, _y - 7.5 * _s, _wd * 0.5, _col, _col, false);
 }
 
-// Draws a crisp vector icon ("camera", "sun" or "cone") centered on _sp.
+// Draws the audio speaker outline: box, cone and two sound waves.
+function __poly_overlay_icon_speaker(_x, _y, _s, _wd, _col) {
+  __poly_overlay_icon_stroke([ -5.5, -2, -3, -2, -3, 2, -5.5, 2 ], _x, _y, _s, _wd, _col, true);
+  __poly_overlay_icon_stroke([ -3, -2, 1.5, -6, 1.5, 6, -3, 2 ], _x, _y, _s, _wd, _col, true);
+  __poly_overlay_icon_stroke([ 4, -3, 5.5, 0, 4, 3 ], _x, _y, _s, _wd, _col);
+  __poly_overlay_icon_stroke([ 6.5, -5, 8.5, 0, 6.5, 5 ], _x, _y, _s, _wd, _col);
+}
+
+// Draws a crisp vector icon ("camera", "sun", "cone" or "speaker") centered on _sp.
 // _scale resizes the icon (stroke width follows automatically).
 function __poly_overlay_icon(_sp, _col, _sel, _kind, _scale = 2.4) {
   var _tint = _sel ? make_colour_rgb(255, 220, 80) : _col;
@@ -140,6 +148,8 @@ function __poly_overlay_icon(_sp, _col, _sel, _kind, _scale = 2.4) {
     __poly_overlay_icon_camera(_sp[0], _sp[1], _s, _wd, _tint);
   } else if (_kind == "sun") {
     __poly_overlay_icon_sun(_sp[0], _sp[1], _s, _wd, _tint);
+  } else if (_kind == "speaker") {
+    __poly_overlay_icon_speaker(_sp[0], _sp[1], _s, _wd, _tint);
   } else {
     __poly_overlay_icon_cone(_sp[0], _sp[1], _s, _wd, _tint);
   }
@@ -221,7 +231,7 @@ function __poly_overlay_box(_vp, _corners, _wd, _col) {
 // Main
 // ---------------------------------------------------------------------------
 
-// Draws overlays for lights, cameras, environments.
+// Draws overlays for lights, cameras, environments and audio sources.
 function __poly_overlay_draw(_ed, _vp) {
   var _pairs = __poly_root_pairs(_ed);
   var _selset = __poly_sel_set(_ed);
@@ -231,7 +241,7 @@ function __poly_overlay_draw(_ed, _vp) {
     var _en = _pairs[_i].en;
     var _kind = is_string(_en.kind) ? _en.kind : undefined;
 
-    if (_kind != "light" && _kind != "camera" && _kind != "environment") continue;
+    if (_kind != "light" && _kind != "camera" && _kind != "environment" && _kind != "audio") continue;
     if (_en.hidden == true && _ed.show_hidden != true) continue;
     var _wp = _node.getWorldPosition();
     var _sp = __poly_world_to_screen(_vp, _wp);
@@ -241,6 +251,8 @@ function __poly_overlay_draw(_ed, _vp) {
       __poly_overlay_light(_vp, _node, _en, _wp, _sp, _sel);
     } else if (_kind == "camera") {
       __poly_overlay_camera(_vp, _node, _en, _wp, _sp, _sel);
+    } else if (_kind == "audio") {
+      __poly_overlay_audio(_vp, _node, _en, _wp, _sp, _sel);
     } else {
       __poly_overlay_env(_vp, _en, _wp, _sp, _sel);
     }
@@ -340,6 +352,33 @@ function __poly_overlay_light(_vp, _nd, _en, _wp, _sp, _sel) {
     var _icon = _d.type == "directional" ? "cone" : "sun";
     __poly_overlay_icon(_sp, _col, _sel, _icon);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Audio sources
+// ---------------------------------------------------------------------------
+
+// Draws the audio falloff sphere (three rings) and speaker icon.
+function __poly_overlay_audio(_vp, _nd, _en, _wp, _sp, _sel) {
+  var _col = __poly_overlay_col(_sel);
+  var _d = (_en != undefined && is_struct(_en.data)) ? _en.data : __poly_audio_defaults();
+
+  if (_sel) {
+    var _r = is_real(_d.falloffMax) ? max(_d.falloffMax, 0) : 0;
+
+    if (_r > 0.0001) {
+      var _u = new GM3D_Vec3(1, 0, 0);
+      var _v = new GM3D_Vec3(0, 1, 0);
+      var _w = new GM3D_Vec3(0, 0, 1);
+      draw_set_alpha(0.45);
+      __poly_overlay_ring(_vp, __poly_basis_ring(_wp, _u, _v, _r, 24), 1, _col);
+      __poly_overlay_ring(_vp, __poly_basis_ring(_wp, _u, _w, _r, 24), 1, _col);
+      __poly_overlay_ring(_vp, __poly_basis_ring(_wp, _v, _w, _r, 24), 1, _col);
+      draw_set_alpha(1);
+    }
+  }
+
+  if (_sp != undefined) __poly_overlay_icon(_sp, _col, _sel, "speaker");
 }
 
 // ---------------------------------------------------------------------------

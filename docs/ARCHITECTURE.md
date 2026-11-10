@@ -99,7 +99,8 @@ viewport sizes, cube offset, ImGui/window/thumbnail sub-states.
 
 `poly_registry.gml`. Invariant: **every tracked root is a wrapper**;
 assets are `wrapper → model root`, lights/cameras/environments are a
-single wrapper carrying the component.
+single wrapper carrying the component, and audio sources are a single
+componentless wrapper whose state lives in the registry data.
 
 - Ids: prefix `__PolygonEditor__`; `__poly_wrap_new` (monotonic
   `id_seq++`), `__poly_wrap_claim` (keep wanted id if free, else fresh;
@@ -118,12 +119,14 @@ single wrapper carrying the component.
   editor state or a raw scene (runtime load skips registry/hooks).
   Kinds: `prefab/primitive → instance` (model `spawnInto(wrapper)`,
   child reset to identity so the wrapper owns TRS), `light/camera/
-  environment` (component on the wrapper), `chrome` (untracked
-  grid/sky). TRS accepts arrays or `x/y/z`, quaternion object/array or
+  environment` (component on the wrapper), `audio` (no component; the
+  wrapper is the marker and `data` is its full state), `chrome`
+  (untracked grid/sky). TRS accepts arrays or `x/y/z`, quaternion object/array or
   components. Pre-claimed `opt.id`; flags `skip_hook/skip_register/
   adopt_src`. Editor instance path: magenta fix → global `on_create`
   then per-model `on_create` → register + shadow-flag apply. Prop path:
-  `light/camera/env_apply` → register.
+  `light/camera/env_apply` → register; audio skips apply and registers
+  its data directly.
 - Import (`__poly_track_adopt_auto`): non-roots skipped; component
   nodes become light/camera/env adoptions (live wrapper id preserved);
   other nodes match the library **by model-root name, only on a unique
@@ -131,12 +134,17 @@ single wrapper carrying the component.
   starts hidden; scene cameras are muted while editing
   (only the viewcam renders).
 
-`poly_props.gml` owns light/camera/environment data: one schema table
-(`__poly_prop_schema`) drives defaults, guarded reads
+`poly_props.gml` owns light/camera/environment/audio data: one schema
+table (`__poly_prop_schema`) drives defaults, guarded reads
 (`__poly_read_num/vec/col`, `__poly_apply_field` with ignore-ranges),
 and apply functions. Details: shadow resolution snapped to powers of
 two 256–8192; camera `far > near`; env `fogEnd ≥ fogStart`; single
 active shadow-map owner; gamecam = first enabled camera else first.
+Audio is a Polygon-authored marker (GM3D has no audio component), so
+it has no apply function: `{ sound, gain 0–1, pitch ≥ 0.01, loop,
+autoplay, falloffRef, falloffMax, falloffFactor, enabled }` lives in
+the registry and `sound` is a GameMaker sound asset name validated via
+`asset_get_index` + `asset_get_type(...) == asset_sound`.
 
 ---
 
@@ -173,9 +181,10 @@ home). Tracked scene cameras stay muted while editing.
   the selection; hidden nodes are skipped by tools but still selectable
   in the list.
 - Tool gating (`__poly_tool_allowed`): instances everything,
-  environment nothing, props never Scale, cameras all, lights Translate
-  always / Rotate except point. Single-light selection auto-switches
-  the tool (directional→Rotate, point→Translate).
+  environment nothing, audio Translate only, props never Scale, cameras
+  all, lights Translate always / Rotate except point. Single-light
+  selection auto-switches the tool (directional→Rotate,
+  point→Translate); audio selections force Translate.
 - Gizmo (`poly_gizmo.gml`, drawn in `poly_gizmo_draw.gml`): Translate
   axes + planar quads (+ Shift screen-space square), Rotate rings +
   view-ring + trackball disc, Scale axes + center uniform handle.
@@ -213,11 +222,12 @@ id. History is cleared on activate/new/load/discard. Creation snapshots
 `poly_scene_ops.gml` (+ hotkeys in `poly_input.gml`):
 
 - Copy/Cut/Paste work on **descriptors** (same structs as files), so
-  instances, lights, cameras and env all survive: copy stores them (no
-  undo); cut deletes in the same undo entry; paste deep-copies them,
-  assigns fresh ids, reuses the rebuild placer (unknown models
-  skipped), reselects the results, one undo. Also in the Hierarchy
-  context menu.
+  instances, lights, cameras, env and audio sources all survive: copy
+  stores them (no undo); cut deletes in the same undo entry; paste
+  deep-copies them, assigns fresh ids, reuses the rebuild placer
+  (unknown models skipped), reselects the results, one undo. Also in
+  the Hierarchy context menu. Duplicate keeps audio data componentless
+  (fresh wrapper, registry data copied).
 - `Ctrl+I` inverts over tracked roots (locked excluded);
   `Ctrl+A` selects all (locked excluded); `Shift+D` clears.
 - `F2` renames the instance label (undoable, empty/unchanged = no-op);
@@ -234,21 +244,28 @@ id. History is cleared on activate/new/load/discard. Creation snapshots
 
 - Descriptors: `instance {kind, id, assetId, transform{position,
   rotation[xyzw], scale}, shadows{cast,receive}?, label?}`,
-  `light/camera/environment` with a same-named sub-object
+  `light/camera/environment/audio` with a same-named sub-object
   (`type/color/intensity/range/innerCone/outerCone/enabled/shadow.*`,
   `projection/fovY/orthoWidth/orthoHeight/near/far/enabled`,
-  `size/ambient/fogEnabled/fogColor/fogStart/fogEnd/enabled`).
-  Strict validation (`__poly_validate_descs` + per-kind validators).
+  `size/ambient/fogEnabled/fogColor/fogStart/fogEnd/enabled`,
+  `sound/gain/pitch/loop/autoplay/falloffRef/falloffMax/falloffFactor/
+  enabled`). Strict validation (`__poly_validate_descs` + per-kind
+  validators); audio requires a string `sound` and typed optional
+  numbers/bools, but allows an empty sound (unassigned marker).
 - JSON v1 file: `{version: 1, seq, assets: {key: {type: "model",
   actor?: {object, layer}}}, nodes: [...]}`. Saved with ordered,
   pretty stringify; `seq` keeps editor id counters monotonic across
   save/load.
 - PLYB binary (`poly_bin.gml`, header documents the layout): magic
-  `PLYB`, u16 version 1, s32 seq, u16 asset table (key + optional actor
+  `PLYB`, u16 version 3, s32 seq, u16 asset table (key + optional actor
   binding), u32 node table (kind byte, strings via `buffer_string`,
-  f32 transforms, u8 colors, packed flag bits). Same content as JSON,
-  field-by-field binary - never JSON-in-a-buffer. `buffer_save/load`
-  with `try/catch`.
+  f32 transforms, u8 colors, packed flag bits). Kind bytes: 0 instance,
+  1 light, 2 camera, 3 environment, 4 audio. Audio stores its string +
+  five f32 falloff values and a packed flags byte (loop/autoplay/
+  enabled). Same content as JSON, field-by-field binary - never
+  JSON-in-a-buffer. `buffer_save/load` with `try/catch`. Readers accept
+  v1/v2/v3; audio kind 4 is only interpreted for `_ver >= 3`, so old
+  readers reject the new version instead of misreading audio nodes.
 - Loading is always chunked (`begin` parses now, `pump` places ~48 nodes/step so the
   `load_job` (`begin` parses now, `pump` places ~48 nodes/step so the
   Load dialog shows progress instead of freezing, `finish` runs the
@@ -267,9 +284,15 @@ id. History is cleared on activate/new/load/discard. Creation snapshots
 
 ## 9. Runtime loading and actors
 
-`poly_load(scene, file, assets, on_create?, on_finish?)` (`poly_load.gml`) starts
-an async job (parse now, spawn ~48/step via `poly_load_step()`); same hooks
-and report as the old sync version, companions included.
+`poly_load(scene, file, assets, on_create?, on_finish?, on_audio?)`
+(`poly_load.gml`) starts an async job (parse now, spawn ~48/step via
+`poly_load_step()`); same hooks and report as the old sync version,
+companions included. Audio sources become componentless nodes (no GM3D
+component, no emitter): each is pushed to `report.audio` as
+`{ node, id, label, sound, gain, pitch, loop, autoplay, falloffRef,
+falloffMax, falloffFactor, enabled }`; missing sounds add a warning.
+The optional `on_audio(node, audio)` runs after placement. The game
+owns emitter/listener creation and lifetime.
 
 Actors (`poly_load_internal.gml`): per-model `{object, layer}` bindings
 stored in the file's top-level `assets` map spawn a companion instance
@@ -311,9 +334,10 @@ companion. Configured per model in the Inspector Actor section
     frame (`aa_used = "pending"`).
 - `__poly_compose_viewport` (`poly_core.gml`) runs on `scene_surf`:
   optional `on_compose(surf, w, h)` dev post-processing first (raw 3D
-  only), then outline composite, gizmo, prop overlays, ViewCube,
-  rect/selection art and notices - all 2D at display res, hence sharp
-  under any AA mode.
+  only), then outline composite, gizmo, prop overlays (lights/cameras/
+  environments plus the audio speaker icon and, when selected, the
+  `falloffMax` wire sphere), ViewCube, rect/selection art and notices -
+  all 2D at display res, hence sharp under any AA mode.
 
 ---
 
@@ -383,7 +407,7 @@ toolbar → FPS → animation preview → modals.
 
 - Menu bar (`poly_imgui_chrome.gml`): brand, File (scene basename +
   New/Save/Save-As/Load/Close with dirty confirms), Create (lights
-  cap 8, cameras, singleton env), View (window toggles, grid, reset
+  cap 8, cameras, singleton env, audio source), View (window toggles, grid, reset
   layout), Help (issues link, About), AI bridge status + toggle.
 - Toolbar: View/Move/Rotate/Scale, Pivot/Center, World/Local, snap
   toggle + grid/size popup, Unlit/Shaded, Home, AA combo
@@ -391,12 +415,15 @@ toolbar → FPS → animation preview → modals.
   sky, outline).
 - Hierarchy (`poly_imgui_scene.gml`): scene tree of tracked roots with
   expandable child nodes (not virtualized; roots own selection, child
-  rows are display-only), eye/lock buttons, kind icons, filter text +
-  kind filters, F2 inline rename, rubber-band select, right-click
+  rows are display-only), eye/lock buttons, kind icons (audio uses
+  `sprPolygonEditorIconAudio` with a procedural speaker fallback),
+  filter text + kind filters (Models/Lights/Cameras/Environment/
+  Audio), F2 inline rename, rubber-band select, right-click
   menu (Focus/Rename/Duplicate/Copy/Cut/Paste/Delete), item counter.
 - Inspector (`poly_imgui_inspector` + `insp_*`): per-kind sections
   (Transform with mixed-value axis editing and drag-grouped undo;
-  Light+Shadow/Camera/Environment; asset Shadows), prefab Overrides
+  Light+Shadow/Camera/Environment/Audio Source with a searchable sound
+  picker and red missing-sound warning; asset Shadows), prefab Overrides
   (per-field Revert/Apply vs spawn defaults), Actor bindings, spawn
   defaults, read-only Materials (slots, sampler state, hex copy) and
   Animations (clip list + floating playable preview).

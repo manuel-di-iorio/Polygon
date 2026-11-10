@@ -167,7 +167,7 @@ async function main() {
     {}, "status");
 
   bridgeTool(server, bridge, "poly_get_scene_hierarchy",
-    "List tracked root nodes of the current scene: stable id, kind (instance|light|camera|environment), label, asset key, local transform, world-space bounds (AABB min/max/size/bottom/top), selection/hidden/locked flags. Use bounds.bottom/top to rest objects exactly instead of guessing Y.",
+    "List tracked root nodes of the current scene: stable id, kind (instance|light|camera|environment|audio), label, asset key, local transform, world-space bounds (AABB min/max/size/bottom/top), selection/hidden/locked flags. Use bounds.bottom/top to rest objects exactly instead of guessing Y.",
     {}, "hierarchy");
 
   bridgeTool(server, bridge, "poly_get_selection",
@@ -188,7 +188,7 @@ async function main() {
     }, "raycast_down");
 
   bridgeTool(server, bridge, "poly_get_object_details",
-    "Full descriptor of one node by stable id (transform, world-space bounds AABB, asset model-space bounds, light/camera/environment data when present).",
+    "Full descriptor of one node by stable id (transform, world-space bounds AABB, asset model-space bounds, light/camera/environment/audio data when present).",
     { id: z.string().describe("Stable node id, e.g. __PolygonEditor__7") }, "details");
 
   bridgeTool(server, bridge, "poly_select_objects",

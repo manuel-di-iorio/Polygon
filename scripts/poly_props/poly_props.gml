@@ -37,6 +37,11 @@ function __poly_env_defaults() {
   return __poly_schema_defaults(__poly_prop_schema(), "env");
 }
 
+// Returns default audio source property values.
+function __poly_audio_defaults() {
+  return __poly_schema_defaults(__poly_prop_schema(), "audio");
+}
+
 // ---------------------------------------------------------------------------
 // Property schema (data table + generic read/apply helpers)
 // ---------------------------------------------------------------------------
@@ -78,6 +83,17 @@ function __poly_prop_schema() {
       { key: "fogcolor", type: "color", min: 0, max: 255, def: [ 192, 192, 192 ] },
       { key: "fogstart", type: "float", min: undefined, max: undefined, def: 20.0 },
       { key: "fogend", type: "float", min: undefined, max: undefined, def: 100.0 },
+      { key: "enabled", type: "bool", min: undefined, max: undefined, def: true },
+    ],
+    audio: [
+      { key: "sound", type: "string", min: undefined, max: undefined, def: "" },
+      { key: "gain", type: "float", min: 0, max: 1, def: 1.0 },
+      { key: "pitch", type: "float", min: 0.01, max: undefined, def: 1.0 },
+      { key: "loop", type: "bool", min: undefined, max: undefined, def: false },
+      { key: "autoplay", type: "bool", min: undefined, max: undefined, def: true },
+      { key: "falloffRef", type: "float", min: 0, max: undefined, def: 1.0 },
+      { key: "falloffMax", type: "float", min: 0, max: undefined, def: 20.0 },
+      { key: "falloffFactor", type: "float", min: 0, max: undefined, def: 1.0 },
       { key: "enabled", type: "bool", min: undefined, max: undefined, def: true },
     ],
   };
@@ -530,6 +546,31 @@ function __poly_env_node(_ed) {
 }
 
 // ---------------------------------------------------------------------------
+// Audio sources
+// ---------------------------------------------------------------------------
+
+// Reads audio source properties from the node. Audio is a Polygon-owned
+// marker with no GM3D component, so registry data is the source of truth;
+// this fallback exists for nodes without a registry entry.
+function __poly_audio_read(_node) {
+  return __poly_audio_defaults();
+}
+
+// Applies audio source properties. No GM3D component exists: the registry
+// data written by the inspector is the complete persisted state.
+function __poly_audio_apply(_node, _d) {
+  return;
+}
+
+// Checks that a sound asset name resolves to a real sound asset.
+function __poly_audio_sound_ok(_name) {
+  if (!is_string(_name) || _name == "") return false;
+  var _i = asset_get_index(_name);
+  return _i >= 0 && asset_get_type(_i) == asset_sound;
+}
+
+
+// ---------------------------------------------------------------------------
 // Creation
 // ---------------------------------------------------------------------------
 
@@ -662,6 +703,25 @@ function __poly_create_env(_ed) {
   __poly_create_finish(_ed, _node, "environment", undefined, _data);
   _ed.sel = [ _node ];
   _ed.giz.drag = -1;
+  __poly_history_commit(_ed, _before);
+  return _node;
+}
+
+// Creates new audio source node in scene. Audio is a Polygon-authored
+// marker (no GM3D component): the wrapper carries the id and registry data.
+function __poly_create_audio(_ed) {
+  if (_ed == undefined || _ed.rt == undefined) return undefined;
+  var _b = __poly_create_begin(_ed);
+
+  if (_b == undefined) return undefined;
+  var _before = _b.before;
+  var _node = _b.node;
+  _node.setLocalPosition(new GM3D_Vec3(0, 2, 0));
+  var _data = __poly_audio_defaults();
+  __poly_create_finish(_ed, _node, "audio", undefined, _data);
+  // Audio is translate-only: force the tool instead of relying on the
+  // current one (unlike cameras/env, which allow more).
+  __poly_sel_assign(_ed, [ _node ]);
   __poly_history_commit(_ed, _before);
   return _node;
 }

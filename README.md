@@ -21,7 +21,7 @@ Polygon opens inside your running game (press **F1** in the demo), mirrors the l
 
 **Scene content**
 - Models (prefabs) with per-asset spawn defaults (rotation, scale, shadows)
-- Lights (directional, point), cameras (perspective, ortho) and an environment volume (ambient, fog)
+- Lights (directional, point), cameras (perspective, ortho), an environment volume (ambient, fog) and audio source markers (sound asset, gain, pitch, loop, autoplay, falloff)
 - Per-instance physics bodies, Box / Sphere / Capsule / Cylinder colliders, character controllers and GM3D collider debug draw (visualization only; no editor simulation)
 - Physics settings are preserved by duplicate, copy/paste, undo/redo and live-scene tracking
 - Prefab overrides with per-field **Revert / Apply**
@@ -262,6 +262,12 @@ A trigger is a sensor body, not a separate mode: enable **Sensor** on any body (
 
 Use the **Create** menu: Directional Light, Point Light (up to 8 lights), Perspective Camera, Ortho Camera, Environment (one per scene). The first enabled camera is the gameplay camera; otherwise the first one is used.
 
+### Audio sources
+
+The **Create** menu also adds an **Audio Source** node. It is a Polygon-authored marker, not a GM3D component (GM3D has no audio components): the node stores a GameMaker sound asset name plus `gain`, `pitch`, `loop`, `autoplay`, `falloffRef`, `falloffMax`, `falloffFactor` and `enabled`. The Inspector has a searchable sound picker and flags missing sounds in red; the viewport shows a speaker icon and, when selected, the `falloffMax` sphere. Audio nodes use a translate-only gizmo.
+
+`poly_load` creates audio nodes and reports them in `report.audio`; it deliberately never creates or owns emitters. The game wires GameMaker's audio emitter/listener API itself, using the reported settings (typically attaching an emitter to each audio node at runtime).
+
 ### Viewport post-processing
 
 Pass `on_compose` in the config to preview your own post-processing inside the editor viewport. It runs after the 3D render (post-AA) and before gizmo/outline overlays, so overlays are never graded:
@@ -285,7 +291,7 @@ on_compose: function(_surf, _w, _h) {
 
 ## Saving and loading scenes
 
-Scenes are saved from **File → Save / Save As** into `working_directory/__PolygonEditor__/scenes/<name>.json` or `<name>.bin`. The save dialog has a **JSON / Binary** radio (no extra modal). JSON remains version 1 with optional physics/world fields. Binary uses `PLYB` v2 and reads v1 files; transforms and common fields use `buffer_*` values, while physics blocks are stored as optional JSON strings. **File → Load** shows a search + file list with one row per file (`scene.json` and `scene.bin` listed separately); `poly_load` opens either one.
+Scenes are saved from **File → Save / Save As** into `working_directory/__PolygonEditor__/scenes/<name>.json` or `<name>.bin`. The save dialog has a **JSON / Binary** radio (no extra modal). JSON remains version 1 with optional physics/world fields. Binary uses `PLYB` v3 and reads v1/v2 files; transforms and common fields use `buffer_*` values, while physics blocks are stored as optional JSON strings. **File → Load** shows a search + file list with one row per file (`scene.json` and `scene.bin` listed separately); `poly_load` opens either one.
 
 Load a scene in your game, without the editor, with (always async: parse
 now, spawn chunked - pump every Step, callback on completion):
@@ -298,6 +304,10 @@ assets[$ "models/rock.glb"] = { model: my_model_b, on_create: my_rock_setup };
 
 var job = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", assets, my_on_create, function(_rep) {
   show_debug_message("placed: " + string(_rep.placed) + " failed: " + string(_rep.failed));
+  for (var i = 0; i < array_length(_rep.audio); i++) {
+    var a = _rep.audio[i]; // { node, id, label, sound, gain, pitch, loop, autoplay, falloffRef, falloffMax, falloffFactor, enabled }
+    my_audio_attach(a.node, a.sound, a.gain, a.pitch, a.loop);
+  }
   physicsWorld = new GM3D_PhysicsWorld(my_scene, {
     maxBodies: _rep.physics.maxBodies,
     fixedTimeStep: _rep.physics.fixedTimeStep,
@@ -305,17 +315,21 @@ var job = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", assets, my
   });
   physicsWorld.setGravity(new GM3D_Vec3(_rep.physics.gravity[0], _rep.physics.gravity[1], _rep.physics.gravity[2]));
   physicsWorld.syncScene();
-  for (var i = 0; i < array_length(_rep.placements); i++) {
-    var placement = _rep.placements[i];
+  for (var j = 0; j < array_length(_rep.placements); j++) {
+    var placement = _rep.placements[j];
     if (is_struct(placement.physics) && placement.physics.mode == "character") physicsWorld.addCharacter(placement.node);
   }
 });
 // undefined = missing/invalid file. The scene must outlive the load.
 
+// Optional 6th argument: function(node, audio) called per audio source.
+// var job = poly_load(my_scene, file, assets, on_create, on_finish, on_audio);
+
 // oGame / Step
 poly_load_step(); // advances all pending loads (~48 nodes each frame), returns pending count
-// report = { placed, failed, companions, warnings, placements, world }
+// report = { placed, failed, companions, warnings, placements, audio, physics }
 // placements = [{ node, asset, id, label, model, instance, physics }]
+// audio = [{ node, id, label, sound, gain, pitch, loop, autoplay, falloffRef, falloffMax, falloffFactor, enabled }]
 ```
 
 The scene-wide settings are available as `job.physics` immediately and as `_rep.physics` in the completion callback. `syncScene()` registers body/shape instances; characters need `addCharacter()` after the sync.
@@ -361,7 +375,7 @@ For simulation, use the GM3D lifecycle order: apply input/kinematic changes, cal
 
 When the editor is open over a live game, pause `step`, interpolation and render-position restoration until it closes. The editor's collider debug world is separate from the game's simulation world.
 
-`poly_load` spawns instances, lights, cameras and environments, preserving node ids. For every instance it calls, in order:
+`poly_load` spawns instances, lights, cameras, environments and audio sources, preserving node ids. Audio sources are componentless markers reported in `_rep.audio`; the loader never owns emitters. For every instance it calls, in order:
 
 1. the global `on_create(node, assetId, model, id)` (4th argument, optional),
 2. the per-model `on_create` from `assets[key]` (optional),
@@ -417,9 +431,9 @@ poly_actor_of(node);       // companion instance id bound to a node, or undefine
 }
 ```
 
-`kind` is one of `instance`, `light`, `camera`, `environment` (the last three carry a `light` / `camera` / `environment` sub-object). The transform lives in `transform: { position, rotation, scale }` (rotation is a quaternion `[x, y, z, w]`). Instances link their model via `assetId`. `label` is an optional custom instance name (F2 in the Hierarchy); without it, the asset file name + id number is shown. Node ids are stable and are what the AI bridge uses.
+`kind` is one of `instance`, `light`, `camera`, `environment`, `audio` (the last four carry a `light` / `camera` / `environment` / `audio` sub-object). Audio sources are componentless editor markers; their `audio` sub-object stores `{ sound, gain, pitch, loop, autoplay, falloffRef, falloffMax, falloffFactor, enabled }`, where `sound` is a GameMaker sound asset name. The transform lives in `transform: { position, rotation, scale }` (rotation is a quaternion `[x, y, z, w]`). Instances link their model via `assetId`. `label` is an optional custom instance name (F2 in the Hierarchy); without it, the asset file name (or kind) + id number is shown. Node ids are stable and are what the AI bridge uses.
 
-The Binary variant (`.bin`, magic `PLYB`, version 2) stores scene/world values with `buffer_*` types and optional physics blocks as JSON strings. Version 1 binaries remain readable. JSON scene files stay at `version: 1`; their optional `physics` and `world` fields preserve compatibility with older files.
+The Binary variant (`.bin`, magic `PLYB`, version 3) stores scene/world values with `buffer_*` types and optional physics blocks as JSON strings. Version 1 and 2 binaries remain readable; audio nodes only exist in version 3. JSON scene files stay at `version: 1`; their optional `physics` and `world` fields preserve compatibility with older files.
 
 ---
 

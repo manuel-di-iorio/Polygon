@@ -42,7 +42,7 @@ function __poly_node_desc(_ed, _node) {
   var _kind = __poly_kind_of(_ed, _node);
 
   if (_kind == undefined) return undefined;
-  if (_kind == "light" || _kind == "camera" || _kind == "environment") return __poly_prop_desc(_ed, _node, _kind);
+  if (_kind == "light" || _kind == "camera" || _kind == "environment" || _kind == "audio") return __poly_prop_desc(_ed, _node, _kind);
   var _asset = __poly_asset_desc(_ed, _node);
 
   if (_asset == undefined) return undefined;
@@ -70,6 +70,8 @@ function __poly_prop_data(_ed, _node, _kind) {
     return __poly_light_read(_node);
   } else if (_kind == "camera") {
     return __poly_camera_read(_node);
+  } else if (_kind == "audio") {
+    return __poly_audio_read(_node);
   } else {
     return __poly_env_read(_node);
   }
@@ -110,6 +112,17 @@ function __poly_prop_keymap() {
       { k: "fogcolor", j: "fogColor", arr: 3 },
       { k: "fogstart", j: "fogStart" },
       { k: "fogend", j: "fogEnd" },
+      { k: "enabled", j: "enabled", b: 1, br: 2 },
+    ],
+    audio: [
+      { k: "sound", j: "sound" },
+      { k: "gain", j: "gain" },
+      { k: "pitch", j: "pitch" },
+      { k: "loop", j: "loop", b: 1, br: 1 },
+      { k: "autoplay", j: "autoplay", b: 1, br: 1 },
+      { k: "falloffRef", j: "falloffRef" },
+      { k: "falloffMax", j: "falloffMax" },
+      { k: "falloffFactor", j: "falloffFactor" },
       { k: "enabled", j: "enabled", b: 1, br: 2 },
     ],
   };
@@ -175,6 +188,11 @@ function __poly_env_desc(_pd) {
   return __poly_prop_subdesc(_pd, "environment");
 }
 
+// Builds the audio source sub-descriptor.
+function __poly_audio_desc(_pd) {
+  return __poly_prop_subdesc(_pd, "audio");
+}
+
 // Builds light camera environment descriptor.
 function __poly_prop_desc(_ed, _node, _kind) {
   var _en = __poly_registry_find(_ed, _node);
@@ -202,6 +220,8 @@ function __poly_prop_desc(_ed, _node, _kind) {
     _desc.light = __poly_light_desc(_data);
   } else if (_kind == "camera") {
     _desc.camera = __poly_camera_desc(_data);
+  } else if (_kind == "audio") {
+    _desc.audio = __poly_audio_desc(_data);
   } else {
     _desc.environment = __poly_env_desc(_data);
   }
@@ -302,6 +322,26 @@ function __poly_is_env_struct(_d) {
   return true;
 }
 
+// Validates audio source descriptor structure. The sound may be empty (an
+// unassigned marker), but when present each optional field must be typed.
+function __poly_is_audio_struct(_d) {
+  if (!variable_struct_exists(_d, "audio") || !is_struct(_d.audio)) return false;
+  var _a = _d.audio;
+
+  if (!variable_struct_exists(_a, "sound") || !is_string(_a.sound)) return false;
+  var _nums = [ "gain", "pitch", "falloffRef", "falloffMax", "falloffFactor" ];
+  for (var _i = 0, _n = array_length(_nums); _i < _n; _i++) {
+    if (variable_struct_exists(_a, _nums[_i]) && !is_real(_a[$ _nums[_i]])) return false;
+  }
+
+  var _bools = [ "loop", "autoplay", "enabled" ];
+  for (var _j = 0, _m = array_length(_bools); _j < _m; _j++) {
+    if (variable_struct_exists(_a, _bools[_j]) && !is_bool(_a[$ _bools[_j]])) return false;
+  }
+
+  return true;
+}
+
 // Validates scene descriptor array structure (strict v1: kind, id and
 // assetId are required; "label" is an optional custom instance name).
 function __poly_validate_descs(_nodes) {
@@ -330,6 +370,8 @@ function __poly_validate_descs(_nodes) {
       if (!__poly_is_camera_struct(_desc)) return false;
     } else if (_kind == "environment") {
       if (!__poly_is_env_struct(_desc)) return false;
+    } else if (_kind == "audio") {
+      if (!__poly_is_audio_struct(_desc)) return false;
     } else {
       return false;
     }
@@ -519,7 +561,7 @@ function __poly_rebuild_place_one(_ed, _p, _report) {
   if (!is_struct(_p)) return;
   var _kind = _p.kind;
 
-  if (_kind == "light" || _kind == "camera" || _kind == "environment") {
+  if (_kind == "light" || _kind == "camera" || _kind == "environment" || _kind == "audio") {
     if (__poly_rebuild_prop(_ed, _p, _kind) == undefined) {
       _report.failed++;
       return;
@@ -652,7 +694,8 @@ function __poly_load_scene_finish(_ed) {
 // (defaults + mapped overrides; dotted keys resolve nesting).
 function __poly_rebuild_data(_p, _kind) {
   var _data = _kind == "light" ? __poly_light_defaults()
-    : (_kind == "camera" ? __poly_camera_defaults() : __poly_env_defaults());
+    : (_kind == "camera" ? __poly_camera_defaults()
+      : (_kind == "audio" ? __poly_audio_defaults() : __poly_env_defaults()));
   var _sub = is_struct(_p) ? _p[$ _kind] : undefined;
 
   if (!is_struct(_sub)) return _data;
@@ -695,6 +738,11 @@ function __poly_rebuild_env_data(_p) {
   return __poly_rebuild_data(_p, "environment");
 }
 
+// Reads audio source data from a descriptor.
+function __poly_rebuild_audio_data(_p) {
+  return __poly_rebuild_data(_p, "audio");
+}
+
 // Rebuilds light camera environment node (wrapper carries id).
 function __poly_rebuild_prop(_ed, _p, _kind) {
   var _data = undefined;
@@ -703,6 +751,8 @@ function __poly_rebuild_prop(_ed, _p, _kind) {
     _data = __poly_rebuild_light_data(_p);
   } else if (_kind == "camera") {
     _data = __poly_rebuild_camera_data(_p);
+  } else if (_kind == "audio") {
+    _data = __poly_rebuild_audio_data(_p);
   } else {
     _data = __poly_rebuild_env_data(_p);
   }

@@ -140,6 +140,10 @@ function __poly_kind_icon_info(_ed, _node, _kind, _cache) {
     return { spr: _cache.pt, tip: "Point light", dir: false };
   }
 
+  if (_kind == "audio") {
+    return { spr: _cache.aud, tip: "Audio source", dir: false };
+  }
+
   return { spr: _cache.obj, tip: "Model", dir: false };
 }
 
@@ -152,11 +156,39 @@ function __poly_imgui_kind_icon(_ed, _node, _kind, _hidden, _idx) {
     cam: asset_get_index("sprPolygonEditorIconCamera"),
     pt: asset_get_index("sprPolygonEditorIconPointLight"),
     dir: asset_get_index("sprPolygonEditorIconDirectionalLight"),
+    aud: asset_get_index("sprPolygonEditorIconAudio"),
   };
 
   var _info = __poly_kind_icon_info(_ed, _node, _kind, _cache);
 
-  if (_info.spr == -1) return;
+  if (_info.spr == -1) {
+    if (_kind == "audio") {
+      ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 1);
+      var _ax = ImGui.GetCursorScreenPosX();
+      var _ay = ImGui.GetCursorScreenPosY();
+      var _acol = _hidden ? make_colour_rgb(105, 115, 135) : make_colour_rgb(220, 228, 242);
+      ImGui.Dummy(13, 13);
+      var _dl = ImGui.GetWindowDrawList();
+
+      if (_dl != undefined) {
+        // Speaker body + cone fallback when the icon sprite is missing.
+        ImGui.DrawListAddRectFilled(_dl, _ax + 2, _ay + 5, _ax + 5, _ay + 9, _acol);
+        ImGui.DrawListAddRectFilled(_dl, _ax + 4, _ay + 3, _ax + 8, _ay + 11, _acol);
+      }
+
+      if (ImGui.IsItemHovered()) {
+        __poly_imgui_tip_delayed("hier|icon|" + string(_node.name), _info.tip, true);
+
+        if (_idx >= 0) {
+          _ed.imgui.scene_eye_idx = _idx;
+          _ed.imgui.scene_eye_till = current_time + 500;
+        }
+      }
+    }
+
+    return;
+  }
+
   var _iw = sprite_get_width(_info.spr);
   var _ih = sprite_get_height(_info.spr);
   var _tint = _hidden ? make_colour_rgb(105, 115, 135) : c_white;
@@ -273,6 +305,7 @@ function __poly_kind_shown(_filter, _kind) {
   if (_kind == "light") return _filter.l;
   if (_kind == "camera") return _filter.c;
   if (_kind == "environment") return _filter.e;
+  if (_kind == "audio") return _filter.a != false;
   return _filter.m;
 }
 
@@ -495,8 +528,10 @@ function __poly_imgui_scene_list(_ed) {
   var _ui = _ed.imgui;
 
   if (!variable_struct_exists(_ui, "show_kind")) {
-    _ui.show_kind = { m: true, l: true, c: true, e: true };
+    _ui.show_kind = { m: true, l: true, c: true, e: true, a: true };
   }
+
+  if (!variable_struct_exists(_ui.show_kind, "a")) _ui.show_kind.a = true;
 
   if (!variable_struct_exists(_ui, "scene_eye_idx")) {
     _ui.scene_eye_idx = -1;
@@ -541,6 +576,9 @@ function __poly_imgui_scene_list(_ed) {
     }
 
     ImGui.Separator();
+    if (ImGui.MenuItem("Audio Source")) __poly_create_audio(_ed);
+
+    ImGui.Separator();
     if (ImGui.MenuItem("Perspective Camera")) __poly_create_camera(_ed, "perspective");
     if (ImGui.MenuItem("Ortho Camera")) __poly_create_camera(_ed, "ortho");
     ImGui.EndPopup();
@@ -551,6 +589,7 @@ function __poly_imgui_scene_list(_ed) {
     _ui.show_kind.l = ImGui.Checkbox("Lights", _ui.show_kind.l);
     _ui.show_kind.c = ImGui.Checkbox("Cameras", _ui.show_kind.c);
     _ui.show_kind.e = ImGui.Checkbox("Environment", _ui.show_kind.e);
+    _ui.show_kind.a = ImGui.Checkbox("Audio", _ui.show_kind.a);
     ImGui.EndPopup();
   }
 

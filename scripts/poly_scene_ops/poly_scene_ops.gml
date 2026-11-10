@@ -253,7 +253,7 @@ function __poly_duplicate_sel(_ed) {
     var _kind = __poly_kind_of(_ed, _src);
     var _copy = undefined;
 
-    if (_kind == "light" || _kind == "camera" || _kind == "environment") {
+    if (_kind == "light" || _kind == "camera" || _kind == "environment" || _kind == "audio") {
       _copy = __poly_duplicate_prop(_ed, _src, _kind);
     } else {
       _copy = __poly_duplicate_asset(_ed, _src);
@@ -296,7 +296,7 @@ function __poly_duplicate_prop(_ed, _src, _kind) {
   } else if (_kind == "camera") {
     _node.addComponent(new GM3D_CameraComponent());
     __poly_camera_apply(_node, _data);
-  } else {
+  } else if (_kind == "environment") {
     _node.addComponent(new GM3D_EnvironmentVolumeComponent());
     __poly_env_apply(_node, _data);
   }

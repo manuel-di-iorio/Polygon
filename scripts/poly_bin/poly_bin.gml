@@ -1,11 +1,11 @@
-// poly_bin - optimized binary scene format (PLYB v2), buffer-based.
+// poly_bin - optimized binary scene format (PLYB v3), buffer-based.
 // Layout (little-endian, alignment 1, strings = buffer_string):
-//   u8[4] magic "PLYB", u16 bin_version (=2), s32 seq
+//   u8[4] magic "PLYB", u16 bin_version (=3), s32 seq
 //   v2: 3x f32 gravity, f32 fixedTimeStep, u16 maxSubSteps, u16 maxBodies
 //   u16 asset_count, per asset: string key, u8 has_actor, [string obj, string layer],
 //     v2: u8 has_physics, [string physics_json]
 //   u32 node_count, per node:
-//     u8 kind (0 instance, 1 light, 2 camera, 3 env)
+//     u8 kind (0 instance, 1 light, 2 camera, 3 env, 4 audio)
 //     string id, string label ("" = none)
 //     3x f32 pos, 4x f32 rot, 3x f32 scale
 //     instance: string assetId, u8 shadow bits (1 cast, 2 receive),
@@ -16,7 +16,9 @@
 //     camera: u8 proj (0 persp, 1 ortho), f32 fov, ow, oh, near, far, u8 enabled
 //     env: 3x f32 size, 3x u8 ambient, u8 fog, 3x u8 fogColor,
 //       f32 fogStart, f32 fogEnd, u8 enabled
-//   v1 files omit all v2 fields and load with default world/no physics.
+//     v3 audio: string sound, f32 gain, pitch, falloffRef, falloffMax,
+//       falloffFactor, u8 flags (1 loop, 2 autoplay, 4 enabled)
+//   v1/v2 files omit newer fields and load with defaults.
 
 
 // Checks if a path points to a binary scene (by extension).
@@ -47,6 +49,7 @@ function __poly_bin_kind_id(_kind) {
   if (_kind == "light") return 1;
   if (_kind == "camera") return 2;
   if (_kind == "environment") return 3;
+  if (_kind == "audio") return 4;
   return 0;
 }
 
@@ -96,7 +99,7 @@ function __poly_bin_save_descs(_path, _seq, _assets, _nodes, _world = undefined)
   buffer_write(_buf, buffer_u8, 76); // L
   buffer_write(_buf, buffer_u8, 89); // Y
   buffer_write(_buf, buffer_u8, 66); // B
-  buffer_write(_buf, buffer_u16, 2);
+  buffer_write(_buf, buffer_u16, 3);
   buffer_write(_buf, buffer_s32, is_real(_seq) ? floor(_seq) : 1);
   var _wd = __poly_world_data(_world);
   __poly_bin_w_vec3(_buf, _wd.gravity, 0, -9.81, 0);
@@ -206,6 +209,16 @@ function __poly_bin_save_descs(_path, _seq, _assets, _nodes, _world = undefined)
       buffer_write(_buf, buffer_f32, __poly_bin_r_num(_c[$ "near"], 0.1));
       buffer_write(_buf, buffer_f32, __poly_bin_r_num(_c[$ "far"], 10000));
       buffer_write(_buf, buffer_u8, _c[$ "enabled"] != false ? 1 : 0);
+    } else if (_kind == "audio") {
+      var _a = is_struct(_d[$ "audio"]) ? _d.audio : {};
+      __poly_bin_w_str(_buf, _a[$ "sound"]);
+      buffer_write(_buf, buffer_f32, __poly_bin_r_num(_a[$ "gain"], 1));
+      buffer_write(_buf, buffer_f32, __poly_bin_r_num(_a[$ "pitch"], 1));
+      buffer_write(_buf, buffer_f32, __poly_bin_r_num(_a[$ "falloffRef"], 1));
+      buffer_write(_buf, buffer_f32, __poly_bin_r_num(_a[$ "falloffMax"], 20));
+      buffer_write(_buf, buffer_f32, __poly_bin_r_num(_a[$ "falloffFactor"], 1));
+      var _aflags = (_a[$ "loop"] == true ? 1 : 0) | (_a[$ "autoplay"] == true ? 2 : 0) | (_a[$ "enabled"] != false ? 4 : 0);
+      buffer_write(_buf, buffer_u8, _aflags);
     } else {
       var _e = is_struct(_d[$ "environment"]) ? _d.environment : {};
       __poly_bin_w_vec3(_buf, _e[$ "size"], 20000, 20000, 20000);
@@ -244,7 +257,7 @@ function __poly_bin_load_data(_path) {
 
   var _ver = buffer_read(_buf, buffer_u16);
 
-  if (_ver != 1 && _ver != 2) {
+  if (_ver != 1 && _ver != 2 && _ver != 3) {
     buffer_delete(_buf);
     return undefined;
   }
@@ -300,7 +313,7 @@ function __poly_bin_load_data(_path) {
     var _sx = buffer_read(_buf, buffer_f32);
     var _sy = buffer_read(_buf, buffer_f32);
     var _sz = buffer_read(_buf, buffer_f32);
-    var _kind = _kid == 1 ? "light" : (_kid == 2 ? "camera" : (_kid == 3 ? "environment" : "instance"));
+    var _kind = _kid == 1 ? "light" : (_kid == 2 ? "camera" : (_kid == 3 ? "environment" : ((_ver >= 3 && _kid == 4) ? "audio" : "instance")));
     var _desc = {
       kind: _kind,
       id: _id,
@@ -344,6 +357,20 @@ function __poly_bin_load_data(_path) {
         fovY: buffer_read(_buf, buffer_f32), orthoWidth: buffer_read(_buf, buffer_f32),
         orthoHeight: buffer_read(_buf, buffer_f32), near: buffer_read(_buf, buffer_f32),
         far: buffer_read(_buf, buffer_f32), enabled: buffer_read(_buf, buffer_u8) != 0,
+      };
+    } else if (_kind == "audio") {
+      var _asound = buffer_read(_buf, buffer_string);
+      var _again = buffer_read(_buf, buffer_f32);
+      var _apitch = buffer_read(_buf, buffer_f32);
+      var _aref = buffer_read(_buf, buffer_f32);
+      var _amax = buffer_read(_buf, buffer_f32);
+      var _afactor = buffer_read(_buf, buffer_f32);
+      var _aflags = buffer_read(_buf, buffer_u8);
+      _desc.audio = {
+        sound: _asound, gain: _again, pitch: _apitch,
+        loop: (_aflags & 1) != 0, autoplay: (_aflags & 2) != 0,
+        falloffRef: _aref, falloffMax: _amax, falloffFactor: _afactor,
+        enabled: (_aflags & 4) != 0,
       };
     } else {
       var _size = [ buffer_read(_buf, buffer_f32), buffer_read(_buf, buffer_f32), buffer_read(_buf, buffer_f32) ];
