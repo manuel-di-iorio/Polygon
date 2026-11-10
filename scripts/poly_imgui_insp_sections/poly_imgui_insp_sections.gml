@@ -725,7 +725,7 @@ function __poly_imgui_audio_sec(_ed, _node, _en) {
     var _shown = 0;
 
     for (var _i = 0, _n = array_length(_ids); _i < _n; _i++) {
-      var _nm = asset_get_name(_ids[_i]);
+      var _nm = audio_get_name(_ids[_i]);
 
       if (!is_string(_nm) || _nm == "") continue;
       if (_flt != "" && string_pos(_flt, string_lower(_nm)) <= 0) continue;

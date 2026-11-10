@@ -358,7 +358,27 @@ function __poly_overlay_light(_vp, _nd, _en, _wp, _sp, _sel) {
 // Audio sources
 // ---------------------------------------------------------------------------
 
-// Draws the audio falloff sphere (three rings) and speaker icon.
+// Draws one ring of the audio sphere, dimming segments on the far side.
+function __poly_overlay_sphere_ring(_vp, _pts, _center, _camFwd, _wd, _col) {
+  var _frontAlpha = 1.0;
+  var _backAlpha = 0.35;
+
+  for (var _i = 0, _n = array_length(_pts) - 1; _i < _n; _i++) {
+    var _a = _pts[_i];
+    var _b = _pts[_i + 1];
+    var _mx = (_a.x + _b.x) * 0.5 - _center.x;
+    var _my = (_a.y + _b.y) * 0.5 - _center.y;
+    var _mz = (_a.z + _b.z) * 0.5 - _center.z;
+    // Front-facing when the normal points toward the camera.
+    var _dot = _mx * _camFwd.x + _my * _camFwd.y + _mz * _camFwd.z;
+    draw_set_alpha(_dot < 0 ? _frontAlpha : _backAlpha);
+    __poly_overlay_seg(_vp, _a, _b, _wd, _col);
+  }
+
+  draw_set_alpha(1);
+}
+
+// Draws the audio falloff sphere (wireframe) and speaker icon.
 function __poly_overlay_audio(_vp, _nd, _en, _wp, _sp, _sel) {
   var _col = __poly_overlay_col(_sel);
   var _d = (_en != undefined && is_struct(_en.data)) ? _en.data : __poly_audio_defaults();
@@ -367,14 +387,31 @@ function __poly_overlay_audio(_vp, _nd, _en, _wp, _sp, _sel) {
     var _r = is_real(_d.falloffMax) ? max(_d.falloffMax, 0) : 0;
 
     if (_r > 0.0001) {
+      var _cf = (is_struct(_vp) && variable_struct_exists(_vp, "camForward")) ? _vp.camForward : new GM3D_Vec3(0, 0, -1);
       var _u = new GM3D_Vec3(1, 0, 0);
       var _v = new GM3D_Vec3(0, 1, 0);
       var _w = new GM3D_Vec3(0, 0, 1);
-      draw_set_alpha(0.45);
-      __poly_overlay_ring(_vp, __poly_basis_ring(_wp, _u, _v, _r, 24), 1, _col);
-      __poly_overlay_ring(_vp, __poly_basis_ring(_wp, _u, _w, _r, 24), 1, _col);
-      __poly_overlay_ring(_vp, __poly_basis_ring(_wp, _v, _w, _r, 24), 1, _col);
-      draw_set_alpha(1);
+      var _pairs = [ [ _u, _v, _w ], [ _u, _w, _v ], [ _v, _w, _u ] ];
+
+      for (var _p = 0; _p < 3; _p++) {
+        var _a = _pairs[_p][0];
+        var _b = _pairs[_p][1];
+        var _n = _pairs[_p][2];
+
+        // Great circle.
+        __poly_overlay_sphere_ring(_vp, __poly_basis_ring(_wp, _a, _b, _r, 24), _wp, _cf, 1.5, _col);
+
+        // Two parallels at +/- 0.5 * r along the normal.
+        for (var _h = -1; _h <= 1; _h += 2) {
+          var _hh = _h * _r * 0.5;
+          var _rr = sqrt(max(_r * _r - _hh * _hh, 0));
+
+          if (_rr > 0.0001) {
+            var _center = new GM3D_Vec3(_wp.x + _n.x * _hh, _wp.y + _n.y * _hh, _wp.z + _n.z * _hh);
+            __poly_overlay_sphere_ring(_vp, __poly_basis_ring(_center, _a, _b, _rr, 24), _center, _cf, 1.5, _col);
+          }
+        }
+      }
     }
   }
 
@@ -468,9 +505,7 @@ function __poly_overlay_env(_vp, _en, _wp, _sp, _sel) {
       new GM3D_Vec3(_wp.x - _hx, _wp.y + _hy, _wp.z + _hz),
       new GM3D_Vec3(_wp.x + _hx, _wp.y + _hy, _wp.z + _hz),
     ];
-    draw_set_alpha(0.5);
-    __poly_overlay_box(_vp, _corners, 1, _col);
-    draw_set_alpha(1);
+    __poly_overlay_box(_vp, _corners, 1.5, _col);
   }
 
   if (_sp != undefined) __poly_overlay_icon(_sp, _col, _sel, "sun");
