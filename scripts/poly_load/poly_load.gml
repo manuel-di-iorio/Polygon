@@ -4,11 +4,15 @@
 // auto-detected by extension with magic fallback, so mislabeled files
 // still load). The file is parsed NOW (cheap); nodes spawn chunked across
 // steps so big scenes never freeze: pump with poly_load_step().
-// _assets: struct mapping asset key -> { model, on_create? } (same
-// shape as the poly_create config).
-// _on_create (optional): function(node, asset, model, id) called for
+// _assets: struct mapping asset key -> { model, on_create?, variables? } (same
+// shape as the poly_create config). "variables" (or "vars") declares the
+// custom variable names/types/defaults in code; values saved in the scene
+// file become the per-model defaults and instance descriptors may override
+// them.
+// _on_create (optional): function(node, asset, model, id, vars) called for
 // every spawned instance, before the per-model on_create. Model stays 3rd
-// so existing hooks keep working unchanged.
+// so existing hooks keep working unchanged; vars is the resolved
+// name -> value map (last argument).
 // _on_finish (optional): function(report) called once when the last node
 // is placed. Report: { placed, failed, companions, warnings, placements,
 // audio, physics }. Audio sources are componentless Polygon markers: they
@@ -56,6 +60,7 @@ function poly_load(_scene, _fname, _assets, _on_create = undefined, _on_finish =
     idx: 0,
     assets: _assets,
     actors: __poly_file_assets(_data),
+    vars_decl: __poly_vars_decl_parse(_assets),
     on_create: _on_create,
     on_finish: _on_finish,
     on_audio: _on_audio,

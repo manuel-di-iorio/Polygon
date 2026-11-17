@@ -4,8 +4,10 @@
 // Identity is the load path (_path): models with duplicate root names can
 // coexist. When _path is omitted, the model root name is used as id.
 // _on_create (optional) is called for every spawned instance of this model,
-// after the global on_create, as (node, asset, model, id).
-function poly_asset_add(_model, _kind = "prefab", _path = undefined, _on_create = undefined) {
+// after the global on_create, as (node, asset, model, id, vars).
+// _variables (optional) declares custom variables: a struct of name -> default
+// value, or an array of { name, type, def?, min?, max? } descriptors.
+function poly_asset_add(_model, _kind = "prefab", _path = undefined, _on_create = undefined, _variables = undefined) {
   var _ed = __poly_inst();
 
   if (_ed == undefined) return undefined;
@@ -35,6 +37,27 @@ function poly_asset_add(_model, _kind = "prefab", _path = undefined, _on_create 
   }
 
   if (is_method(_on_create)) _entry.on_create = _on_create;
+  _entry.vars_schema = [];
+  _entry.vars_def = {};
+  _entry.vars_code_schema = [];
+  _entry.vars_code_def = {};
   array_push(_ed.assets, _entry);
+  if (_variables != undefined) poly_asset_variables(_key, _variables);
   return _key;
+}
+
+// Declares (or replaces) the custom variables of an existing library asset.
+// Accepts a struct of name -> default value or an array of
+// { name, type, def?, min?, max? } descriptors. Names/types come from code;
+// values edited in the Inspector become the per-model defaults.
+function poly_asset_variables(_key, _variables) {
+  var _ed = __poly_inst();
+
+  if (_ed == undefined || !is_string(_key) || _key == "") return false;
+  var _entry = __poly_asset_get(_ed, _key);
+
+  if (_entry == undefined) return false;
+  __poly_vars_set_code(_entry, _variables);
+  __poly_vars_meta_set(_ed, _entry);
+  return true;
 }

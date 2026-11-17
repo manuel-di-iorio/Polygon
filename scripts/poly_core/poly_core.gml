@@ -34,7 +34,8 @@ function __poly_create_rt(_src) {
 }
 
 // Registers prefab entries from the adapter assets struct:
-// { assetKey: { model, on_create? } }.
+// { assetKey: { model, on_create?, physics?, variables? } }.
+// "variables" (or "vars") declares code-defined custom variables.
 function __poly_create_assets(_src) {
   if (!variable_struct_exists(_src, "assets") || !is_struct(_src.assets)) return;
   var _ed = __poly_inst();
@@ -45,7 +46,8 @@ function __poly_create_assets(_src) {
     var _a = _src.assets[$ _k];
 
     if (!is_struct(_a) || _a.model == undefined) continue;
-    var _added = poly_asset_add(_a.model, "prefab", _k, _a[$ "on_create"]);
+    var _vars = variable_struct_exists(_a, "variables") ? _a.variables : _a[$ "vars"];
+    var _added = poly_asset_add(_a.model, "prefab", _k, _a[$ "on_create"], _vars);
     var _entry = __poly_asset_get(_ed, _k);
     if (_entry != undefined && is_struct(_a[$ "physics"])) _entry.physics_default = __poly_physics_data(_a.physics);
     if (_entry != undefined && (string_pos("cube.glb", _k) > 0 || string_pos("sphere.glb", _k) > 0)) _entry.primitive = true;

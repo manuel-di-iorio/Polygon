@@ -397,7 +397,7 @@ function __poly_overlay_audio(_vp, _nd, _en, _wp, _sp, _sel) {
       __poly_overlay_sphere_ring(_vp, __poly_basis_ring(_wp, _v, _w, _r, 64), _wp, _cf, 1.5, _col);
 
       // Camera-facing silhouette circle: tangent plane to the sphere, so it
-      // matches the apparent silhouette (Unity-style), with stable basis.
+      // matches the apparent silhouette, with stable basis.
       if (is_struct(_vp) && variable_struct_exists(_vp, "camNode") && _vp.camNode != undefined) {
         var _cam_pos = _vp.camNode.getWorldPosition();
         var _forward = new GM3D_Vec3(_wp.x - _cam_pos.x, _wp.y - _cam_pos.y, _wp.z - _cam_pos.z);

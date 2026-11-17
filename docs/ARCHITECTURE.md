@@ -126,7 +126,17 @@ componentless wrapper whose state lives in the registry data.
   adopt_src`. Editor instance path: magenta fix → global `on_create`
   then per-model `on_create` → register + shadow-flag apply. Prop path:
   `light/camera/env_apply` → register; audio skips apply and registers
-  its data directly.
+  its data directly. Hooks receive `(node, asset, model, id, vars)`;
+  `vars` is the resolved custom-variable map (model defaults + instance
+  overrides) and the last argument is optional.
+- Custom variables (`poly_library.gml` vars helpers): code declares
+  names/types/defaults per model (struct or descriptor array: `bool`,
+  `int`, `float`, `string`, `vec3`, optional `min/max`). Library entries
+  keep `vars_code_schema/vars_code_def` (code snapshot) and
+  `vars_schema/vars_def` (current model defaults, overlaid from the
+  file's `assets[key].vars`). Instances store only overrides in
+  `reg.data.vars`; resolution fills missing names from the model
+  defaults. New scenes reset model defaults to the code snapshot.
 - Import (`__poly_track_adopt_auto`): non-roots skipped; component
   nodes become light/camera/env adoptions (live wrapper id preserved);
   other nodes match the library **by model-root name, only on a unique
@@ -243,7 +253,8 @@ id. History is cleared on activate/new/load/discard. Creation snapshots
 `poly_serialize.gml` / `poly_bin.gml` / `poly_files.gml`.
 
 - Descriptors: `instance {kind, id, assetId, transform{position,
-  rotation[xyzw], scale}, shadows{cast,receive}?, label?}`,
+  rotation[xyzw], scale}, shadows{cast,receive}?, physics?, vars?, label?}`
+  (`vars` is the per-instance override map `{name: value}`),
   `light/camera/environment/audio` with a same-named sub-object
   (`type/color/intensity/range/innerCone/outerCone/enabled/shadow.*`,
   `projection/fovY/orthoWidth/orthoHeight/near/far/enabled`,
@@ -253,17 +264,19 @@ id. History is cleared on activate/new/load/discard. Creation snapshots
   validators); audio requires a string `sound` and typed optional
   numbers/bools, but allows an empty sound (unassigned marker).
 - JSON v1 file: `{version: 1, seq, assets: {key: {type: "model",
-  actor?: {object, layer}}}, nodes: [...]}`. Saved with ordered,
-  pretty stringify; `seq` keeps editor id counters monotonic across
-  save/load.
+  actor?: {object, layer}, physics?, vars?: [{name, type, def,
+  min?, max?}]}}, nodes: [...]}`. Saved with ordered, pretty stringify;
+  `seq` keeps editor id counters monotonic across save/load.
 - PLYB binary (`poly_bin.gml`, header documents the layout): magic
-  `PLYB`, u16 version 1, s32 seq, u16 asset table (key + optional actor
-  binding), u32 node table (kind byte, strings via `buffer_string`,
-  f32 transforms, u8 colors, packed flag bits). Kind bytes: 0 instance,
-  1 light, 2 camera, 3 environment, 4 audio. Audio stores its string +
-  five f32 falloff values and a packed flags byte (loop/autoplay/
-  enabled). Same content as JSON, field-by-field binary - never
-  JSON-in-a-buffer. `buffer_save/load` with `try/catch`.
+  `PLYB`, u16 version 2 (reader accepts v1), s32 seq, u16 asset table
+  (key + optional actor binding + physics JSON + vars JSON), u32 node
+  table (kind byte, strings via `buffer_string`, f32 transforms, u8
+  colors, packed flag bits, optional physics/vars JSON). Kind bytes: 0
+  instance, 1 light, 2 camera, 3 environment, 4 audio. Audio stores its
+  string + five f32 falloff values and a packed flags byte
+  (loop/autoplay/enabled). Same content as JSON, field-by-field binary -
+  the optional blocks are the only JSON strings. `buffer_save/load` with
+  `try/catch`.
 - Loading is always chunked (`begin` parses now, `pump` places ~48 nodes/step so the
   `load_job` (`begin` parses now, `pump` places ~48 nodes/step so the
   Load dialog shows progress instead of freezing, `finish` runs the
@@ -292,10 +305,19 @@ falloffMax, falloffFactor, enabled }`; missing sounds add a warning.
 The optional `on_audio(node, audio)` runs after placement. The game
 owns emitter/listener creation and lifetime.
 
+Custom variables: `_assets[key].variables` (or `.vars`) provides the
+code schema/defaults; the file's `assets[key].vars` overlays the saved
+model defaults; `nodes[].vars` overlays instance values. Resolution
+happens per placement, is stored in a global id-keyed map (overwritten
+on reload) and exposed through `poly_node_vars(node)` /
+`poly_node_var(node, name)`. The resolved map is the 5th argument of
+both hooks and is included in `report.placements[]` and the actor
+creation struct as `vars`.
+
 Actors (`poly_load_internal.gml`): per-model `{object, layer}` bindings
 stored in the file's top-level `assets` map spawn a companion instance
 via `instance_create_layer(0, 0, layer, obj, {node, poly_id,
-poly_asset_id})`. Binding is by object **name** (renames break it; the
+poly_asset_id, vars})`. Binding is by object **name** (renames break it; the
 Inspector flags unknown objects in red). Kill halves only through
 `poly_actor_destroy(id|node)`; `poly_actor_of(node)` finds the
 companion. Configured per model in the Inspector Actor section

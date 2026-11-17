@@ -8,7 +8,7 @@ function __poly_load_jobs_push(_job) {
 // Places one descriptor of a job (hooks, companions and report included).
 function __poly_load_place(_job, _p) {
   var _rep = _job.report;
-  var _pl = __poly_load_node(_job.scene, _job.assets, _p, _job.actors);
+  var _pl = __poly_load_node(_job.scene, _job.assets, _p, _job.actors, _job[$ "vars_decl"]);
 
   if (_pl == undefined) {
     _rep.failed++;
@@ -17,16 +17,14 @@ function __poly_load_place(_job, _p) {
 
   _rep.placed++;
   if (!is_struct(_pl)) return;
+  if (_pl.kind == "instance") __poly_runtime_vars_set(_pl.node, _pl[$ "vars"]);
 
   if (_pl.kind == "audio") {
     // __poly_load_node already parsed the descriptor; keep its values
     // instead of re-parsing the flat data struct.
     var _ad = is_struct(_pl.audio) ? _pl.audio : __poly_audio_defaults();
 
-    if (_ad.sound != "" && !__poly_audio_sound_ok(_ad.sound)) {
-      array_push(_rep.warnings, "sound asset '" + _ad.sound + "' not found for audio source '" + _pl.id + "'");
-    }
-
+    if (_ad.sound != "" && !__poly_audio_sound_ok(_ad.sound)) array_push(_rep.warnings, "sound asset '" + _ad.sound + "' not found for audio source '" + _pl.id + "'");
     var _aentry = {
       node: _pl.node,
       id: _pl.id,
@@ -47,9 +45,9 @@ function __poly_load_place(_job, _p) {
   }
 
   if (_pl.kind != "instance") return;
-  if (is_method(_job.on_create)) _job.on_create(_pl.node, _pl.asset, _pl.model, _pl.id);
+  if (is_method(_job.on_create)) _job.on_create(_pl.node, _pl.asset, _pl.model, _pl.id, __poly_vars_clone(_pl.vars));
   var _entry = _job.assets[$ _pl.asset];
-  if (is_struct(_entry) && is_method(_entry[$ "on_create"])) _entry.on_create(_pl.node, _pl.asset, _pl.model, _pl.id);
+  if (is_struct(_entry) && is_method(_entry[$ "on_create"])) _entry.on_create(_pl.node, _pl.asset, _pl.model, _pl.id, __poly_vars_clone(_pl.vars));
   var _inst = undefined;
 
   if (__poly_load_actor(_job.actors, _pl, _rep)) {
@@ -58,7 +56,89 @@ function __poly_load_place(_job, _p) {
   }
 
   var _physics = variable_struct_exists(_pl, "physics") ? _pl.physics : __poly_physics_live_read(_pl.node);
-  array_push(_rep.placements, { node: _pl.node, asset: _pl.asset, id: _pl.id, label: _pl.label, model: _pl.model, instance: _inst, physics: _physics });
+  array_push(_rep.placements, { node: _pl.node, asset: _pl.asset, id: _pl.id, label: _pl.label, model: _pl.model, instance: _inst, physics: _physics, vars: __poly_vars_clone(_pl.vars) });
+}
+
+// Parses per-asset custom variable declarations from the runtime assets
+// config: key -> specs array.
+function __poly_vars_decl_parse(_assets) {
+  var _out = {};
+
+  if (!is_struct(_assets)) return _out;
+  var _keys = variable_struct_get_names(_assets);
+
+  for (var _i = 0, _n = array_length(_keys); _i < _n; _i++) {
+    var _k = _keys[_i];
+    var _a = _assets[$ _k];
+
+    if (!is_struct(_a)) continue;
+    var _src = variable_struct_exists(_a, "variables") ? _a.variables : _a[$ "vars"];
+
+    if (_src != undefined) _out[$ _k] = __poly_vars_parse(_src);
+  }
+
+  return _out;
+}
+
+// Resolves code declarations + file-side model defaults for one runtime asset.
+function __poly_vars_runtime_schema(_decl, _key, _meta) {
+  var _specs = (is_struct(_decl) && variable_struct_exists(_decl, _key) && is_array(_decl[$ _key]))
+    ? __poly_vars_specs_clone(_decl[$ _key]) : [];
+  var _file = undefined;
+
+  if (is_struct(_meta) && variable_struct_exists(_meta, _key) && is_struct(_meta[$ _key])
+  && is_array(_meta[$ _key][$ "vars"])) _file = __poly_vars_parse(_meta[$ _key].vars);
+  var _vals = __poly_vars_fill(_specs, undefined);
+  var _merged = __poly_vars_merge_file(_specs, _vals, _file);
+  return _merged;
+}
+
+// Registers/updates the runtime vars map for a spawned node (keyed by id).
+function __poly_runtime_vars_set(_node, _vars) {
+  if (_node == undefined || !is_struct(_vars)) return;
+  var _key = _node.name;
+
+  if (!is_string(_key) || _key == "") return;
+  __poly_runtime_vars_map()[$ _key] = __poly_vars_clone(_vars);
+}
+
+// Returns the id-keyed runtime custom-variable map, creating it.
+function __poly_runtime_vars_map() {
+  if (!variable_global_exists("__poly_node_vars_map")) global.__poly_node_vars_map = {};
+  return global.__poly_node_vars_map;
+}
+
+// Public: returns the resolved custom variables of a loaded/spawned node.
+// Editor nodes fall back to the registry + library defaults.
+function poly_node_vars(_node) {
+  if (_node == undefined) return {};
+  var _key = _node.name;
+
+  if (is_string(_key) && _key != "") {
+    var _map = __poly_runtime_vars_map();
+
+    if (variable_struct_exists(_map, _key)) return __poly_vars_clone(_map[$ _key]);
+  }
+
+  var _ed = __poly_inst();
+
+  if (_ed != undefined) {
+    var _en = __poly_registry_find(_ed, _node);
+
+    if (_en != undefined && is_string(_en[$ "asset"]) && _en.asset != "") {
+      return __poly_vars_resolve_entry(_ed, _en.asset, is_struct(_en.data) ? _en.data[$ "vars"] : undefined);
+    }
+  }
+
+  return {};
+}
+
+// Public: returns one resolved custom variable value, or undefined.
+function poly_node_var(_node, _name) {
+  var _vars = poly_node_vars(_node);
+
+  if (is_struct(_vars) && variable_struct_exists(_vars, _name)) return _vars[$ _name];
+  return undefined;
 }
 
 // Reads the tolerant per-model file map ("assets"). Unknown content is
@@ -110,7 +190,7 @@ function __poly_load_actor(_actors, _pl, _rep) {
     return false;
   }
 
-  var _inst = instance_create_layer(0, 0, _layer, _oi, { node: _pl.node, poly_id: _pl.id, poly_asset_id: _pl.asset });
+  var _inst = instance_create_layer(0, 0, _layer, _oi, { node: _pl.node, poly_id: _pl.id, poly_asset_id: _pl.asset, vars: __poly_vars_clone(_pl[$ "vars"]) });
   __poly_actor_map()[$ _pl.id] = _inst;
   return true;
 }
@@ -130,10 +210,10 @@ function __poly_actor_map() {
 // Spawns single node from descriptor (v1: id/asset).
 // Assets spawn inside a wrapper named after the id so editor imports
 // preserve identity; props are single nodes carrying the id.
-// Returns a placement struct { node, kind, asset, id, label, model } for
+// Returns a placement struct { node, kind, asset, id, label, model, vars } for
 // spawned instances (asset/model feed the spawn hooks and companions),
 // { node, kind, ... } for props, or undefined on failure.
-function __poly_load_node(_scene, _assets, _p, _meta = undefined) {
+function __poly_load_node(_scene, _assets, _p, _meta = undefined, _decl = undefined) {
   if (_scene == undefined || !is_struct(_p)) return undefined;
   var _kind = undefined;
 
@@ -173,6 +253,10 @@ function __poly_load_node(_scene, _assets, _p, _meta = undefined) {
   if (variable_struct_exists(_p, "physics")) _flags.physics = __poly_physics_data(_p.physics);
   else if (is_struct(_meta) && is_struct(_meta[$ _akey]) && is_struct(_meta[$ _akey][$ "physics"])) _flags.physics = __poly_physics_data(_meta[$ _akey].physics);
 
+  var _vstate = __poly_vars_runtime_schema(_decl, _akey, _meta);
+  var _vover = __poly_vars_overrides(_vstate.schema, _p[$ "vars"]);
+  var _vars = __poly_vars_merge(_vstate.values, _vover);
+
   var _t = is_struct(_p[$ "transform"]) ? _p.transform : {};
 
   var _node = __poly_spawn(_scene, {
@@ -183,12 +267,13 @@ function __poly_load_node(_scene, _assets, _p, _meta = undefined) {
     scale: _t[$ "scale"],
     id: _id,
     data: _flags,
+    vars: _vars,
     skip_hook: true,
     skip_register: true,
   });
 
   if (_node == undefined) return undefined;
-  return { node: _node, kind: "instance", asset: _akey, id: _id, label: _p[$ "label"], model: _model, physics: is_struct(_flags[$ "physics"]) ? _flags.physics : undefined };
+  return { node: _node, kind: "instance", asset: _akey, id: _id, label: _p[$ "label"], model: _model, physics: is_struct(_flags[$ "physics"]) ? _flags.physics : undefined, vars: _vars };
 }
 
 // Creates light camera environment or audio source from descriptor.

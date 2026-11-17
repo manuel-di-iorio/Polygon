@@ -18,7 +18,7 @@ function __poly_outline_cfg(_ed) {
       whiteSkin: undefined,
       mats_ok: undefined,
       warmed: false,
-      color: [ 1.0, 0.55, 0.1 ], // orange (Unity selection outline)
+      color: [ 1.0, 0.55, 0.1 ], // orange
       thickness: 1,
       strength: 1.5,
       glow: 0.75,

@@ -272,6 +272,7 @@ function __poly_asset_desc(_ed, _node) {
     shadows: { cast: _cast, receive: _recv },
   };
   if (is_struct(_en.data) && is_struct(_en.data[$ "physics"]) && _en.data.physics.mode != "none") _out.physics = __poly_physics_data(_en.data.physics);
+  if (is_struct(_en.data) && is_struct(_en.data[$ "vars"]) && __poly_vars_has(_en.data.vars)) _out.vars = __poly_vars_clone(_en.data.vars);
   return _out;
 }
 
@@ -399,6 +400,14 @@ function __poly_spawn(_ed, _opt) {
   var _data = _opt[$ "data"];
   var _asset = (variable_struct_exists(_opt, "asset") && is_string(_opt.asset)) ? _opt.asset : "";
   var _label = _opt[$ "label"];
+  var _lib_entry = _is_ed ? __poly_asset_get(_ed, _asset) : undefined;
+  var _vars_specs = (is_struct(_lib_entry) && is_array(_lib_entry[$ "vars_schema"])) ? _lib_entry.vars_schema : [];
+  var _vars_over = __poly_vars_overrides(_vars_specs, is_struct(_data) ? _data[$ "vars"] : undefined);
+  var _vars_resolved = {};
+
+  if (_is_ed && is_struct(_lib_entry)) _vars_resolved = __poly_vars_merge(__poly_vars_entry_def(_lib_entry), _vars_over);
+  else _vars_resolved = __poly_vars_clone(_vars_over);
+  if (variable_struct_exists(_opt, "vars") && is_struct(_opt.vars)) _vars_resolved = __poly_vars_clone(_opt.vars);
 
   var _px = 0;
   var _py = 0;
@@ -509,8 +518,6 @@ function __poly_spawn(_ed, _opt) {
         if (_physics.mode == "character" && (!is_struct(_meta_character) || !variable_struct_exists(_meta_character, "visualOffset"))) _physics = __poly_physics_fit_visual(_model, _physics);
       }
 
-      var _lib_entry = __poly_asset_get(_ed, _asset);
-
       if (_physics == undefined && _lib_entry != undefined && is_struct(_lib_entry[$ "physics_default"])) {
         _physics = __poly_physics_data(_lib_entry.physics_default);
         var _default_character = _lib_entry[$ "physics_default"][$ "character"];
@@ -523,8 +530,14 @@ function __poly_spawn(_ed, _opt) {
     if (is_struct(_data)) {
       if (_physics != undefined) _data.physics = _physics;
       else if (variable_struct_exists(_data, "physics")) _data.physics = __poly_physics_data(_data.physics);
-    } else if (_physics != undefined) {
-      _data = { castShadows: true, receiveShadows: true, physics: _physics };
+    } else if (_physics != undefined || __poly_vars_has(_vars_over)) {
+      _data = { castShadows: true, receiveShadows: true };
+      if (_physics != undefined) _data.physics = _physics;
+    }
+
+    if (is_struct(_data)) {
+      if (__poly_vars_has(_vars_over)) _data.vars = __poly_vars_clone(_vars_over);
+      else if (variable_struct_exists(_data, "vars")) variable_struct_remove(_data, "vars");
     }
 
     if (_is_ed) {
@@ -536,11 +549,11 @@ function __poly_spawn(_ed, _opt) {
     if (_is_ed && !_skip_hook) {
       // Unified spawn contract (editor and runtime): global hook first,
       // then the per-model hook from the library entry.
-      // (node, asset, model, id): model stays 3rd so existing
-      // 3-arg hooks keep working unchanged.
-      if (variable_struct_exists(_ed.rt, "on_create") && is_method(_ed.rt.on_create)) _ed.rt.on_create(_wrap, _asset, _model, _wrap.name);
+      // (node, asset, model, id, vars): model stays 3rd and vars is the last
+      // (optional) argument so existing hooks keep working unchanged.
+      if (variable_struct_exists(_ed.rt, "on_create") && is_method(_ed.rt.on_create)) _ed.rt.on_create(_wrap, _asset, _model, _wrap.name, __poly_vars_clone(_vars_resolved));
       var _hook_entry = __poly_asset_get(_ed, _asset);
-      if (_hook_entry != undefined && is_method(_hook_entry[$ "on_create"])) _hook_entry.on_create(_wrap, _asset, _model, _wrap.name);
+      if (_hook_entry != undefined && is_method(_hook_entry[$ "on_create"])) _hook_entry.on_create(_wrap, _asset, _model, _wrap.name, __poly_vars_clone(_vars_resolved));
     }
 
     if (_is_ed && !_skip_reg) {

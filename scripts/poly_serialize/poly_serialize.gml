@@ -55,6 +55,7 @@ function __poly_node_desc(_ed, _node) {
   };
 
   if (is_struct(_asset[$ "physics"]) && _asset.physics.mode != "none") _desc.physics = __poly_physics_data(_asset.physics);
+  if (is_struct(_asset[$ "vars"]) && __poly_vars_has(_asset.vars)) _desc.vars = __poly_vars_clone(_asset.vars);
 
   if (is_string(_asset.label) && _asset.label != "") _desc.label = _asset.label;
   return _desc;
@@ -330,15 +331,9 @@ function __poly_is_audio_struct(_d) {
 
   if (!variable_struct_exists(_a, "sound") || !is_string(_a.sound)) return false;
   var _nums = [ "gain", "pitch", "falloffRef", "falloffMax", "falloffFactor" ];
-  for (var _i = 0, _n = array_length(_nums); _i < _n; _i++) {
-    if (variable_struct_exists(_a, _nums[_i]) && !is_real(_a[$ _nums[_i]])) return false;
-  }
-
+  for (var _i = 0, _n = array_length(_nums); _i < _n; _i++) if (variable_struct_exists(_a, _nums[_i]) && !is_real(_a[$ _nums[_i]])) return false;
   var _bools = [ "loop", "autoplay", "enabled" ];
-  for (var _j = 0, _m = array_length(_bools); _j < _m; _j++) {
-    if (variable_struct_exists(_a, _bools[_j]) && !is_bool(_a[$ _bools[_j]])) return false;
-  }
-
+  for (var _j = 0, _m = array_length(_bools); _j < _m; _j++) if (variable_struct_exists(_a, _bools[_j]) && !is_bool(_a[$ _bools[_j]])) return false;
   return true;
 }
 
@@ -388,6 +383,15 @@ function __poly_validate_asset_desc(_desc) {
     if (!is_struct(_desc.shadows)) return false;
     if (!variable_struct_exists(_desc.shadows, "cast") || !is_bool(_desc.shadows.cast)) return false;
     if (!variable_struct_exists(_desc.shadows, "receive") || !is_bool(_desc.shadows.receive)) return false;
+  }
+
+  if (variable_struct_exists(_desc, "vars")) {
+    if (!is_struct(_desc.vars)) return false;
+    var _vn = variable_struct_get_names(_desc.vars);
+
+    for (var _vi = 0, _vnl = array_length(_vn); _vi < _vnl; _vi++) {
+      if (!__poly_vars_value_ok(_desc.vars[$ _vn[_vi]])) return false;
+    }
   }
 
   if (variable_struct_exists(_desc, "physics")) {
@@ -488,8 +492,9 @@ function __poly_rebuild_place_asset(_ed, _p, _key) {
     _flags = { castShadows: _p.shadows.cast == true, receiveShadows: _p.shadows.receive == true };
   }
 
-  if (!is_struct(_flags)) _flags = {};
+  if (!is_struct(_flags)) _flags = { castShadows: true, receiveShadows: true };
   if (variable_struct_exists(_p, "physics")) _flags.physics = __poly_physics_data(_p.physics);
+  if (variable_struct_exists(_p, "vars") && is_struct(_p.vars)) _flags.vars = __poly_vars_clone(_p.vars);
 
   var _wrap = __poly_spawn(_ed, {
     kind: "instance",
@@ -529,6 +534,7 @@ function __poly_rebuild(_ed, _nodes) {
   _ed.world = __poly_world_data(_world);
   _ed.physics_enabled = _ed.world.enabled == true;
   __poly_physics_prefab_meta_sync(_ed);
+  __poly_vars_prefab_meta_sync(_ed);
   _ed.unlit_quiet = false;
   var _report = { placed: 0, failed: 0, err: "" };
 
@@ -640,6 +646,7 @@ function __poly_load_scene_begin(_ed) {
   _ed.unlit_quiet = true;
   _ed.asset_meta = __poly_file_assets(_file);
   __poly_physics_prefab_meta_sync(_ed);
+  __poly_vars_prefab_meta_sync(_ed);
   _ed.world = __poly_world_data(_file[$ "physics"]);
   _ed.physics_enabled = _ed.world.enabled == true;
   __poly_history_clear(_ed);
@@ -816,15 +823,22 @@ function __poly_write_file_assets(_ed) {
       }
 
       if (is_struct(_mv[$ "physics"])) _dst.physics = __poly_physics_data(_mv.physics);
+      if (is_array(_mv[$ "vars"])) _dst.vars = __poly_vars_specs_file(__poly_vars_parse(_mv.vars), undefined);
     }
   }
 
   if (is_array(_ed.assets)) {
     for (var _a = 0; _a < array_length(_ed.assets); _a++) {
       var _entry = _ed.assets[_a];
-      if (!is_struct(_entry) || !is_string(_entry.key) || !is_struct(_entry[$ "physics_default"])) continue;
+
+      if (!is_struct(_entry) || !is_string(_entry.key)) continue;
+      var _has_physics = is_struct(_entry[$ "physics_default"]);
+      var _has_vars = is_array(_entry[$ "vars_schema"]) && array_length(_entry.vars_schema) > 0;
+
+      if (!_has_physics && !_has_vars) continue;
       if (!variable_struct_exists(_out, _entry.key)) _out[$ _entry.key] = { type: "model" };
-      _out[$ _entry.key].physics = __poly_physics_data(_entry.physics_default);
+      if (_has_physics) _out[$ _entry.key].physics = __poly_physics_data(_entry.physics_default);
+      if (_has_vars) _out[$ _entry.key].vars = __poly_vars_specs_file(_entry.vars_schema, _entry[$ "vars_def"]);
     }
   }
 

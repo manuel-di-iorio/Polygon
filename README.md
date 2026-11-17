@@ -104,8 +104,8 @@ Close it from the editor with **File → Close Editor** (Ctrl+W).
 |------------|-------------|
 | `scene`    | Live scene. On every enable, Polygon imports it (see below). |
 | `cam`      | Gameplay camera node, used to seed the editor camera. |
-| `assets`   | Struct `{ assetKey: { model, on_create? } }`. The key is the stable asset id used in scene files (usually the load path); the file name (no path, no extension) is used as display text everywhere. `on_create` is an optional per-model hook, called after the global one. |
-| `on_create` | `function(node, assetId, model, id)`. Called for every spawned node: global hook first, then the per-model `on_create` from the library entry. `assetId` is the stable key (same string as in files); `model` is the resolved library model. Walk the subtree: the model root lives inside the wrapper. |
+| `assets`   | Struct `{ assetKey: { model, on_create?, variables? } }`. The key is the stable asset id used in scene files (usually the load path); the file name (no path, no extension) is used as display text everywhere. `on_create` is an optional per-model hook, called after the global one. `variables` (or `vars`) declares custom variables from code (see [Custom variables](#custom-variables)). |
+| `on_create` | `function(node, assetId, model, id, vars)`. Called for every spawned node: global hook first, then the per-model `on_create` from the library entry. `assetId` is the stable key (same string as in files); `model` is the resolved library model; `vars` is the resolved custom-variable map (optional last argument, so 4-argument hooks keep working). Walk the subtree: the model root lives inside the wrapper. |
 | `on_close` | Called after the editor closes. |
 | `keys`     | Optional struct that remaps editor shortcuts. Each entry is an array of element structs `{ key, mouse?, modifier? }`, e.g. `save: [ { key: vk_control, modifier: true }, { key: ord("S") } ]` and `cam_fly: [ { key: mb_right, mouse: true } ]`. Every shortcut and camera control is remappable, including nudging and the mouse-driven camera gestures. Unknown names are ignored. See "Remapping shortcuts". |
 | `on_compose` | `function(surf, w, h)`. Optional viewport post-processing: called with the scene surface as target, after the 3D render (post-AA) and before overlays compose (they stay sharp). Copy `surf` to your own scratch, apply your shader back onto `surf`, and leave the target on `surf`. Runs on re-render, not every frame. |
@@ -258,6 +258,39 @@ Character controllers use a capsule centered at the wrapper origin. **Visual off
 
 A trigger is a sensor body, not a separate mode: enable **Sensor** on any body (or pick the `Trigger` layer) and the collider detects overlaps without blocking. The editor stores the requested event set in the instance `physics` block as `triggerEnter` / `triggerStay` / `triggerExit` (defaults: enter and exit on, stay off). At runtime the game creates its own `GM3D_PhysicsWorld`, calls `syncScene()`, and registers a contact callback on the body (or reads `world.getContactEvents()` after `step()`). The callback receives a `GM3D_ContactEvent` with `nodeA`, `nodeB`, `point`, `normal`, `impactVelocity`, `type` (`Enter`/`Stay`/`Exit`), `selfNode`, `otherNode`; filter by `otherNode` and by the configured event mask. Remove callbacks (`removeContactCallback`/`clearContactCallbacks`) and unregister bodies on node destruction or scene rebuild to avoid stale references. Multiple sensors, load/rebuild and destruction are supported as long as callbacks are re-registered after `syncScene()`.
 
+### Custom variables
+
+Models can declare their own variables from code, with defaults. The editor shows a dedicated **Variables** section in the Inspector for both the prefab (model defaults) and each instance (overrides). Supported types are `bool`, `int`, `float`, `string` and `vec3`.
+
+```gml
+// Struct form: the type is inferred from the default value.
+poly_asset_add(my_door_model, "prefab", "models/door.glb", my_door_setup, {
+  hp: 100,
+  locked: false,
+  title: "Door",
+  offset: [ 0, 1, 0 ],
+});
+
+// Descriptor form: explicit types and optional ranges.
+poly_asset_variables("models/door.glb", [
+  { name: "hp", type: "int", def: 100, min: 0, max: 999 },
+  { name: "locked", type: "bool", def: false },
+  { name: "title", type: "string", def: "Door" },
+  { name: "offset", type: "vec3", def: [ 0, 1, 0 ] },
+]);
+```
+
+The values edited on the prefab are saved as the model defaults. An instance only stores the variables you override; everything else follows the prefab. In the instance Inspector a **Revert** button removes an override, and the prefab-instance **Overrides** combo gains a **Variables** entry with the usual Revert / Apply actions. Names and types always come from code (or from a loaded scene file); the editor does not let you add or rename variables.
+
+The model defaults are stored in the scene file's top-level `assets[key].vars` array (`{name, type, def, min?, max?}`), and instance overrides in `nodes[].vars` (`{name: value}`). Saving a new scene restores the defaults declared in code.
+
+At runtime `poly_load` resolves code declarations, the scene's model defaults and each instance's overrides. The resolved map is passed as the last argument of both `on_create` hooks, stored in `placement.vars`, and included in the actor companion creation struct; read it later with:
+
+```gml
+var _vars = poly_node_vars(node);        // resolved { name: value } map
+var _hp = poly_node_var(node, "hp");     // one value, or undefined
+```
+
 ### Creating lights, cameras and environment
 
 Use the **Create** menu: Directional Light, Point Light (up to 8 lights), Perspective Camera, Ortho Camera, Environment (one per scene). The first enabled camera is the gameplay camera; otherwise the first one is used.
@@ -377,9 +410,11 @@ When the editor is open over a live game, pause `step`, interpolation and render
 
 `poly_load` spawns instances, lights, cameras, environments and audio sources, preserving node ids. Audio sources are componentless markers reported in `_rep.audio`; the loader never owns emitters. For every instance it calls, in order:
 
-1. the global `on_create(node, assetId, model, id)` (4th argument, optional),
+1. the global `on_create(node, assetId, model, id, vars)` (4th and 5th arguments optional),
 2. the per-model `on_create` from `assets[key]` (optional),
 3. the companion spawn below (when configured).
+
+`vars` is the resolved custom-variable map (code declarations + saved model defaults + instance overrides). The same map is available later through `poly_node_vars(node)` / `poly_node_var(node, name)` and through `placement.vars`.
 
 ### Actors
 
@@ -410,7 +445,15 @@ poly_actor_of(node);       // companion instance id bound to a node, or undefine
   "version": 1,
   "seq": 12,
   "assets": {
-    "models/tree.glb": { "type": "model", "actor": { "object": "oTree", "layer": "Actors" }, "physics": { "mode": "static", "shape": "Box" } }
+    "models/tree.glb": {
+      "type": "model",
+      "actor": { "object": "oTree", "layer": "Actors" },
+      "physics": { "mode": "static", "shape": "Box" },
+      "vars": [
+        { "name": "hp", "type": "int", "def": 100, "min": 0, "max": 999 },
+        { "name": "title", "type": "string", "def": "Tree" }
+      ]
+    }
   },
   "world": { "gravity": [0, -9.81, 0], "fixedTimeStep": 0.0166667, "maxSubSteps": 4, "maxBodies": 512 },
   "nodes": [
@@ -425,7 +468,8 @@ poly_actor_of(node);       // companion instance id bound to a node, or undefine
         "scale": [1, 1, 1]
       },
       "shadows": { "cast": true, "receive": true },
-      "physics": { "mode": "static", "shape": "Box", "halfExtents": [0.5, 0.5, 0.5], "offset": [0, 0, 0], "mass": 1, "friction": 0.8, "restitution": 0 }
+      "physics": { "mode": "static", "shape": "Box", "halfExtents": [0.5, 0.5, 0.5], "offset": [0, 0, 0], "mass": 1, "friction": 0.8, "restitution": 0 },
+      "vars": { "hp": 80 }
     }
   ]
 }
@@ -433,7 +477,7 @@ poly_actor_of(node);       // companion instance id bound to a node, or undefine
 
 `kind` is one of `instance`, `light`, `camera`, `environment`, `audio` (the last four carry a `light` / `camera` / `environment` / `audio` sub-object). Audio sources are componentless editor markers; their `audio` sub-object stores `{ sound, gain, pitch, loop, autoplay, falloffRef, falloffMax, falloffFactor, enabled }`, where `sound` is a GameMaker sound asset name. The transform lives in `transform: { position, rotation, scale }` (rotation is a quaternion `[x, y, z, w]`). Instances link their model via `assetId`. `label` is an optional custom instance name (F2 in the Hierarchy); without it, the asset file name (or kind) + id number is shown. Node ids are stable and are what the AI bridge uses.
 
-The Binary variant (`.bin`, magic `PLYB`, version 1) stores scene/world values with `buffer_*` types and optional physics blocks as JSON strings. JSON scene files stay at `version: 1`; their optional `physics` and `world` fields preserve compatibility with older files.
+The Binary variant (`.bin`, magic `PLYB`, version 2) stores scene/world values with `buffer_*` types and optional physics/vars blocks as JSON strings. Readers still accept version 1 (no vars block). JSON scene files stay at `version: 1`; their optional `physics`, `vars` and `world` fields preserve compatibility with older files.
 
 ---
 

@@ -1,15 +1,17 @@
-// poly_bin - optimized binary scene format (PLYB v1), buffer-based.
+// poly_bin - optimized binary scene format (PLYB v2), buffer-based.
 // Layout (little-endian, alignment 1, strings = buffer_string):
-//   u8[4] magic "PLYB", u16 bin_version (=1), s32 seq
+//   u8[4] magic "PLYB", u16 bin_version (=2), s32 seq
 //   3x f32 gravity, f32 fixedTimeStep, u16 maxSubSteps, u16 maxBodies
 //   u16 asset_count, per asset: string key, u8 has_actor, [string obj, string layer],
-//     u8 has_physics, [string physics_json]
+//     u8 has_physics, [string physics_json],
+//     u8 has_vars, [string vars_json]  (v2+)
 //   u32 node_count, per node:
 //     u8 kind (0 instance, 1 light, 2 camera, 3 env, 4 audio)
 //     string id, string label ("" = none)
 //     3x f32 pos, 4x f32 rot, 3x f32 scale
 //     instance: string assetId, u8 shadow bits (1 cast, 2 receive),
-//       u8 has_physics, [string physics_json]
+//       u8 has_physics, [string physics_json],
+//       u8 has_vars, [string vars_json]  (v2+)
 //     light: u8 type (0 dir, 1 point, 2 spot), 3x u8 color,
 //       f32 intensity, range, inner, outer, u8 flags (1 enabled, 2 shadow),
 //       u16 shadowRes, f32 shadowDist, f32 shadowNormal
@@ -98,7 +100,7 @@ function __poly_bin_save_descs(_path, _seq, _assets, _nodes, _world = undefined)
   buffer_write(_buf, buffer_u8, 76); // L
   buffer_write(_buf, buffer_u8, 89); // Y
   buffer_write(_buf, buffer_u8, 66); // B
-  buffer_write(_buf, buffer_u16, 1);
+  buffer_write(_buf, buffer_u16, 2);
   buffer_write(_buf, buffer_s32, is_real(_seq) ? floor(_seq) : 1);
   var _wd = __poly_world_data(_world);
   __poly_bin_w_vec3(_buf, _wd.gravity, 0, -9.81, 0);
@@ -133,6 +135,9 @@ function __poly_bin_save_descs(_path, _seq, _assets, _nodes, _world = undefined)
     var _has_physics = is_struct(_meta[$ "physics"]);
     buffer_write(_buf, buffer_u8, _has_physics ? 1 : 0);
     if (_has_physics) __poly_bin_w_str(_buf, json_stringify(_meta.physics));
+    var _has_vars = is_array(_meta[$ "vars"]) && array_length(_meta.vars) > 0;
+    buffer_write(_buf, buffer_u8, _has_vars ? 1 : 0);
+    if (_has_vars) __poly_bin_w_str(_buf, json_stringify(_meta.vars));
   }
 
   buffer_write(_buf, buffer_u32, array_length(_nodes));
@@ -174,6 +179,9 @@ function __poly_bin_save_descs(_path, _seq, _assets, _nodes, _world = undefined)
       var _has_instance_physics = is_struct(_d[$ "physics"]);
       buffer_write(_buf, buffer_u8, _has_instance_physics ? 1 : 0);
       if (_has_instance_physics) __poly_bin_w_str(_buf, json_stringify(_d.physics));
+      var _has_instance_vars = is_struct(_d[$ "vars"]) && __poly_vars_has(_d.vars);
+      buffer_write(_buf, buffer_u8, _has_instance_vars ? 1 : 0);
+      if (_has_instance_vars) __poly_bin_w_str(_buf, json_stringify(_d.vars));
     } else if (_kind == "light") {
       var _l = is_struct(_d[$ "light"]) ? _d.light : {};
       var _lt = _l[$ "type"];
@@ -256,7 +264,7 @@ function __poly_bin_load_data(_path) {
 
   var _ver = buffer_read(_buf, buffer_u16);
 
-  if (_ver != 1) {
+  if (_ver != 1 && _ver != 2) {
     buffer_delete(_buf);
     return undefined;
   }
@@ -288,6 +296,12 @@ function __poly_bin_load_data(_path) {
       var _asset_physics_text = buffer_read(_buf, buffer_string);
       var _asset_physics_data = json_parse(_asset_physics_text);
       if (is_struct(_asset_physics_data)) _entry.physics = _asset_physics_data;
+    }
+
+    if (_ver >= 2 && buffer_read(_buf, buffer_u8) == 1) {
+      var _asset_vars_text = buffer_read(_buf, buffer_string);
+      var _asset_vars_data = json_parse(_asset_vars_text);
+      if (is_array(_asset_vars_data)) _entry.vars = _asset_vars_data;
     }
 
     if (_key != "") _assets[$ _key] = _entry;
@@ -329,6 +343,12 @@ function __poly_bin_load_data(_path) {
         var _node_physics_text = buffer_read(_buf, buffer_string);
         var _node_physics_data = json_parse(_node_physics_text);
         if (is_struct(_node_physics_data)) _desc.physics = _node_physics_data;
+      }
+
+      if (_ver >= 2 && buffer_read(_buf, buffer_u8) == 1) {
+        var _node_vars_text = buffer_read(_buf, buffer_string);
+        var _node_vars_data = json_parse(_node_vars_text);
+        if (is_struct(_node_vars_data)) _desc.vars = _node_vars_data;
       }
     } else if (_kind == "light") {
       var _lt = buffer_read(_buf, buffer_u8);

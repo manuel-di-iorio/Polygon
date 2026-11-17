@@ -716,10 +716,7 @@ function __poly_imgui_audio_sec(_ed, _node, _en) {
     if (!variable_struct_exists(_ed.imgui, "audio_filter")) _ed.imgui.audio_filter = "";
     _ed.imgui.audio_filter = __poly_imgui_text_hint("##audio_find", "Search sounds...", _ed.imgui.audio_filter);
 
-    if (ImGui.Selectable("(none)", _cur == "(none)", 0, 0, 0)) {
-      __poly_edit_field(_ed, _node, _d, "sound", __poly_audio_apply, "");
-    }
-
+    if (ImGui.Selectable("(none)", _cur == "(none)", 0, 0, 0)) __poly_edit_field(_ed, _node, _d, "sound", __poly_audio_apply, "");
     var _ids = asset_get_ids(asset_sound);
     var _flt = string_lower(_ed.imgui.audio_filter);
     var _shown = 0;
@@ -730,10 +727,7 @@ function __poly_imgui_audio_sec(_ed, _node, _en) {
       if (!is_string(_nm) || _nm == "") continue;
       if (_flt != "" && string_pos(_flt, string_lower(_nm)) <= 0) continue;
 
-      if (ImGui.Selectable(_nm, _cur == _nm, 0, 0, 0)) {
-        __poly_edit_field(_ed, _node, _d, "sound", __poly_audio_apply, _nm);
-      }
-
+      if (ImGui.Selectable(_nm, _cur == _nm, 0, 0, 0)) __poly_edit_field(_ed, _node, _d, "sound", __poly_audio_apply, _nm);
       _shown++;
       if (_shown >= 200) break;
     }
@@ -741,10 +735,7 @@ function __poly_imgui_audio_sec(_ed, _node, _en) {
     ImGui.EndCombo();
   }
 
-  if (_cur != "(none)" && !__poly_audio_sound_ok(_cur)) {
-    ImGui.TextColored("sound not found (deleted?)", make_colour_rgb(235, 90, 90));
-  }
-
+  if (_cur != "(none)" && !__poly_audio_sound_ok(_cur)) ImGui.TextColored("sound not found (deleted?)", make_colour_rgb(235, 90, 90));
   __poly_edit_float(_ed, _node, _d, "audio_gain", "Gain", "gain", __poly_audio_apply, 0, 1);
   __poly_edit_float(_ed, _node, _d, "audio_pitch", "Pitch", "pitch", __poly_audio_apply, 0.01);
   __poly_edit_bool(_ed, _node, _d, "loop", "Loop", __poly_audio_apply);
@@ -848,9 +839,19 @@ function __poly_imgui_spawn_sec(_ed, _entry) {
     ImGui.Spacing();
   }
 
-  ImGui.Spacing();
-  __poly_imgui_sec_open();
-  if (ImGui.CollapsingHeader("Physics Defaults")) __poly_imgui_prefab_physics(_ed, _entry);
+  // Physics defaults only exist while the scene physics world is enabled.
+  if (_ed.physics_enabled) {
+    ImGui.Spacing();
+    __poly_imgui_sec_open();
+    if (ImGui.CollapsingHeader("Physics Defaults")) __poly_imgui_prefab_physics(_ed, _entry);
+  }
+
+  if (is_array(_entry[$ "vars_schema"]) && array_length(_entry.vars_schema) > 0) {
+    ImGui.Spacing();
+    __poly_imgui_sec_open();
+
+    if (ImGui.CollapsingHeader("Variables")) __poly_imgui_vars_prefab_sec(_ed, _entry);
+  }
 
   ImGui.Spacing();
   __poly_imgui_sec_open();
@@ -1145,6 +1146,170 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
         _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
         if (_before != undefined) __poly_history_commit(_ed, _before);
       }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Custom variables (prefab defaults + per-instance overrides)
+// ---------------------------------------------------------------------------
+
+// Draws one variable widget. Returns the new value, or undefined while
+// unchanged/active (drag/typing in progress). _id must be unique per field.
+function __poly_imgui_var_value(_ed, _id, _spec, _value) {
+  if (!is_struct(_spec)) return undefined;
+  var _type = _spec.type;
+
+  if (_type == "bool") {
+    var _nb = ImGui.Checkbox("##" + _id, _value == true);
+    return _nb != (_value == true) ? _nb : undefined;
+  }
+
+  if (_type == "int") {
+    var _ni = __poly_imgui_prop_float(_ed, _id, "##" + _id, _value, 120);
+
+    if (_ni == undefined) return undefined;
+    _ni = __poly_var_clamp(_spec, round(_ni));
+    return _ni != _value ? _ni : undefined;
+  }
+
+  if (_type == "float") {
+    var _nf = __poly_imgui_prop_float(_ed, _id, "##" + _id, _value, 120);
+
+    if (_nf == undefined) return undefined;
+    _nf = __poly_var_clamp(_spec, _nf);
+    return _nf != _value ? _nf : undefined;
+  }
+
+  if (_type == "string") {
+    var _r = __poly_imgui_text(_id, "##" + _id, _value);
+
+    if (!is_struct(_r) || _r.active) return undefined;
+    return _r.text != _value ? _r.text : undefined;
+  }
+
+  if (_type == "vec3") {
+    var _out = [ _value[0], _value[1], _value[2] ];
+    var _axes = [ "X", "Y", "Z" ];
+    var _changed = false;
+
+    for (var _a = 0; _a < 3; _a++) {
+      if (_a > 0) ImGui.SameLine();
+      var _nv = __poly_imgui_prop_float(_ed, _id + "_" + _a, "##" + _id + _axes[_a], _out[_a], 46);
+
+      if (_nv != undefined && _nv != _out[_a]) {
+        _out[_a] = _nv;
+        _changed = true;
+      }
+    }
+
+    return _changed ? _out : undefined;
+  }
+
+  return undefined;
+}
+
+// Draws the custom variables section for one instance (resolved values;
+// edits create per-instance overrides).
+function __poly_imgui_vars_sec(_ed, _node, _en) {
+  if (!is_struct(_en) || !is_string(_en[$ "asset"]) || _en.asset == "") return;
+  var _entry = __poly_asset_get(_ed, _en.asset);
+
+  if (_entry == undefined || !is_array(_entry[$ "vars_schema"]) || array_length(_entry.vars_schema) == 0) return;
+  if (!is_struct(_en.data)) _en.data = __poly_flags_read(_node);
+  var _specs = _entry.vars_schema;
+  var _defs = __poly_vars_entry_def(_entry);
+  var _over = is_struct(_en.data[$ "vars"]) ? _en.data.vars : {};
+  ImGui.Spacing();
+  __poly_imgui_sec_open();
+
+  if (!ImGui.CollapsingHeader("Variables")) return;
+  ImGui.Spacing();
+
+  for (var _i = 0, _n = array_length(_specs); _i < _n; _i++) {
+    var _s = _specs[_i];
+
+    if (!is_struct(_s)) continue;
+    var _has_over = variable_struct_exists(_over, _s.name);
+    var _val = _has_over ? __poly_var_coerce(_s.type, _over[$ _s.name]) : undefined;
+
+    if (_val == undefined) _val = _defs[$ _s.name];
+    var _id = "vars_inst_" + _en.id + "_" + _s.name;
+    ImGui.AlignTextToFramePadding();
+    ImGui.Text(_s.name);
+    ImGui.SameLine(150);
+    var _nv = __poly_imgui_var_value(_ed, _id, _s, _val);
+
+    if (_nv != undefined) {
+      var _before = __poly_history_snap(_ed);
+      if (!is_struct(_en.data[$ "vars"])) _en.data.vars = {};
+      _en.data.vars[$ _s.name] = _nv;
+      if (_before != undefined) __poly_history_commit(_ed, _before);
+      _has_over = true;
+      _val = _nv;
+    }
+
+    if (_has_over) {
+      ImGui.SameLine();
+      ImGui.PushID(_id);
+
+      if (ImGui.SmallButton("Revert")) {
+        var _before2 = __poly_history_snap(_ed);
+
+        if (is_struct(_en.data[$ "vars"]) && variable_struct_exists(_en.data.vars, _s.name)) variable_struct_remove(_en.data.vars, _s.name);
+        if (_before2 != undefined) __poly_history_commit(_ed, _before2);
+      }
+
+      if (ImGui.IsItemHovered()) ImGui.SetTooltip("Remove this instance override and use the prefab default.");
+      ImGui.PopID();
+    }
+  }
+}
+
+// Draws the custom variables section for a library asset (model defaults).
+function __poly_imgui_vars_prefab_sec(_ed, _entry) {
+  if (!is_struct(_entry) || !is_array(_entry[$ "vars_schema"]) || array_length(_entry.vars_schema) == 0) return;
+  var _specs = _entry.vars_schema;
+  var _defs = __poly_vars_entry_def(_entry);
+  var _code_def = is_struct(_entry[$ "vars_code_def"]) ? _entry.vars_code_def : _defs;
+
+  if (!is_struct(_entry[$ "vars_def"])) _entry.vars_def = __poly_vars_clone(_defs);
+
+  for (var _i = 0, _n = array_length(_specs); _i < _n; _i++) {
+    var _s = _specs[_i];
+
+    if (!is_struct(_s)) continue;
+    var _val = _defs[$ _s.name];
+    var _id = "vars_prefab_" + _entry.key + "_" + _s.name;
+    ImGui.AlignTextToFramePadding();
+    ImGui.Text(_s.name);
+    ImGui.SameLine(150);
+    var _nv = __poly_imgui_var_value(_ed, _id, _s, _val);
+
+    if (_nv != undefined) {
+      var _before = __poly_history_snap(_ed);
+      _entry.vars_def[$ _s.name] = _nv;
+      __poly_vars_meta_set(_ed, _entry);
+      if (_before != undefined) __poly_history_commit(_ed, _before);
+      _defs[$ _s.name] = _nv;
+      _val = _nv;
+    }
+
+    var _cv = __poly_var_coerce(_s.type, _code_def[$ _s.name]);
+
+    if (_cv != undefined && !__poly_var_value_equal(_val, _cv)) {
+      ImGui.SameLine();
+      ImGui.PushID(_id);
+
+      if (ImGui.SmallButton("Reset")) {
+        var _before2 = __poly_history_snap(_ed);
+        _entry.vars_def[$ _s.name] = _cv;
+        __poly_vars_meta_set(_ed, _entry);
+        if (_before2 != undefined) __poly_history_commit(_ed, _before2);
+      }
+
+      if (ImGui.IsItemHovered()) ImGui.SetTooltip("Restore the value declared in code.");
+      ImGui.PopID();
     }
   }
 }

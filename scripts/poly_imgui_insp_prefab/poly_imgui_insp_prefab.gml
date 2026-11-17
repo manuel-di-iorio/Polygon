@@ -57,6 +57,14 @@ function __poly_over_diffs(_ed, _node, _en, _entry) {
     if (json_stringify(__poly_physics_data(_defaults)) != json_stringify(__poly_physics_data(_en.data.physics))) array_push(_diffs, { kind: "physics", label: "Physics" });
   }
 
+  if (is_array(_entry[$ "vars_schema"]) && array_length(_entry.vars_schema) > 0
+  && is_struct(_en.data) && is_struct(_en.data[$ "vars"]) && __poly_vars_has(_en.data.vars)) {
+    var _resolved = __poly_vars_resolve_entry(_ed, _entry.key, _en.data.vars);
+    var _vdefs = __poly_vars_entry_def(_entry);
+
+    if (!__poly_vars_equal(_resolved, _vdefs)) array_push(_diffs, { kind: "vars", label: "Variables" });
+  }
+
   return _diffs;
 }
 
@@ -83,6 +91,8 @@ function __poly_over_revert(_ed, _node, _en, _entry, _kind) {
     __poly_physics_debug_destroy(_ed);
     __poly_physics_apply(_node, _en.data.physics);
     __poly_physics_debug_rebuild(_ed);
+  } else if (_kind == "vars" && is_struct(_en.data)) {
+    if (is_struct(_en.data[$ "vars"])) _en.data.vars = {};
   }
 }
 
@@ -117,6 +127,10 @@ function __poly_over_apply(_ed, _node, _en, _entry, _kind) {
     var _meta = variable_struct_exists(_ed.asset_meta, _entry.key) ? _ed.asset_meta[$ _entry.key] : { type: "model" };
     _meta.physics = __poly_physics_data(_en.data.physics);
     _ed.asset_meta[$ _entry.key] = _meta;
+  } else if (_kind == "vars" && is_struct(_en.data) && is_struct(_en.data[$ "vars"])) {
+    _entry.vars_def = __poly_vars_resolve_entry(_ed, _entry.key, _en.data.vars);
+    __poly_vars_meta_set(_ed, _entry);
+    _en.data.vars = {};
   }
 }
 

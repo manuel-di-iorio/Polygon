@@ -88,6 +88,7 @@ function __poly_new_scene(_ed) {
   __poly_sel_clear(_ed);
   __poly_history_clear(_ed);
   _ed.asset_meta = {};
+  __poly_vars_prefab_meta_sync(_ed);
   _ed.world = __poly_world_defaults();
   _ed.physics_enabled = false;
   _ed.dirty = false;
@@ -222,6 +223,7 @@ function __poly_duplicate_asset(_ed, _src) {
     if (_copy_en != undefined) {
       _copy_en.data.castShadows = _cast;
       _copy_en.data.receiveShadows = _recv;
+      if (is_struct(_src_en.data[$ "vars"])) _copy_en.data.vars = __poly_vars_clone(_src_en.data.vars);
     }
 
     __poly_flags_apply(_copy, _cast, _recv);

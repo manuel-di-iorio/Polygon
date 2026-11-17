@@ -603,10 +603,13 @@ function demo_build_player() {
 }
 
 // Editor create hook: assigns shaders and starts the idle animation.
-// Signature is fixed by the editor (wrapper node, model id, model):
-// walk the subtree, the model root lives inside the wrapper.
-function demo_on_create(_node, _asset_id, _src) {
+// Signature is fixed by the editor (wrapper node, model id, model, id, vars):
+// walk the subtree, the model root lives inside the wrapper. The optional 5th
+// argument carries the resolved custom variables (prefab defaults + instance
+// overrides), both when the editor spawns a node and when a scene is loaded.
+function demo_on_create(_node, _asset_id, _src, _id = undefined, _vars = undefined) {
   if (_node == undefined || _src == undefined) return;
+  if (is_struct(_vars) && variable_struct_exists(_vars, "life")) show_debug_message("[demo] female character vars: life=" + string(_vars.life) + " speed=" + string(_vars[$ "speed"]));
   demo_assign_instance_shaders(_node);
 
   if (_src.animationCount > 0) {
