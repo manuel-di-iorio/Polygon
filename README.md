@@ -354,8 +354,7 @@ function my_on_close() {
 
 Scenes are saved from **File → Save / Save As** into `working_directory/__PolygonEditor__/scenes/<name>.json` or `<name>.bin`.
 
-Load a scene in your game, without the editor, with (always async: parse
-now, spawn chunked - pump every Step, callback on completion):
+Load a scene in your game, without the editor, with:
 
 ```gml
 // assets: same struct shape as the poly_create config
@@ -363,28 +362,7 @@ var assets = {};
 assets[$ "models/tree.glb"] = { model: my_model_a };
 assets[$ "models/rock.glb"] = { model: my_model_b, on_create: my_rock_setup };
 
-var job = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", assets, my_on_create, function(_rep) {
-  show_debug_message("placed: " + string(_rep.placed) + " failed: " + string(_rep.failed));
-  for (var i = 0; i < array_length(_rep.audio); i++) {
-    var a = _rep.audio[i]; // { node, id, label, sound, gain, pitch, loop, autoplay, falloffRef, falloffMax, falloffFactor, enabled }
-    my_audio_attach(a.node, a.sound, a.gain, a.pitch, a.loop);
-  }
-  physicsWorld = new GM3D_PhysicsWorld(my_scene, {
-    maxBodies: _rep.physics.maxBodies,
-    fixedTimeStep: _rep.physics.fixedTimeStep,
-    maxSubSteps: _rep.physics.maxSubSteps,
-  });
-  physicsWorld.setGravity(new GM3D_Vec3(_rep.physics.gravity[0], _rep.physics.gravity[1], _rep.physics.gravity[2]));
-  physicsWorld.syncScene();
-  for (var j = 0; j < array_length(_rep.placements); j++) {
-    var placement = _rep.placements[j];
-    if (is_struct(placement.physics) && placement.physics.mode == "character") physicsWorld.addCharacter(placement.node);
-  }
-});
-// undefined = missing/invalid file. The scene must outlive the load.
-
-// Optional 6th argument: function(node, audio) called per audio source.
-// var job = poly_load(my_scene, file, assets, on_create, on_finish, on_audio);
+var job = poly_load(my_scene, "__PolygonEditor__/scenes/level1.json", assets);
 
 // oGame / Step
 poly_load_step(); // advances all pending loads (~48 nodes each frame), returns pending count
@@ -531,20 +509,6 @@ Edit: `poly_select_objects`, `poly_focus_object`, `poly_set_camera`, `poly_creat
 Details in [`other/mcp-relay/README.md`](other/mcp-relay/README.md).
 
 ---
-
-## Rebuilding the asset package (maintainers)
-
-`editor.yymps` is the importable Local Asset Package. It is generated with GameMaker's **ProjectTool** (the same tool the IDE uses behind **Tools → Create Local Package**) and contains every resource of the **Polygon Editor** folder - scripts, sprites, shaders - plus the Included Files under `datafiles/__PolygonEditor__`. The demo datafiles are stripped from the package.
-
-```sh
-# one-time: enable the checked-in hooks (runs on any npm install)
-npm install
-
-# rebuild on demand
-npm run pack
-```
-
-The `pre-push` hook rebuilds the package automatically and **never blocks the push**: if GameMaker (or PowerShell) is unavailable it just pushes the previous package. When the package **content** changes it commits `editor.yymps` in its own commit so the next push ships it - a re-export always differs byte-for-byte because the zip stores timestamps, so the script compares the entries (name + MD5) rather than trusting `git status`. Skip the rebuild with `POLYGON_SKIP_PACK=1 git push`, or set `POLYGON_PROJECTTOOL` when ProjectTool is not in its default location.
 
 ## Contributing
 
