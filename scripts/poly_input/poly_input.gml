@@ -446,7 +446,8 @@ function __poly_step_hotkeys(_ed, _input) {
   if (__poly_bind_pressed(_keys, "select_all")) __poly_select_all(_ed);
   if (__poly_bind_pressed(_keys, "focus_search")) __poly_focus_search(_ed);
   if (__poly_bind_pressed(_keys, "new_scene")) __poly_confirm_ask(_ed, "new");
-  if (__poly_bind_pressed(_keys, "close")) __poly_confirm_ask(_ed, "close");
+  if (__poly_bind_pressed(_keys, "play")) _ed[$ "pending_play"] = true;
+  if (__poly_bind_pressed(_keys, "close")) _ed.confirm = { action: "reset", open: true };
   if (__poly_bind_pressed(_keys, "load")) __poly_confirm_ask(_ed, "load");
   if (__poly_bind_pressed(_keys, "snap_grid")) __poly_push_sel_to_grid(_ed);
 

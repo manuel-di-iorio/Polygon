@@ -65,6 +65,8 @@ function __poly_import_live(_ed) {
   for (var _d = 0, _nd = array_length(_tracked); _d < _nd; _d++) __poly_destroy_subtree(_tracked[_d]);
   _ed.rt.scene.update(0);
   __poly_reg_clear(_ed);
+  // Fresh adoption: poly_sync_live() rebuilds the editor -> live pairing.
+  _ed.live_links = {};
   var _nodes = undefined;
 
   if (variable_struct_exists(_ed.rt, "live_scene") && _ed.rt.live_scene != undefined) _nodes = _ed.rt.live_scene.getNodes();
@@ -373,7 +375,7 @@ function __poly_view_restore(_ed) {
 // ---------------------------------------------------------------------------
 
 // Tears down editor chrome when closing.
-function __poly_deactivate(_ed) {
+function __poly_deactivate(_ed, _reason = "play") {
   __poly_physics_debug_destroy(_ed);
   __poly_drop_preview_clear(_ed);
   _ed.load_job = undefined;
@@ -395,12 +397,20 @@ function __poly_deactivate(_ed) {
   _ed.show_unlit = false;
   __poly_unlit_apply(_ed);
 
+  // Publish the edited scene in memory so on_close can consume it without
+  // ever touching the scene file (poly_scene_snapshot / poly_sync_live).
+  // A reset close drops the edits instead: nothing is published, so the live
+  // scene stays exactly as the game had it when the editor opened.
+  _ed.close_reason = _reason;
+  _ed.close_data = (_reason == "play") ? __poly_close_data_build(_ed) : undefined;
   if (variable_struct_exists(_ed.rt, "on_close")) _ed.rt.on_close();
 }
 
 // Sets up editor chrome when opening (fresh mirror of the live scene).
 function __poly_activate(_ed) {
   _ed.load_job = undefined;
+  _ed.close_data = undefined;
+  _ed.close_reason = "";
   __poly_view_save(_ed);
   __poly_view_sync(_ed);
   __poly_import_live(_ed);
@@ -418,14 +428,14 @@ function __poly_activate(_ed) {
 }
 
 // Toggles editor active state with setup.
-function __poly_set_active(_ed, _on) {
+function __poly_set_active(_ed, _on, _reason = "play") {
   if (_ed == undefined) return;
   var _was = _ed.active;
   _ed.active = _on;
   global.poly_active = _on;
 
   if (_was && !_on) {
-    __poly_deactivate(_ed);
+    __poly_deactivate(_ed, _reason);
   } else if (!_was && _on) {
     __poly_activate(_ed);
   }
@@ -574,6 +584,7 @@ function __poly_keys_defaults() {
     select_all: [ { key: vk_control, modifier: true }, { key: ord("A") } ],
     new_scene: [ { key: vk_control, modifier: true }, { key: ord("N") } ],
     close: [ { key: vk_control, modifier: true }, { key: ord("W") } ],
+    play: [ { key: vk_f5 } ],
     load: [ { key: vk_control, modifier: true }, { key: ord("L") } ],
     undo: [ { key: vk_control, modifier: true }, { key: ord("Z") } ],
     redo: [ { key: vk_control, modifier: true }, { key: ord("Y") } ],
@@ -623,12 +634,14 @@ function __poly_create_state(_rt) {
     },
     active: false,
     dirty: false,
+    pending_play: false,
     assets: [],
     thumbs_done: false,
     thumb_initializing: false,
     sel: [],
     clipboard: undefined,
     reg: {},
+    live_links: {},
     id_seq: 1,
     asset_meta: {},
     models_bg: undefined,
@@ -757,6 +770,14 @@ function __poly_step(_ed, _dt) {
   var _keys = _ed.cfg.keys;
 
   if (!_ed.active) return;
+  // Play requested from the UI closes here, before any other step work: the
+  // teardown never runs in the middle of an ImGui frame.
+  if (_ed[$ "pending_play"] == true) {
+    _ed[$ "pending_play"] = false;
+    poly_play();
+    return;
+  }
+
   if (__poly_bind_pressed(_keys, "fps")) _ed.show_fps = !_ed.show_fps;
   __poly_view_sync(_ed);
 

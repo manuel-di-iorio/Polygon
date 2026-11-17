@@ -148,6 +148,9 @@ function __poly_imgui_toolbar(_ed) {
     ImGui.EndPopup();
   }
 
+  __poly_toolbar_sep();
+  if (__poly_imgui_tool_btn("Play: close the editor without saving and keep the edits in the game [F5]", "Play", false, 22)) _ed[$ "pending_play"] = true;
+
   ImGui.End();
 }
 
@@ -292,7 +295,7 @@ function __poly_ui_load(_ed) {
 
 // Draws the File menu, returning pending actions.
 function __poly_menu_file(_ed) {
-  var _pending = { do_new: false, do_load: false, do_saveas: false, do_close: false };
+  var _pending = { do_new: false, do_load: false, do_saveas: false, do_play: false, do_reset: false };
 
   if (!ImGui.BeginMenu("File")) return _pending;
   ImGui.TextDisabled(_ed.scene_file != "" ? __poly_base_name(_ed.scene_file) : "(unsaved scene)");
@@ -303,7 +306,9 @@ function __poly_menu_file(_ed) {
   if (ImGui.MenuItem("Load", __poly_bind_label(_ed.cfg.keys, "load"))) _pending.do_load = true;
   ImGui.Separator();
 
-  if (ImGui.MenuItem("Close Editor", __poly_bind_label(_ed.cfg.keys, "close"))) _pending.do_close = true;
+  if (ImGui.MenuItem("Play", __poly_bind_label(_ed.cfg.keys, "play"))) _pending.do_play = true;
+  ImGui.Separator();
+  if (ImGui.MenuItem("Reset & exit...", __poly_bind_label(_ed.cfg.keys, "close"))) _pending.do_reset = true;
   ImGui.EndMenu();
   return _pending;
 }
@@ -429,7 +434,8 @@ function __poly_menu_do(_ed, _file) {
   if (_file.do_new) __poly_confirm_ask(_ed, "new");
   if (_file.do_load) __poly_confirm_ask(_ed, "load");
   if (_file.do_saveas) __poly_scene_dlg_open(_ed, "save", undefined);
-  if (_file.do_close) __poly_confirm_ask(_ed, "close");
+  if (_file.do_play) _ed[$ "pending_play"] = true;
+  if (_file.do_reset) _ed.confirm = { action: "reset", open: true };
 }
 
 // Tries to pad the menu bar via FramePadding (Dear ImGui StyleVar 11).
@@ -468,6 +474,19 @@ function __poly_menu_ai(_ed) {
   if (__poly_imgui_tool_btn("MCP bridge: connect/disconnect the relay", "MCP", _ai.on, 0, 0)) __poly_ai_enable(!_ai.on);
 }
 
+// Draws the Play button centered in the menu bar.
+function __poly_menu_play(_ed) {
+  var _label = "Play";
+  var _bw = ImGui.CalcTextWidth(_label) + 20;
+  var _w = ImGui.GetWindowWidth();
+  var _key = __poly_bind_label(_ed.cfg.keys, "play");
+  var _tip = "Play: close the editor without saving and keep the edits in the game";
+  if (_key != "") _tip += " [" + _key + "]";
+  ImGui.SameLine(max(0, (_w - _bw) * 0.5));
+
+  if (__poly_imgui_tool_btn(_tip, _label, false, 0, 0)) _ed[$ "pending_play"] = true;
+}
+
 // Draws main menu bar with actions.
 function __poly_imgui_menu(_ed) {
   ImGui.PushStyleVar(11, 8, 12);
@@ -483,6 +502,7 @@ function __poly_imgui_menu(_ed) {
   var _file = __poly_menu_file(_ed);
   __poly_menu_view(_ed);
   __poly_menu_help(_ed);
+  __poly_menu_play(_ed);
   __poly_menu_ai(_ed);
   ImGui.EndMainMenuBar();
 

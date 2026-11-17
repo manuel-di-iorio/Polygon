@@ -85,6 +85,31 @@ function demo_destroy() {
   demo_renderer = undefined;
 }
 
+// Editor close hook (Play): push the edited scene into the running game
+// without saving anything, then rebuild the game-owned physics
+// world so new/changed bodies are registered. Player, camera and visual keep
+// their nodes, so their references stay valid.
+function demo_on_close() {
+  // Reset & exit hands over no scene: the live game is already as it was.
+  if (!is_struct(poly_scene_snapshot())) return;
+  poly_sync_live();
+  if (demo_physics != undefined) demo_physics.destroy();
+
+  demo_physics = new GM3D_PhysicsWorld(demo_scene, {
+    maxBodies: 64,
+    fixedTimeStep: 1 / 60,
+    maxSubSteps: 4,
+  });
+  demo_physics.setGravity(new GM3D_Vec3(0.0, -22.0, 0.0));
+  demo_physics.syncScene();
+
+  if (demo_player != undefined) {
+    demo_physics.addCharacter(demo_player);
+    demo_physics.setCharacterVelocity(demo_player, new GM3D_Vec3());
+    demo_physics.setCharacterStickToGroundEnabled(demo_player, false);
+  }
+}
+
 // Updates demo scene animation.
 function demo_step() {
   var _dt = min(delta_time * 0.000001, 1 / 20);

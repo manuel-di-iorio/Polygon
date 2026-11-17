@@ -34,7 +34,10 @@ var config = {
   cam: demo_cam,
   editor_camera_z_offset: 8.1,
   editor_camera_yaw_offset: 180.0,
-  on_create: demo_on_create,
+  // Hooks are called from the editor instance: bind them to oGame so they can
+  // use this instance's variables (demo_scene, demo_physics, ...).
+  on_create: method(id, demo_on_create),
+  on_close: method(id, demo_on_close),
   assets: assets,
 };
 

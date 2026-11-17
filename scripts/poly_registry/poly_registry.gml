@@ -633,7 +633,7 @@ function __poly_track_place_asset(_ed, _key, _model, _node, _label = undefined) 
 
   if (_live_physics != undefined && _live_physics.mode != "none") _data.physics = _live_physics;
 
-  return __poly_spawn(_ed, {
+  var _new = __poly_spawn(_ed, {
     kind: "prefab",
     asset: _key,
     model: _model,
@@ -649,6 +649,9 @@ function __poly_track_place_asset(_ed, _key, _model, _node, _label = undefined) 
     adopt_src: _node,
     data: _data,
   });
+
+  __poly_live_link(_ed, _new, _node);
+  return _new;
 }
 
 
@@ -769,6 +772,7 @@ function __poly_track_make_node(_ed, _node) {
   if (_new == undefined) return undefined;
   _new.setLocalPosition(new GM3D_Vec3(_pos.x, _pos.y, _pos.z));
   _new.setLocalRotation(_node.getLocalRotation().clone());
+  __poly_live_link(_ed, _new, _node);
   return _new;
 }
 

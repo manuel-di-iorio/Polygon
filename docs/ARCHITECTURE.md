@@ -46,9 +46,10 @@ Core principles:
 
 ## 2. Lifecycle and frame flow
 
-Public API (`poly_create`, `poly_enable`, `poly_disable`,
+Public API (`poly_create`, `poly_enable`, `poly_disable`, `poly_play`,
 `poly_is_active`, `poly_step`, `poly_draw`, `poly_draw_ui`,
-`poly_cleanup`, `poly_ai_net`) is wired to `oEditor` events
+`poly_cleanup`, `poly_ai_net`, `poly_scene_snapshot`, `poly_sync_live`) is
+wired to `oEditor` events
 (Create / Step / Draw / Draw GUI / Async Networking / Clean Up).
 
 - `poly_create(config)` (`poly_create.gml`): wraps the adapter into `rt`
@@ -64,7 +65,13 @@ Public API (`poly_create`, `poly_enable`, `poly_disable`,
     clear selection+history, `scene_file=""`, snapshot `open_snapshot`.
   - Deactivate: clear drag preview, restore view/background, remove
     grid/sky, restore cameras, park the viewcam, restore shadows/unlit,
-    call `rt.on_close()`.
+    publish the edited scene in memory (`close_data`, read by
+    `poly_scene_snapshot()`), then call `rt.on_close()`. The close reason
+    is carried by `__poly_set_active(_ed, false, reason)`: `"play"`
+    publishes the scene, `"reset"` publishes nothing (`close_data` stays
+    `undefined`). `poly_play()` (toolbar / menu bar / File → Play / F5)
+    closes with no prompt; `__poly_reset_exit()` (File → Reset & exit...
+    / Ctrl+W) asks first and closes with reason `"reset"`.
 - `poly_step()` (`poly_step.gml`): `__poly_step(dt)` then AI step then
   `__poly_imgui_draw`. `__poly_step` order (`poly_core.gml`):
   1. window/GUI sizes, F9 FPS toggle, `__poly_view_sync`;
@@ -290,6 +297,17 @@ id. History is cleared on activate/new/load/discard. Creation snapshots
   scene has no file yet; dirty scenes go through the confirm dialog
   (Save / Don't save / Cancel). Delete removes the selected file
   (Load lists `.json`/`.bin` as separate rows).
+- In-memory handoff (Play): `__poly_deactivate` stores `close_data`
+  (`{ physics, assets, nodes }`, same shape as a file) before calling
+  `on_close`. `poly_scene_snapshot()` returns it and `poly_sync_live()`
+  applies it to `rt.live_scene` through the `live_links` map recorded at
+  import time: existing nodes get transform/shadows/visibility/physics/
+  prop data/resolved vars, editor-created nodes are spawned (with the
+  normal hooks), nodes removed in the editor are destroyed. Game-owned
+  nodes the editor never tracked are untouched. No file I/O, `dirty` and
+  `scene_file` unchanged. A reset exit stores no `close_data`: the editor
+  only ever modified its own mirror, so the live scene still has the
+  state it had at import and nothing has to be restored.
 
 ---
 

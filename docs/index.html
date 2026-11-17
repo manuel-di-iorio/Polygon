@@ -265,6 +265,15 @@ poly_load_step(); // call every Step, spawns ~48 nodes per frame</code></pre>
                 down (autosave-if-dirty).
               </li>
               <li>
+                <code>poly_play()</code> closes the editor without saving;
+                <code>poly_scene_snapshot()</code> and
+                <code>poly_sync_live()</code> hand the in-memory scene to
+                <code>on_close</code>, so Play keeps the edits in the running
+                game. <code>File &rarr; Reset &amp; exit</code> closes it the
+                other way: it confirms, then drops the edits and leaves the
+                live game as it was.
+              </li>
+              <li>
                 Remap every shortcut and camera control through the
                 <code>keys</code> config of <code>poly_create</code>.
               </li>
