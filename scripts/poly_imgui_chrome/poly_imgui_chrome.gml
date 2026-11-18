@@ -148,9 +148,6 @@ function __poly_imgui_toolbar(_ed) {
     ImGui.EndPopup();
   }
 
-  __poly_toolbar_sep();
-  if (__poly_imgui_tool_btn("Play: close the editor without saving and keep the edits in the game [F5]", "Play", false, 22)) _ed[$ "pending_play"] = true;
-
   ImGui.End();
 }
 
