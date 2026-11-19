@@ -89,6 +89,7 @@
     {"id":{"name":"poly_imgui_assets","path":"scripts/poly_imgui_assets/poly_imgui_assets.yy",},},
     {"id":{"name":"poly_imgui_chrome","path":"scripts/poly_imgui_chrome/poly_imgui_chrome.yy",},},
     {"id":{"name":"poly_imgui_dock","path":"scripts/poly_imgui_dock/poly_imgui_dock.yy",},},
+    {"id":{"name":"poly_imgui_history","path":"scripts/poly_imgui_history/poly_imgui_history.yy",},},
     {"id":{"name":"poly_imgui_insp_anim","path":"scripts/poly_imgui_insp_anim/poly_imgui_insp_anim.yy",},},
     {"id":{"name":"poly_imgui_insp_fields","path":"scripts/poly_imgui_insp_fields/poly_imgui_insp_fields.yy",},},
     {"id":{"name":"poly_imgui_insp_materials","path":"scripts/poly_imgui_insp_materials/poly_imgui_insp_materials.yy",},},

@@ -94,7 +94,11 @@ function __poly_axis_release(_ed, _fkey, _nv, _shown, _was, _mode, _ax) {
 
   if (_was) {
     if (is_real(_nv) && _nv != _shown) __poly_apply_axis(_ed, _mode, _ax, _nv);
-    if (_before != undefined) __poly_history_commit(_ed, _before);
+    var _hl = __poly_history_sel_label(_ed, "Moved");
+
+    if (_mode == 1) _hl = __poly_history_sel_label(_ed, "Rotated");
+    if (_mode == 2) _hl = __poly_history_sel_label(_ed, "Scaled");
+    if (_before != undefined) __poly_history_commit(_ed, _before, _hl, _hl);
     __poly_physics_debug_rebuild(_ed);
   }
 }
@@ -209,7 +213,7 @@ function __poly_imgui_color_edit(_ed, _key, _label, _packed) {
     var _before = _rec.before;
     _ed.imgui.col_gest[$ _key] = { active: false, before: undefined };
 
-    if (_before != undefined) __poly_history_commit(_ed, _before);
+    if (_before != undefined) __poly_history_commit(_ed, _before, "Edit color");
   }
 
   if (_nv != _packed) return _nv;

@@ -551,12 +551,62 @@ function __poly_gizmo_calibrate_ring(_ed, _vp, _g, _pivot, _mx, _my) {
   }
 }
 
+// Formats a vector as X/Y/Z for history tooltips.
+function __poly_fmt_vec3(_v) {
+  if (_v == undefined) return "0/0/0";
+  return string_format(_v.x, 0, 2) + "/" + string_format(_v.y, 0, 2) + "/" + string_format(_v.z, 0, 2);
+}
+
+// History label + detail for the current transform tool.
+function __poly_gizmo_hist_info(_ed) {
+  var _tool = _ed.giz.tool;
+  var _verb = "Transformed";
+
+  if (_tool == PolygonEditorTool.Rotate) _verb = "Rotated";
+  else if (_tool == PolygonEditorTool.Scale) _verb = "Scaled";
+  else if (_tool == PolygonEditorTool.Translate) _verb = "Moved";
+
+  var _nodes = _ed.sel;
+  var _n = is_array(_nodes) ? array_length(_nodes) : 0;
+  var _names = [];
+
+  for (var _i = 0; _i < _n; _i++) array_push(_names, __poly_node_display(_ed, _nodes[_i]));
+
+  var _label = "";
+
+  if (_n == 0) _label = _verb + " objects";
+  else if (_n == 1) _label = _verb + " instance " + _names[0];
+  else _label = _verb + " " + string(_n) + " instances";
+
+  var _detail = _label;
+
+  if (_tool == PolygonEditorTool.Translate && _n > 0 && is_array(_ed.giz.starts) && array_length(_ed.giz.starts) == _n) {
+    if (_n == 1) {
+      _detail = _label + " from " + __poly_fmt_vec3(_ed.giz.starts[0].pos) + " to " + __poly_fmt_vec3(_nodes[0].getLocalPosition());
+    } else {
+      var _parts = "";
+
+      for (var _j = 0; _j < _n; _j++) {
+        if (_j > 0) _parts += "; ";
+        _parts += _names[_j] + " from " + __poly_fmt_vec3(_ed.giz.starts[_j].pos) + " to " + __poly_fmt_vec3(_nodes[_j].getLocalPosition());
+      }
+
+      _detail = _parts;
+    }
+  }
+
+  return [_label, _detail];
+}
+
 // Initializes gizmo drag state and interaction plane.
 function __poly_gizmo_begin(_ed, _vp, _mx, _my) {
   var _g = _ed.giz;
   _g.starts = [];
+  // The release commits this snapshot directly (one entry per gesture), so no
+  // command is opened here: a stale cmd_open from a previous gesture could
+  // coalesce the commit away and leave the move without an undo entry.
   _ed.hist_before = __poly_history_snap(_ed);
-  __poly_cmd_begin(_ed, "gizmo-drag");
+  _ed.cmd_open = undefined;
 
   for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++) {
     array_push(_g.starts, {

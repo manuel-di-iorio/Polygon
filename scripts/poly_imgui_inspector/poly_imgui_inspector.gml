@@ -282,6 +282,7 @@ function __poly_imgui_inspector(_ed) {
   }
 
   __poly_imgui_panel_save(_ed, "insp");
+  _ui.insp_dock = __poly_imgui_safe("GetWindowDockID", 0);
   _ui.axis_values = undefined;
 
   if (variable_struct_exists(_ed, "mat_inspector") && is_struct(_ed.mat_inspector) && __poly_mat_inspector_stale(_ed)) __poly_mat_inspector_close(_ed);

@@ -36,6 +36,13 @@ function __poly_imgui_dock_fresh(_ed) {
   return variable_struct_exists(_ed.imgui, "dock_pos_skip") && _ed.imgui.dock_pos_skip == true;
 }
 
+// Docks the next window into _dock_id (FirstUseEver keeps user moves).
+function __poly_imgui_dock_next(_dock_id, _cond) {
+  if (!is_real(_dock_id) || _dock_id == 0) return false;
+  ImGui.SetNextWindowDockID(_dock_id, _cond);
+  return true;
+}
+
 // Checks if the dock layout still needs (re)building.
 // ImGui alone owns the layout: the default dock is built on the very
 // first run and on Reset Layout only. Later sessions skip the build and
@@ -115,6 +122,7 @@ function __poly_imgui_dock_build(_ed, _root) {
   var _center = _split_right[1];
   ImGui.DockBuilderDockWindow("Scene", _center);
   ImGui.DockBuilderDockWindow("Inspector", _right);
+  ImGui.DockBuilderDockWindow("History", _right);
   ImGui.DockBuilderDockWindow("Models", _bottom);
   ImGui.DockBuilderDockWindow("Hierarchy", _left);
   ImGui.DockBuilderFinish(_root);

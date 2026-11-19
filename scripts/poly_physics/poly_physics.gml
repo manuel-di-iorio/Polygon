@@ -170,6 +170,13 @@ function __poly_physics_data(_source) {
     if (!is_real(_out.character.visualOffset[_a])) _out.character.visualOffset[_a] = 0.0;
   }
 
+  // Optional blocks that are absent must not stay in the data as keys holding
+  // undefined: variable_struct_exists() still reports them (so the scene
+  // validator rejected every physics instance, breaking undo/redo and load)
+  // and JSON keeps them as null.
+  if (!is_array(_out.shapes)) variable_struct_remove(_out, "shapes");
+  if (!is_struct(_out.constraint)) variable_struct_remove(_out, "constraint");
+  if (!is_struct(_out.vehicle)) variable_struct_remove(_out, "vehicle");
   _out.character.radius = clamp(is_real(_out.character.radius) ? _out.character.radius : 0.33, 0.01, 1000.0);
   _out.character.halfHeight = clamp(is_real(_out.character.halfHeight) ? _out.character.halfHeight : 0.92, 0.01, 1000.0);
   _out.character.stepHeight = max(0.0, is_real(_out.character.stepHeight) ? _out.character.stepHeight : 0.3);

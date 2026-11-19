@@ -405,9 +405,11 @@ function __poly_validate_asset_desc(_desc) {
     var _nums = [ "mass", "linearDamping", "angularDamping", "gravityFactor", "friction", "restitution" ];
     for (var _n = 0; _n < array_length(_nums); _n++) if (variable_struct_exists(_p, _nums[_n]) && !is_real(_p[$ _nums[_n]])) return false;
     if (variable_struct_exists(_p, "isSensor") && !is_bool(_p.isSensor)) return false;
-    if (variable_struct_exists(_p, "shapes") && !is_array(_p.shapes)) return false;
+    // Optional blocks may be absent, undefined or null (older files saved the
+    // empty slots as JSON null): only a present value must be typed.
+    if (variable_struct_exists(_p, "shapes") && _p.shapes != undefined && !is_array(_p.shapes)) return false;
 
-    if (variable_struct_exists(_p, "constraint")) {
+    if (variable_struct_exists(_p, "constraint") && _p.constraint != undefined) {
       if (!is_struct(_p.constraint)) return false;
       if (variable_struct_exists(_p.constraint, "type") && !is_string(_p.constraint.type)) return false;
       if (variable_struct_exists(_p.constraint, "nodeB") && !is_string(_p.constraint.nodeB)) return false;
@@ -418,7 +420,7 @@ function __poly_validate_asset_desc(_desc) {
       if (variable_struct_exists(_p.constraint, "motorEnabled") && !is_bool(_p.constraint.motorEnabled)) return false;
     }
 
-    if (variable_struct_exists(_p, "vehicle")) {
+    if (variable_struct_exists(_p, "vehicle") && _p.vehicle != undefined) {
       if (!is_struct(_p.vehicle)) return false;
       if (variable_struct_exists(_p.vehicle, "enabled") && !is_bool(_p.vehicle.enabled)) return false;
       if (variable_struct_exists(_p.vehicle, "automatic") && !is_bool(_p.vehicle.automatic)) return false;

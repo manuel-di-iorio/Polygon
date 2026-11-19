@@ -1033,7 +1033,7 @@ function __poly_ai_op_create(_ed, _p, _commit) {
   __poly_sel_assign(_ed, [ _node ]);
   __poly_physics_debug_rebuild(_ed);
 
-  if (_commit) __poly_history_commit(_ed, _before);
+  if (_commit) __poly_history_commit(_ed, _before, "AI: create");
   var _res = { id: _en != undefined ? _en.id : _node.name, label: __poly_node_display(_ed, _node, _en) };
   if (variable_struct_exists(_p, "physics")) _res.physics = _physics_data;
 
@@ -1360,7 +1360,7 @@ function __poly_ai_op_drop(_ed, _p, _commit) {
   var _b = __poly_ai_snap_bottom(_ed, _node, _gy);
 
   if (!is_struct(_b) || _b.valid != true) return __poly_ai_err("failed", "node has no measurable bounds: " + _p.id);
-  if (_commit) __poly_history_commit(_ed, _before);
+  if (_commit) __poly_history_commit(_ed, _before, "AI: drop");
   return { id: _p.id, ground_y: _gy, bounds: _b };
 }
 
@@ -1383,7 +1383,7 @@ function __poly_ai_op_stack(_ed, _p, _commit) {
   var _b = __poly_ai_snap_bottom(_ed, _node, _sb.top + _gap);
 
   if (!is_struct(_b) || _b.valid != true) return __poly_ai_err("failed", "node has no measurable bounds: " + _p.id);
-  if (_commit) __poly_history_commit(_ed, _before);
+  if (_commit) __poly_history_commit(_ed, _before, "AI: stack");
   return { id: _p.id, on: _p.on, gap: _gap, bounds: _b };
 }
 
@@ -1416,7 +1416,7 @@ function __poly_ai_op_transform(_ed, _p, _commit) {
   _ed.rt.scene.update(0);
   __poly_physics_debug_rebuild(_ed);
 
-  if (_commit) __poly_history_commit(_ed, _before);
+  if (_commit) __poly_history_commit(_ed, _before, "AI: transform");
   var _result = { id: _p.id, transform: __poly_ai_transform_of(_node) };
   if (_has_physics) _result.physics = _physics_data;
   return _result;
@@ -1433,7 +1433,7 @@ function __poly_ai_op_rename(_ed, _p, _commit) {
   var _en = __poly_registry_find(_ed, _node);
 
   if (_en != undefined) _en.label = _p.label;
-  if (_commit) __poly_history_commit(_ed, _before);
+  if (_commit) __poly_history_commit(_ed, _before, "AI: rename");
   return { id: _p.id, label: _p.label };
 }
 
@@ -1491,7 +1491,7 @@ function __poly_ai_op_delete(_ed, _p, _commit) {
   __poly_sel_assign(_ed, _kept);
   __poly_physics_debug_rebuild(_ed);
 
-  if (_commit) __poly_history_commit(_ed, _before);
+  if (_commit) __poly_history_commit(_ed, _before, "AI: delete");
   return { deleted: _ids };
 }
 
@@ -1550,14 +1550,14 @@ function __poly_ai_op_batch(_ed, _p) {
     var _r = __poly_ai_apply(_ed, _op2.op, _pp2);
 
     if (variable_struct_exists(_r, "error")) {
-      __poly_history_commit(_ed, _before);
+      __poly_history_commit(_ed, _before, "AI: batch");
       return __poly_ai_err(_r.error_code, "ops[" + string(_j) + "] " + _op2.op + ": " + _r.error_msg);
     }
 
     array_push(_results, _r);
   }
 
-  __poly_history_commit(_ed, _before);
+  __poly_history_commit(_ed, _before, "AI: batch");
   return { results: _results };
 }
 

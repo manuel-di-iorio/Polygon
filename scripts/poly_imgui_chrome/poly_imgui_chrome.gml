@@ -324,6 +324,7 @@ function __poly_menu_view(_ed) {
   __poly_menu_win("Models", _ui.win_assets);
   __poly_menu_win("Hierarchy", _ui.win_hier);
   __poly_menu_win("Inspector", _ui.win_insp);
+  __poly_menu_win("History", _ui.win_hist);
   __poly_menu_win("Toolbar", _ui.win_toolbar);
   __poly_menu_win("View Cube", _ui.win_cube);
   __poly_menu_win("Scene", _ui.win_scene);

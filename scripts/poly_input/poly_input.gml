@@ -401,7 +401,8 @@ function __poly_step_nudge(_ed, _keys) {
     _ed.sel[_i].setLocalPosition(new GM3D_Vec3(_pos.x + _nx * _step, _pos.y, _pos.z + _nz * _step));
   }
 
-  __poly_history_commit(_ed, _before);
+  var _nlabel = __poly_history_sel_label(_ed, "Nudged");
+  __poly_history_commit(_ed, _before, _nlabel, _nlabel);
   __poly_physics_debug_rebuild(_ed);
 }
 
@@ -532,17 +533,27 @@ function __poly_step_gizmo(_ed, _input) {
   if (!mouse_check_button(mb_left)) {
     _ed.giz.drag = -1;
 
-    if (_ed.hist_before != undefined) __poly_cmd_commit(_ed, _ed.hist_before, "gizmo-drag");
+    if (_ed.hist_before != undefined) {
+      var _ginfo = __poly_gizmo_hist_info(_ed);
+      // Commit as a plain (non-coalesced) entry so the captured before-
+      // snapshot is always pushed, regardless of any stale cmd_open state.
+      _ed.cmd_open = undefined;
+      __poly_history_commit(_ed, _ed.hist_before, _ginfo[0], _ginfo[1]);
+    }
     __poly_physics_debug_rebuild(_ed);
     __poly_wrap_end(_ed);
 
     _ed.hist_before = undefined;
+    _ed.cmd_open = undefined;
     __poly_input_owner_clear(_ed, "gizmo");
   } else {
     if (_ed.wrap == undefined) {
       _ed.wrap = { on: true, vx: _mx, vy: _my, lx: _mx, ly: _my };
     }
 
+    // A drag without a captured before-state could never be undone: capture
+    // one here, before the first movement is applied.
+    if (_ed.hist_before == undefined) _ed.hist_before = __poly_history_snap(_ed);
     var _wrapped = __poly_wrap_step(_ed, _mx, _my);
     __poly_gizmo_drag(_ed, _vp, _wrapped[0] - _vp.offX, _wrapped[1] - _vp.offY);
   }
@@ -645,7 +656,12 @@ function __poly_step_libdrop(_ed, _input) {
       __poly_libdrop_place_new(_ed, _asset, _spawn, _drop);
     }
 
-    __poly_history_commit(_ed, _before);
+    // Name the placed model in the History panel ("Placed model tree #6")
+    // instead of a generic label.
+    var _placed = (is_array(_ed.sel) && array_length(_ed.sel) > 0) ? _ed.sel[0] : undefined;
+    var _place_label = (_placed != undefined) ? ("Placed model " + __poly_node_display(_ed, _placed)) : "Placed model";
+
+    __poly_history_commit(_ed, _before, _place_label, _place_label);
   } else {
     __poly_drop_preview_clear(_ed);
   }

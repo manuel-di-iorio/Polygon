@@ -36,6 +36,7 @@
     {"name":"poly_imgui_assets","order":10,"path":"scripts/poly_imgui_assets/poly_imgui_assets.yy",},
     {"name":"poly_imgui_chrome","order":8,"path":"scripts/poly_imgui_chrome/poly_imgui_chrome.yy",},
     {"name":"poly_imgui_dock","order":4,"path":"scripts/poly_imgui_dock/poly_imgui_dock.yy",},
+    {"name":"poly_imgui_history","order":17,"path":"scripts/poly_imgui_history/poly_imgui_history.yy",},
     {"name":"poly_imgui_insp_anim","order":7,"path":"scripts/poly_imgui_insp_anim/poly_imgui_insp_anim.yy",},
     {"name":"poly_imgui_insp_fields","order":14,"path":"scripts/poly_imgui_insp_fields/poly_imgui_insp_fields.yy",},
     {"name":"poly_imgui_insp_materials","order":13,"path":"scripts/poly_imgui_insp_materials/poly_imgui_insp_materials.yy",},

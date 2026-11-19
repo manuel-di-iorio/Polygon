@@ -8,21 +8,21 @@
 // Thin wrappers below delegate here so undo/apply stay in one place.
 // _undo=false skips history (live color edits: history is grouped inside
 // __poly_imgui_color_edit via col_gest, the caller marks dirty itself).
-function __poly_edit_field(_ed, _node, _data, _field, _apply, _newval, _undo = true) {
+function __poly_edit_field(_ed, _node, _data, _field, _apply, _newval, _undo = true, _label = undefined) {
   var _before = undefined;
 
   if (_undo) _before = __poly_history_snap(_ed);
   _data[$ _field] = _newval;
   _apply(_node, _data);
 
-  if (_undo && _before != undefined) __poly_history_commit(_ed, _before);
+  if (_undo && _before != undefined) __poly_history_commit(_ed, _before, is_string(_label) ? _label : "Inspector edit");
 }
 
 // Edits a bool field with undo.
 function __poly_edit_bool(_ed, _node, _data, _field, _label, _apply) {
   var _nv = ImGui.Checkbox(_label, _data[$ _field] == true);
 
-  if (_nv != (_data[$ _field] == true)) __poly_edit_field(_ed, _node, _data, _field, _apply, _nv);
+  if (_nv != (_data[$ _field] == true)) __poly_edit_field(_ed, _node, _data, _field, _apply, _nv, true, "Edit " + _label);
 }
 
 // Edits a float field with undo and optional clamping.
@@ -34,13 +34,13 @@ function __poly_edit_float(_ed, _node, _data, _id, _label, _field, _apply, _min 
 
   if (_min != undefined) _v = max(_v, _min);
   if (_max != undefined) _v = min(_v, _max);
-  __poly_edit_field(_ed, _node, _data, _field, _apply, _v);
+  __poly_edit_field(_ed, _node, _data, _field, _apply, _v, true, "Edit " + _label);
 }
 
 // Edits a radio option with undo. Returns true when picked.
 function __poly_edit_radio(_ed, _node, _data, _field, _value, _label, _apply) {
   if (!ImGui.RadioButton(_label, _data[$ _field] == _value)) return false;
-  __poly_edit_field(_ed, _node, _data, _field, _apply, _value);
+  __poly_edit_field(_ed, _node, _data, _field, _apply, _value, true, "Edit " + _label);
   return true;
 }
 
@@ -87,7 +87,7 @@ function __poly_physics_ui_change(_ed, _node, _en, _data, _field, _value, _child
   _ed.rt.scene.update(0.0);
   __poly_physics_debug_rebuild(_ed);
   _ed.view_dirty = true;
-  if (_before != undefined) __poly_history_commit(_ed, _before);
+  if (_before != undefined) __poly_history_commit(_ed, _before, "Edit physics: " + _field);
 }
 
 function __poly_imgui_physics_tip(_text) {
@@ -264,7 +264,7 @@ function __poly_imgui_physics_sec(_ed, _node, _en) {
         _ed.rt.scene.update(0.0);
         __poly_physics_debug_rebuild(_ed);
         _ed.view_dirty = true;
-        if (_before != undefined) __poly_history_commit(_ed, _before);
+        if (_before != undefined) __poly_history_commit(_ed, _before, "Edit constraint type");
       }
 
       ImGui.EndCombo();
@@ -280,7 +280,7 @@ function __poly_imgui_physics_sec(_ed, _node, _en) {
         if (_nb != _d.constraint.nodeB) {
           var _before = __poly_history_snap(_ed);
           _d.constraint.nodeB = _nb; _d = __poly_physics_data(_d); _en.data.physics = _d;
-          if (_before != undefined) __poly_history_commit(_ed, _before);
+          if (_before != undefined) __poly_history_commit(_ed, _before, "Edit constraint target");
         }
       }
     }
@@ -301,7 +301,7 @@ function __poly_imgui_physics_sec(_ed, _node, _en) {
         if (!_venabled) variable_struct_remove(_d, "vehicle");
         _d = __poly_physics_data(_d); _en.data.physics = _d;
         _ed.rt.scene.update(0.0); __poly_physics_debug_rebuild(_ed); _ed.view_dirty = true;
-        if (_before != undefined) __poly_history_commit(_ed, _before);
+        if (_before != undefined) __poly_history_commit(_ed, _before, "Toggle vehicle");
       }
 
       if (is_struct(_d[$ "vehicle"])) {
@@ -317,7 +317,7 @@ function __poly_imgui_physics_sec(_ed, _node, _en) {
             var _before = __poly_history_snap(_ed);
             _v[$ _f[0]] = clamp(_val, _f[2], _f[3]);
             _d.vehicle = _v; _d = __poly_physics_data(_d); _en.data.physics = _d;
-            if (_before != undefined) __poly_history_commit(_ed, _before);
+            if (_before != undefined) __poly_history_commit(_ed, _before, "Edit vehicle: " + _f[1]);
           }
         }
 
@@ -326,7 +326,7 @@ function __poly_imgui_physics_sec(_ed, _node, _en) {
         if (_auto != (_v.automatic == true)) {
           var _before = __poly_history_snap(_ed);
           _v.automatic = _auto; _d.vehicle = _v; _d = __poly_physics_data(_d); _en.data.physics = _d;
-          if (_before != undefined) __poly_history_commit(_ed, _before);
+          if (_before != undefined) __poly_history_commit(_ed, _before, "Edit vehicle: Automatic");
         }
       }
     }
@@ -410,7 +410,7 @@ function __poly_physics_multi_apply(_ed, _nodes, _field, _value) {
   _ed.rt.scene.update(0.0);
   __poly_physics_debug_rebuild(_ed);
   _ed.view_dirty = true;
-  if (_before != undefined) __poly_history_commit(_ed, _before);
+  if (_before != undefined) __poly_history_commit(_ed, _before, "Edit physics (multiple): " + _field);
 }
 
 // Draws the common physics fields for a multi-selection. Values that differ
@@ -483,7 +483,7 @@ function __poly_world_ui_change(_ed, _field, _value, _axis = -1) {
   _ed.world = __poly_world_data(_d);
   __poly_physics_debug_rebuild(_ed);
   _ed.view_dirty = true;
-  if (_before != undefined) __poly_history_commit(_ed, _before);
+  if (_before != undefined) __poly_history_commit(_ed, _before, "Edit physics world");
 }
 
 function __poly_imgui_world_sec(_ed) {
@@ -544,7 +544,7 @@ function __poly_imgui_world_sec(_ed) {
           _d.layerCollision[_i][_j] = _nv;
           _ed.world = __poly_world_data(_d);
           _ed.view_dirty = true;
-          if (_before != undefined) __poly_history_commit(_ed, _before);
+          if (_before != undefined) __poly_history_commit(_ed, _before, "Edit collision matrix");
         }
       }
     }
@@ -895,7 +895,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
     if (!is_struct(_meta)) _meta = { type: "model" };
     _meta.physics = _d;
     _ed.asset_meta[$ _entry.key] = _meta;
-    if (_before != undefined) __poly_history_commit(_ed, _before);
+    if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
   }
 
   if (_d.mode == "none") return;
@@ -913,7 +913,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
       _entry.physics_default = _d;
       if (!is_struct(_meta)) _meta = { type: "model" };
       _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-      if (_before != undefined) __poly_history_commit(_ed, _before);
+      if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
     }
 
     ImGui.EndCombo();
@@ -933,7 +933,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
         _d.shape = _shapes[_s]; _entry.physics_default = _d;
         if (!is_struct(_meta)) _meta = { type: "model" };
         _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-        if (_before != undefined) __poly_history_commit(_ed, _before);
+        if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
       }
 
       ImGui.EndCombo();
@@ -949,7 +949,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
       _d.mass = max(0.001, _mass); _entry.physics_default = _d;
       if (!is_struct(_meta)) _meta = { type: "model" };
       _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-      if (_before != undefined) __poly_history_commit(_ed, _before);
+      if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
     }
   }
 
@@ -967,7 +967,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
         _d.layer = _layers[_l]; _entry.physics_default = _d;
         if (!is_struct(_meta)) _meta = { type: "model" };
         _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-        if (_before != undefined) __poly_history_commit(_ed, _before);
+        if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
       }
 
       ImGui.EndCombo();
@@ -983,7 +983,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
       _d.linearDamping = max(0.0, _ld); _entry.physics_default = _d;
       if (!is_struct(_meta)) _meta = { type: "model" };
       _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-      if (_before != undefined) __poly_history_commit(_ed, _before);
+      if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
     }
 
     var _ad = __poly_imgui_prop_float(_ed, "prefab_physics_ad", "Angular damping", _d.angularDamping, 120);
@@ -994,7 +994,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
       _d.angularDamping = max(0.0, _ad); _entry.physics_default = _d;
       if (!is_struct(_meta)) _meta = { type: "model" };
       _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-      if (_before != undefined) __poly_history_commit(_ed, _before);
+      if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
     }
 
     var _gf = __poly_imgui_prop_float(_ed, "prefab_physics_gf", "Gravity factor", _d.gravityFactor, 120);
@@ -1005,7 +1005,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
       _d.gravityFactor = _gf; _entry.physics_default = _d;
       if (!is_struct(_meta)) _meta = { type: "model" };
       _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-      if (_before != undefined) __poly_history_commit(_ed, _before);
+      if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
     }
   }
 
@@ -1017,7 +1017,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
     _d.friction = clamp(_fr, 0.0, 1.0); _entry.physics_default = _d;
     if (!is_struct(_meta)) _meta = { type: "model" };
     _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-    if (_before != undefined) __poly_history_commit(_ed, _before);
+    if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
   }
 
   var _re = __poly_imgui_prop_float(_ed, "prefab_physics_re", "Restitution", _d.restitution, 120);
@@ -1028,7 +1028,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
     _d.restitution = clamp(_re, 0.0, 1.0); _entry.physics_default = _d;
     if (!is_struct(_meta)) _meta = { type: "model" };
     _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-    if (_before != undefined) __poly_history_commit(_ed, _before);
+    if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
   }
 
   var _sensor = ImGui.Checkbox("Sensor##prefab", _d.isSensor == true);
@@ -1039,7 +1039,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
     _d.isSensor = _sensor; _entry.physics_default = _d;
     if (!is_struct(_meta)) _meta = { type: "model" };
     _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-    if (_before != undefined) __poly_history_commit(_ed, _before);
+    if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
   }
 
   _d = __poly_physics_data(_entry.physics_default);
@@ -1055,7 +1055,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
       _d.halfExtents = _he; _entry.physics_default = _d;
       if (!is_struct(_meta)) _meta = { type: "model" };
       _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-      if (_before != undefined) __poly_history_commit(_ed, _before);
+      if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
     }
 
     var _off = __poly_imgui_prop_float(_ed, "prefab_physics_offset_" + _labels[_v], "Offset " + _labels[_v], _d.offset[_v], 120);
@@ -1067,7 +1067,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
       _d.offset = _of; _entry.physics_default = _d;
       if (!is_struct(_meta)) _meta = { type: "model" };
       _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-      if (_before != undefined) __poly_history_commit(_ed, _before);
+      if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
     }
   }
 
@@ -1080,7 +1080,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
       _d.triggerEnter = _te; _entry.physics_default = _d;
       if (!is_struct(_meta)) _meta = { type: "model" };
       _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-      if (_before != undefined) __poly_history_commit(_ed, _before);
+      if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
     }
 
     var _ts = ImGui.Checkbox("On stay##prefab", _d.triggerStay == true);
@@ -1090,7 +1090,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
       _d.triggerStay = _ts; _entry.physics_default = _d;
       if (!is_struct(_meta)) _meta = { type: "model" };
       _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-      if (_before != undefined) __poly_history_commit(_ed, _before);
+      if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
     }
 
     var _tx = ImGui.Checkbox("On exit##prefab", _d.triggerExit == true);
@@ -1100,7 +1100,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
       _d.triggerExit = _tx; _entry.physics_default = _d;
       if (!is_struct(_meta)) _meta = { type: "model" };
       _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-      if (_before != undefined) __poly_history_commit(_ed, _before);
+      if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
     }
   }
 
@@ -1119,7 +1119,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
         _entry.physics_default = _d;
         if (!is_struct(_meta)) _meta = { type: "model" };
         _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-        if (_before != undefined) __poly_history_commit(_ed, _before);
+        if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
       }
     }
 
@@ -1132,7 +1132,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
       _entry.physics_default = _d;
       if (!is_struct(_meta)) _meta = { type: "model" };
       _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-      if (_before != undefined) __poly_history_commit(_ed, _before);
+      if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
     }
 
     if (ImGui.Button("Recenter visual##prefab")) {
@@ -1144,7 +1144,7 @@ function __poly_imgui_prefab_physics(_ed, _entry) {
         _entry.physics_default = _d;
         if (!is_struct(_meta)) _meta = { type: "model" };
         _meta.physics = _d; _ed.asset_meta[$ _entry.key] = _meta;
-        if (_before != undefined) __poly_history_commit(_ed, _before);
+        if (_before != undefined) __poly_history_commit(_ed, _before, "Prefab physics");
       }
     }
   }
@@ -1244,7 +1244,7 @@ function __poly_imgui_vars_sec(_ed, _node, _en) {
       var _before = __poly_history_snap(_ed);
       if (!is_struct(_en.data[$ "vars"])) _en.data.vars = {};
       _en.data.vars[$ _s.name] = _nv;
-      if (_before != undefined) __poly_history_commit(_ed, _before);
+      if (_before != undefined) __poly_history_commit(_ed, _before, "Edit variable: " + _s.name);
       _has_over = true;
       _val = _nv;
     }
@@ -1257,7 +1257,7 @@ function __poly_imgui_vars_sec(_ed, _node, _en) {
         var _before2 = __poly_history_snap(_ed);
 
         if (is_struct(_en.data[$ "vars"]) && variable_struct_exists(_en.data.vars, _s.name)) variable_struct_remove(_en.data.vars, _s.name);
-        if (_before2 != undefined) __poly_history_commit(_ed, _before2);
+        if (_before2 != undefined) __poly_history_commit(_ed, _before2, "Revert variable: " + _s.name);
       }
 
       if (ImGui.IsItemHovered()) ImGui.SetTooltip("Remove this instance override and use the prefab default.");
@@ -1290,7 +1290,7 @@ function __poly_imgui_vars_prefab_sec(_ed, _entry) {
       var _before = __poly_history_snap(_ed);
       _entry.vars_def[$ _s.name] = _nv;
       __poly_vars_meta_set(_ed, _entry);
-      if (_before != undefined) __poly_history_commit(_ed, _before);
+      if (_before != undefined) __poly_history_commit(_ed, _before, "Edit prefab variable: " + _s.name);
       _defs[$ _s.name] = _nv;
       _val = _nv;
     }
@@ -1305,7 +1305,7 @@ function __poly_imgui_vars_prefab_sec(_ed, _entry) {
         var _before2 = __poly_history_snap(_ed);
         _entry.vars_def[$ _s.name] = _cv;
         __poly_vars_meta_set(_ed, _entry);
-        if (_before2 != undefined) __poly_history_commit(_ed, _before2);
+        if (_before2 != undefined) __poly_history_commit(_ed, _before2, "Reset prefab variable: " + _s.name);
       }
 
       if (ImGui.IsItemHovered()) ImGui.SetTooltip("Restore the value declared in code.");

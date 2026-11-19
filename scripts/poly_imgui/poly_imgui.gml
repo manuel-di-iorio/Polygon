@@ -32,6 +32,7 @@ function __poly_imgui_draw(_ed) {
   var _modal_open =
     _ed.confirm != undefined ||
     _ed.delete_confirm != undefined ||
+    _ed.hist_confirm != undefined ||
     _ed.about != undefined ||
     _ed.scene_dlg != undefined;
 
@@ -55,6 +56,7 @@ function __poly_imgui_draw(_ed) {
   __poly_imgui_assets(_ed);
   __poly_imgui_scene_win(_ed);
   __poly_imgui_inspector(_ed);
+  __poly_imgui_history_win(_ed);
   __poly_imgui_scene_panel(_ed);
   __poly_imgui_toolbar(_ed);
   __poly_imgui_console_win(_ed);
@@ -74,6 +76,7 @@ function __poly_imgui_draw(_ed) {
 function __poly_imgui_modals(_ed) {
   if (_ed.confirm != undefined) __poly_imgui_confirm(_ed);
   if (variable_struct_exists(_ed, "delete_confirm") && _ed.delete_confirm != undefined) __poly_imgui_delete_confirm(_ed);
+  if (variable_struct_exists(_ed, "hist_confirm") && _ed.hist_confirm != undefined) __poly_imgui_history_confirm(_ed);
   if (_ed.about != undefined) __poly_imgui_about(_ed);
   if (_ed.scene_dlg != undefined) __poly_imgui_scene_dlg(_ed);
 }

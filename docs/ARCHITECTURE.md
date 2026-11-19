@@ -222,7 +222,7 @@ home). Tracked scene cameras stay muted while editing.
 ## 6. History (undo/redo)
 
 `poly_history.gml`. Snapshots, not deltas: `{json:
-stringify(serialize_scene), sel: [descriptors]}`. `history_commit`
+stringify(serialize_scene), sel: [descriptors], label}`. `history_commit`
 pushes the *before* snapshot (skipped when identical), caps 100, clears
 redo, marks dirty. Gizmo drags coalesce through `cmd_open`
 (`cmd_begin`/`cmd_commit`); every other op (create, delete, duplicate,
@@ -231,6 +231,12 @@ one entry. Undo/redo (`Ctrl+Z`, `Ctrl+Y`/`Ctrl+Shift+Z`) pops, pushes
 the current state on the other stack, `rebuild`s, restores selection by
 id. History is cleared on activate/new/load/discard. Creation snapshots
 *before* `createNode` so empty nodes never leak into undo.
+
+Each entry carries a human-readable `label` ("Delete objects", "Move
+objects", "AI: transform", ...). The History panel uses it, and
+`history_jump(index)` / `history_redo_to(index)` move several snapshots
+between the stacks like repeated undo/redo while rebuilding the scene
+only once at the destination (the confirmation modal guards both).
 
 ---
 
@@ -438,9 +444,10 @@ plus GM3D `s*` model shaders):
 ## 14. Panels and chrome
 
 ImGui, docked (`poly_imgui.gml` orchestrator,
-`poly_imgui_dock.gml` layout: Scene center, Inspector right, Models
-bottom, Hierarchy left; dark theme; panel-move lock while gesturing).
-Draw order: menu → Models → Hierarchy → Inspector → Scene →
+`poly_imgui_dock.gml` layout: Scene center, Inspector + History right
+(same node, History second tab), Models bottom, Hierarchy left; dark
+theme; panel-move lock while gesturing).
+Draw order: menu → Models → Hierarchy → Inspector → History → Scene →
 toolbar → FPS → animation preview → modals.
 
 - Menu bar (`poly_imgui_chrome.gml`): brand, File (scene basename +
@@ -465,6 +472,12 @@ toolbar → FPS → animation preview → modals.
   (per-field Revert/Apply vs spawn defaults), Actor bindings, spawn
   defaults, read-only Materials (slots, sampler state, hex copy) and
   Animations (clip list + floating playable preview).
+- History (`poly_imgui_history.gml`): docks as a second tab next to the
+  Inspector (DockBuilder + `SetNextWindowDockID` first-use for layouts
+  saved before the panel existed). Lists undo entries newest-first, each
+  with a rotate icon that asks for confirmation and jumps back to that
+  point (`history_jump`), plus the redo stack with a right-arrow row
+  (`history_redo_to`). Empty-state text when both stacks are empty.
 - Models (`poly_imgui_assets.gml`): Cards/List views, search filter,
   drag-into-viewport placement with live preview node, background-
   click deselect.
@@ -472,7 +485,7 @@ toolbar → FPS → animation preview → modals.
   (`F9`); ViewCube (orientation cones, axis snap, draggable).
 - Modals: scene save/load (name + format radio on save; search +
   per-file list on load; chunked-load progress bar), new/load/close
-  confirms, multi-delete confirm, About.
+  confirms, multi-delete confirm, history restore confirm, About.
 
 ---
 

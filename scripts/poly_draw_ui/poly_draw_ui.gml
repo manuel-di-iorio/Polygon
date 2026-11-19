@@ -5,7 +5,7 @@ function poly_draw_ui() {
   var _ed = __poly_inst();
 
   if (_ed == undefined) return;
-  var _modal = _ed.confirm != undefined || _ed.about != undefined || _ed.scene_dlg != undefined;
+  var _modal = _ed.confirm != undefined || _ed.delete_confirm != undefined || _ed.hist_confirm != undefined || _ed.about != undefined || _ed.scene_dlg != undefined;
 
   if (_modal) {
     draw_set_alpha(0.55);

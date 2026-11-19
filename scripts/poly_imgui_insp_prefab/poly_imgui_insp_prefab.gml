@@ -139,7 +139,7 @@ function __poly_over_revert_one(_ed, _node, _en, _entry, _kind) {
   var _before = __poly_history_snap(_ed);
   __poly_over_revert(_ed, _node, _en, _entry, _kind);
 
-  if (_before != undefined) __poly_history_commit(_ed, _before);
+  if (_before != undefined) __poly_history_commit(_ed, _before, "Revert override");
 }
 
 // Reverts all overrides with undo.
@@ -147,7 +147,7 @@ function __poly_over_revert_all(_ed, _node, _en, _entry, _diffs) {
   var _before = __poly_history_snap(_ed);
 
   for (var _i = 0, _n = array_length(_diffs); _i < _n; _i++) __poly_over_revert(_ed, _node, _en, _entry, _diffs[_i].kind);
-  if (_before != undefined) __poly_history_commit(_ed, _before);
+  if (_before != undefined) __poly_history_commit(_ed, _before, "Revert all overrides");
 }
 
 // ---------------------------------------------------------------------------

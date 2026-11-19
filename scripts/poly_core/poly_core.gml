@@ -490,6 +490,7 @@ function __poly_state_imgui() {
     win_assets: { open: true },
     win_hier: { open: true },
     win_insp: { open: true },
+    win_hist: { open: true },
     win_toolbar: { open: true },
     win_cube: { open: true },
     win_scene: { open: true },
@@ -660,6 +661,7 @@ function __poly_create_state(_rt) {
     rename_id: undefined,
     confirm: undefined,
     delete_confirm: undefined,
+    hist_confirm: undefined,
     about: undefined,
     scene_dlg: undefined,
     show_fps: false,
@@ -788,7 +790,7 @@ function __poly_step(_ed, _dt) {
   var _vp = _input.vp;
   _ed.vp = _vp;
 
-  var _modal = _ed.confirm != undefined || _ed.about != undefined || _ed.scene_dlg != undefined;
+  var _modal = _ed.confirm != undefined || _ed.hist_confirm != undefined || _ed.about != undefined || _ed.scene_dlg != undefined;
 
   if (_modal) {
     // A running chunked load owns its dialog: ESC must not kill it
@@ -797,6 +799,7 @@ function __poly_step(_ed, _dt) {
 
     if (!_loading && !_input.typing && __poly_bind_pressed(_keys, "cancel")) {
       _ed.confirm = undefined;
+      _ed.hist_confirm = undefined;
       _ed.about = undefined;
       _ed.scene_dlg = undefined;
     }
