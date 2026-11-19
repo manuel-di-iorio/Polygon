@@ -179,7 +179,12 @@ function __poly_delete_sel(_ed) {
   if (array_length(_victims) == 0) return;
   var _names = [];
 
-  for (var _k = 0, _nk = array_length(_victims); _k < _nk; _k++) array_push(_names, __poly_node_display(_ed, _victims[_k]));
+  var _at = [];
+
+  for (var _k = 0, _nk = array_length(_victims); _k < _nk; _k++) {
+    array_push(_names, __poly_node_display(_ed, _victims[_k]));
+    array_push(_at, _victims[_k].getLocalPosition().clone());
+  }
 
   var _label = (array_length(_victims) == 1) ? ("Deleted instance " + _names[0]) : ("Deleted " + string(array_length(_victims)) + " instances");
   var _before = __poly_history_snap(_ed);
@@ -193,7 +198,15 @@ function __poly_delete_sel(_ed) {
   _ed.rt.scene.update(0);
   __poly_sel_clear(_ed);
   __poly_physics_debug_rebuild(_ed);
-  __poly_history_commit(_ed, _before, _label, _label);
+  var _detail = _label;
+
+  if (array_length(_victims) == 1) {
+    _detail = _label + " at " + __poly_fmt_xyz(_at[0]);
+  } else {
+    _detail = __poly_history_names_detail(_names);
+  }
+
+  __poly_history_commit(_ed, _before, _label, _detail);
 }
 
 // Duplicates one asset node in place, copying shadow flags and spawn physics defaults.
@@ -276,7 +289,19 @@ function __poly_duplicate_sel(_ed) {
 
   if (array_length(_out) > 0) _ed.sel = _out;
   __poly_physics_debug_rebuild(_ed);
-  __poly_history_commit(_ed, _before, _label, _label);
+  var _detail = _label;
+
+  if (array_length(_out) == 1) {
+    _detail = _label + " at " + __poly_fmt_xyz(_out[0].getLocalPosition());
+  } else if (array_length(_out) > 1) {
+    var _copy_names = [];
+
+    for (var _dn = 0, _dnn = array_length(_out); _dn < _dnn; _dn++) array_push(_copy_names, __poly_node_display(_ed, _out[_dn]));
+
+    _detail = __poly_history_names_detail(_copy_names);
+  }
+
+  __poly_history_commit(_ed, _before, _label, _detail);
 }
 
 // Copies prop data for duplication (shape-preserving deep copy: the
@@ -375,9 +400,15 @@ function __poly_clipboard_cut(_ed) {
   if (array_length(_victims) == 0) return false;
   var _names = [];
 
-  for (var _k = 0, _nk = array_length(_victims); _k < _nk; _k++) array_push(_names, __poly_node_display(_ed, _victims[_k]));
+  var _at = [];
+
+  for (var _k = 0, _nk = array_length(_victims); _k < _nk; _k++) {
+    array_push(_names, __poly_node_display(_ed, _victims[_k]));
+    array_push(_at, _victims[_k].getLocalPosition().clone());
+  }
 
   var _label = (array_length(_victims) == 1) ? ("Cut instance " + _names[0]) : ("Cut " + string(array_length(_victims)) + " instances");
+  var _detail = (array_length(_victims) == 1) ? (_label + " at " + __poly_fmt_xyz(_at[0])) : __poly_history_names_detail(_names);
   var _before = __poly_history_snap(_ed);
   _ed.clipboard = { descs: _descs, cut: true };
   __poly_physics_debug_destroy(_ed);
@@ -390,7 +421,7 @@ function __poly_clipboard_cut(_ed) {
   _ed.rt.scene.update(0);
   __poly_sel_clear(_ed);
   __poly_physics_debug_rebuild(_ed);
-  __poly_history_commit(_ed, _before, _label, _label);
+  __poly_history_commit(_ed, _before, _label, _detail);
   return true;
 }
 
@@ -433,8 +464,16 @@ function __poly_clipboard_paste(_ed) {
   for (var _ni = 0, _nn = array_length(_nodes); _ni < _nn; _ni++) array_push(_names, __poly_node_display(_ed, _nodes[_ni]));
 
   var _label = (array_length(_nodes) == 1) ? ("Pasted instance " + _names[0]) : ("Pasted " + string(array_length(_nodes)) + " instances");
+  var _detail = _label;
+
+  if (array_length(_nodes) == 1) {
+    _detail = _label + " at " + __poly_fmt_xyz(_nodes[0].getLocalPosition());
+  } else if (array_length(_nodes) > 1) {
+    _detail = __poly_history_names_detail(_names);
+  }
+
   __poly_physics_debug_rebuild(_ed);
-  __poly_history_commit(_ed, _before, _label, _label);
+  __poly_history_commit(_ed, _before, _label, _detail);
   return true;
 }
 
@@ -810,19 +849,23 @@ function __poly_push_sel_to_grid(_ed) {
   if (array_length(_ed.sel) == 0) return;
   var _step = __poly_snap_step(_ed);
   var _before = __poly_history_snap(_ed);
+  var _moved = [];
 
   for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++) {
     if (!__poly_tool_allowed(_ed, _ed.sel[_i], PolygonEditorTool.Translate) || __poly_hidden_get(_ed, _ed.sel[_i])) continue;
-    var _pos = _ed.sel[_i].getLocalPosition().clone();
+    var _from = _ed.sel[_i].getLocalPosition().clone();
+    var _pos = _from.clone();
 
     if (!variable_struct_exists(_ed, "snap_x") || _ed.snap_x) _pos.x = __poly_snap(_pos.x, _step);
     if (!variable_struct_exists(_ed, "snap_y") || _ed.snap_y) _pos.y = __poly_snap(_pos.y, _step);
     if (!variable_struct_exists(_ed, "snap_z") || _ed.snap_z) _pos.z = __poly_snap(_pos.z, _step);
+    if (_from.x == _pos.x && _from.y == _pos.y && _from.z == _pos.z) continue;
+    array_push(_moved, { name: __poly_node_display(_ed, _ed.sel[_i]), from: _from, to: _pos.clone() });
     _ed.sel[_i].setLocalPosition(_pos);
   }
 
   var _label = __poly_history_sel_label(_ed, "Snapped") + " to grid";
-  __poly_history_commit(_ed, _before, _label, _label);
+  __poly_history_commit(_ed, _before, _label, __poly_history_move_detail(_moved, _label));
 }
 
 // Applies position rotation scale axis edit (mode 0/1/2, axis 0/1/2).

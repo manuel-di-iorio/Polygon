@@ -29,19 +29,6 @@ function __poly_imgui_draw(_ed) {
   var _resized = _ed.imgui._pw != _ed.gw || _ed.imgui._ph != _ed.gh;
   _ed.imgui._pw = _ed.gw;
   _ed.imgui._ph = _ed.gh;
-  var _modal_open =
-    _ed.confirm != undefined ||
-    _ed.delete_confirm != undefined ||
-    _ed.hist_confirm != undefined ||
-    _ed.about != undefined ||
-    _ed.scene_dlg != undefined;
-
-  if (_modal_open) {
-    __poly_imgui_modals(_ed);
-    _ed.imgui.dock_pos_skip = false;
-    return;
-  }
-
   var _reset = _ed.imgui.reset_layout == true;
 
   if (_reset) {

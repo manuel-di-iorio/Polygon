@@ -98,7 +98,11 @@ function __poly_axis_release(_ed, _fkey, _nv, _shown, _was, _mode, _ax) {
 
     if (_mode == 1) _hl = __poly_history_sel_label(_ed, "Rotated");
     if (_mode == 2) _hl = __poly_history_sel_label(_ed, "Scaled");
-    if (_before != undefined) __poly_history_commit(_ed, _before, _hl, _hl);
+    var _hd = _hl;
+    var _axes = [ "X", "Y", "Z" ];
+
+    if (_ax >= 0 && _ax < 3 && is_real(_shown) && is_real(_nv)) _hd = _hl + ": " + _axes[_ax] + " " + __poly_fmt_value(_shown) + " -> " + __poly_fmt_value(_nv);
+    if (_before != undefined) __poly_history_commit(_ed, _before, _hl, _hd);
     __poly_physics_debug_rebuild(_ed);
   }
 }

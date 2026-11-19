@@ -141,6 +141,11 @@ function __poly_modal_begin(_ed, _title, _w, _h, _handle) {
   ImGui.SetNextWindowBgAlpha(1);
   ImGui.PushStyleColor(ImGuiCol.TitleBg, _title_bg, 1);
   ImGui.PushStyleColor(ImGuiCol.TitleBgActive, _title_bg, 1);
+  // These are plain windows, not ImGui popups, so nothing keeps them above
+  // the editor panels drawn behind them: ask for focus every frame.
+  var _focus = ImGui[$ "SetNextWindowFocus"];
+
+  if (_focus != undefined) method(ImGui, _focus)();
   return ImGui.Begin(_title, _handle, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize);
 }
 

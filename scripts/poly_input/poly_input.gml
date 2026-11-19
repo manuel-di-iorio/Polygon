@@ -394,15 +394,20 @@ function __poly_step_nudge(_ed, _keys) {
   if ((_nx == 0 && _nz == 0) || array_length(_ed.sel) == 0) return;
   var _step = _ed.snap_on ? __poly_snap_step(_ed) : 0.25;
   var _before = __poly_history_snap(_ed);
+  var _moved = [];
 
   for (var _i = 0, _n = array_length(_ed.sel); _i < _n; _i++) {
     if (!__poly_tool_allowed(_ed, _ed.sel[_i], PolygonEditorTool.Translate) || __poly_hidden_get(_ed, _ed.sel[_i])) continue;
     var _pos = _ed.sel[_i].getLocalPosition();
-    _ed.sel[_i].setLocalPosition(new GM3D_Vec3(_pos.x + _nx * _step, _pos.y, _pos.z + _nz * _step));
+    var _next = new GM3D_Vec3(_pos.x + _nx * _step, _pos.y, _pos.z + _nz * _step);
+
+    array_push(_moved, { name: __poly_node_display(_ed, _ed.sel[_i]), from: _pos.clone(), to: _next.clone() });
+    _ed.sel[_i].setLocalPosition(_next);
   }
 
   var _nlabel = __poly_history_sel_label(_ed, "Nudged");
-  __poly_history_commit(_ed, _before, _nlabel, _nlabel);
+
+  __poly_history_commit(_ed, _before, _nlabel, __poly_history_move_detail(_moved, _nlabel));
   __poly_physics_debug_rebuild(_ed);
 }
 
@@ -661,7 +666,7 @@ function __poly_step_libdrop(_ed, _input) {
     var _placed = (is_array(_ed.sel) && array_length(_ed.sel) > 0) ? _ed.sel[0] : undefined;
     var _place_label = (_placed != undefined) ? ("Placed model " + __poly_node_display(_ed, _placed)) : "Placed model";
 
-    __poly_history_commit(_ed, _before, _place_label, _place_label);
+    __poly_history_commit(_ed, _before, _place_label, _place_label + " at " + __poly_fmt_xyz(_drop));
   } else {
     __poly_drop_preview_clear(_ed);
   }

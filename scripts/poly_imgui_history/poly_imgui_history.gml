@@ -47,13 +47,40 @@ function __poly_history_row_tip(_verb, _label, _steps) {
   return _verb + " " + string(_steps) + " actions (back to before \"" + _label + "\")";
 }
 
+// Splits a long line into screen lines of at most _max characters, breaking
+// on spaces so dialog text stays inside the window.
+function __poly_history_wrap_lines(_text, _max) {
+  var _out = [];
+  var _rest = is_string(_text) ? _text : "";
+
+  while (string_length(_rest) > _max) {
+    var _sp = string_last_pos(" ", string_copy(_rest, 1, _max));
+    var _next = (_sp > 1) ? _sp + 1 : _max + 1;
+
+    array_push(_out, string_trim(string_copy(_rest, 1, _next - 1)));
+    _rest = string_trim(string_copy(_rest, _next, string_length(_rest)));
+  }
+
+  array_push(_out, _rest);
+  return _out;
+}
+
+// Tooltip for a restorable row: the action text plus its detail (the detail
+// describes what that single action changed).
+function __poly_history_row_tip_full(_verb, _label, _detail, _steps) {
+  var _tip = __poly_history_row_tip(_verb, _label, _steps);
+
+  if (_steps == 1 && _detail != "") _tip += "\n" + _detail;
+  return _tip;
+}
+
 // Draws one restorable undo row (newest first).
 function __poly_imgui_history_undo_row(_ed, _index, _count) {
   ImGui.PushID(_index);
   var _label = __poly_history_entry_label(_ed.undo[_index]);
   var _steps = max(1, _count - _index);
   var _detail = __poly_history_entry_detail(_ed.undo[_index]);
-  var _tip = (_steps == 1 && _detail != "") ? _detail : __poly_history_row_tip("Undo", _label, _steps);
+  var _tip = __poly_history_row_tip_full("Undo", _label, _detail, _steps);
   var _hit = __poly_imgui_icon_btn(
     "##hist_undo",
     _tip,
@@ -67,6 +94,7 @@ function __poly_imgui_history_undo_row(_ed, _index, _count) {
   ImGui.SameLine();
   ImGui.AlignTextToFramePadding();
   ImGui.TextUnformatted(_label);
+  __poly_imgui_tip_delayed("hist_undo_text", _tip, ImGui.IsItemHovered());
 
   if (_hit) {
     _ed.hist_confirm = {
@@ -88,13 +116,14 @@ function __poly_imgui_history_redo_row(_ed, _index, _count) {
   var _label = __poly_history_entry_label(_ed.redo[_index]);
   var _steps = max(1, _count - _index);
   var _detail = __poly_history_entry_detail(_ed.redo[_index]);
-  var _tip = (_steps == 1 && _detail != "") ? _detail : __poly_history_row_tip("Redo", _label, _steps);
+  var _tip = __poly_history_row_tip_full("Redo", _label, _detail, _steps);
   var _hit = ImGui.ArrowButton("##hist_redo", ImGuiDir.Right);
 
-  if (ImGui.IsItemHovered()) ImGui.SetTooltip(_tip);
+  __poly_imgui_tip_delayed("hist_redo_btn", _tip, ImGui.IsItemHovered());
   ImGui.SameLine();
   ImGui.AlignTextToFramePadding();
   ImGui.TextUnformatted(_label);
+  __poly_imgui_tip_delayed("hist_redo_text", _tip, ImGui.IsItemHovered());
 
   if (_hit) {
     _ed.hist_confirm = {
@@ -144,23 +173,30 @@ function __poly_imgui_history_confirm(_ed) {
     return;
   }
 
-  var _begun = __poly_modal_begin(_ed, "Restore history state", 430, 142, _dlg);
-
-  if (!_begun) {
-    __poly_modal_end();
-    return;
-  }
-
   var _steps = (is_real(_dlg[$ "steps"]) && _dlg.steps > 0) ? round(_dlg.steps) : 1;
   var _label = (is_string(_dlg[$ "label"]) && _dlg.label != "") ? _dlg.label : "action";
   var _detail = (is_string(_dlg[$ "detail"]) && _dlg.detail != "") ? _dlg.detail : "";
   var _redo = _dlg.action == "redo";
   var _verb = _redo ? "Redo" : "Undo";
   var _what = _steps == 1 ? "1 action" : string(_steps) + " actions";
+  var _head = (_redo ? "Redo up to: \"" : "Back to before: \"") + _label + "\"";
+  // Long labels and details wrap into extra lines, and the window grows with
+  // them instead of clipping the text at its edge.
+  var _head_lines = __poly_history_wrap_lines(_head, 68);
+  var _dl_lines = (_detail != "" && _steps == 1) ? __poly_history_wrap_lines(_detail, 68) : [];
+  var _line_h = max(12, ImGui.GetTextLineHeight());
+  var _n_lines = 1 + array_length(_head_lines) + array_length(_dl_lines);
+  var _begun = __poly_modal_begin(_ed, "Restore history state", 560, 96 + _n_lines * _line_h, _dlg);
+
+  if (!_begun) {
+    __poly_modal_end();
+    return;
+  }
 
   ImGui.Text(_verb + " " + _what + "?");
-  ImGui.TextDisabled((_redo ? "Redo up to: \"" : "Back to before: \"") + _label + "\"");
-  if (_detail != "" && _steps == 1) ImGui.TextDisabled(_detail);
+
+  for (var _hi = 0, _hn = array_length(_head_lines); _hi < _hn; _hi++) ImGui.TextDisabled(_head_lines[_hi]);
+  for (var _di = 0, _dn = array_length(_dl_lines); _di < _dn; _di++) ImGui.TextDisabled(_dl_lines[_di]);
   // ImGui.Spacing();
   // if (_redo) ImGui.TextDisabled("The restored actions can still be undone.");
 

@@ -615,7 +615,9 @@ function __poly_create_light(_ed, _type) {
   __poly_light_apply(_node, _data);
   __poly_create_finish(_ed, _node, "light", undefined, _data);
   __poly_sel_assign(_ed, [ _node ]);
-  __poly_history_commit(_ed, _before, __poly_history_sel_label(_ed, "Created"), __poly_history_sel_label(_ed, "Created"));
+  var _clabel = __poly_history_sel_label(_ed, "Created");
+
+  __poly_history_commit(_ed, _before, _clabel, _clabel + " at " + __poly_fmt_xyz(_node.getLocalPosition()));
   return _node;
 }
 
@@ -635,7 +637,9 @@ function __poly_create_camera(_ed, _proj) {
   __poly_create_finish(_ed, _node, "camera", undefined, _data);
   _ed.sel = [ _node ];
   _ed.giz.drag = -1;
-  __poly_history_commit(_ed, _before, __poly_history_sel_label(_ed, "Created"), __poly_history_sel_label(_ed, "Created"));
+  var _clabel = __poly_history_sel_label(_ed, "Created");
+
+  __poly_history_commit(_ed, _before, _clabel, _clabel + " at " + __poly_fmt_xyz(_node.getLocalPosition()));
   __poly_cameras_mute(_ed);
   return _node;
 }
@@ -685,7 +689,9 @@ function __poly_create_primitive(_ed, _type) {
   if (_en != undefined) _en.asset = _asset;
   _ed.sel = [ _node ];
   _ed.giz.drag = -1;
-  __poly_history_commit(_ed, _before, __poly_history_sel_label(_ed, "Created"), __poly_history_sel_label(_ed, "Created"));
+  var _clabel = __poly_history_sel_label(_ed, "Created");
+
+  __poly_history_commit(_ed, _before, _clabel, _clabel + " at " + __poly_fmt_xyz(_node.getLocalPosition()));
   return _node;
 }
 // Creates new environment node in scene (wrapper carries id + component).
@@ -703,7 +709,9 @@ function __poly_create_env(_ed) {
   __poly_create_finish(_ed, _node, "environment", undefined, _data);
   _ed.sel = [ _node ];
   _ed.giz.drag = -1;
-  __poly_history_commit(_ed, _before, __poly_history_sel_label(_ed, "Created"), __poly_history_sel_label(_ed, "Created"));
+  var _clabel = __poly_history_sel_label(_ed, "Created");
+
+  __poly_history_commit(_ed, _before, _clabel, _clabel + " at " + __poly_fmt_xyz(_node.getLocalPosition()));
   return _node;
 }
 
@@ -722,6 +730,8 @@ function __poly_create_audio(_ed) {
   // Audio is translate-only: force the tool instead of relying on the
   // current one (unlike cameras/env, which allow more).
   __poly_sel_assign(_ed, [ _node ]);
-  __poly_history_commit(_ed, _before, __poly_history_sel_label(_ed, "Created"), __poly_history_sel_label(_ed, "Created"));
+  var _clabel = __poly_history_sel_label(_ed, "Created");
+
+  __poly_history_commit(_ed, _before, _clabel, _clabel + " at " + __poly_fmt_xyz(_node.getLocalPosition()));
   return _node;
 }

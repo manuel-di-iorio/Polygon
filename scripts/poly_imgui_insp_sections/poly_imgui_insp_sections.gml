@@ -12,10 +12,15 @@ function __poly_edit_field(_ed, _node, _data, _field, _apply, _newval, _undo = t
   var _before = undefined;
 
   if (_undo) _before = __poly_history_snap(_ed);
+  var _old = variable_struct_exists(_data, _field) ? _data[$ _field] : undefined;
   _data[$ _field] = _newval;
   _apply(_node, _data);
 
-  if (_undo && _before != undefined) __poly_history_commit(_ed, _before, is_string(_label) ? _label : "Inspector edit");
+  if (_undo && _before != undefined) {
+    var _name = is_string(_label) ? _label : "Inspector edit";
+
+    __poly_history_commit(_ed, _before, _name, _name + ": " + __poly_fmt_value(_old) + " -> " + __poly_fmt_value(_newval));
+  }
 }
 
 // Edits a bool field with undo.
@@ -73,6 +78,14 @@ function __poly_imgui_asset_sec(_ed, _node, _en) {
 
 function __poly_physics_ui_change(_ed, _node, _en, _data, _field, _value, _child = "") {
   var _before = __poly_history_snap(_ed);
+  var _old = undefined;
+
+  if (_child != "") {
+    if (variable_struct_exists(_data, _child) && is_struct(_data[$ _child]) && variable_struct_exists(_data[$ _child], _field)) _old = _data[$ _child][$ _field];
+  } else if (variable_struct_exists(_data, _field)) {
+    _old = _data[$ _field];
+  }
+
   if (_child != "") _data[$ _child][$ _field] = _value; else _data[$ _field] = _value;
 
   if (_field == "mode" && _value == "character" && _child == "") {
@@ -87,7 +100,11 @@ function __poly_physics_ui_change(_ed, _node, _en, _data, _field, _value, _child
   _ed.rt.scene.update(0.0);
   __poly_physics_debug_rebuild(_ed);
   _ed.view_dirty = true;
-  if (_before != undefined) __poly_history_commit(_ed, _before, "Edit physics: " + _field);
+  if (_before != undefined) {
+    var _plabel = "Edit physics: " + _field;
+
+    __poly_history_commit(_ed, _before, _plabel, _plabel + ": " + __poly_fmt_value(_old) + " -> " + __poly_fmt_value(_value));
+  }
 }
 
 function __poly_imgui_physics_tip(_text) {
@@ -853,6 +870,17 @@ function __poly_imgui_spawn_sec(_ed, _entry) {
     if (ImGui.CollapsingHeader("Variables")) __poly_imgui_vars_prefab_sec(_ed, _entry);
   }
 
+  // Actor binding sits above Materials: it is model-level setup (which
+  // object spawns this prefab), not a per-instance detail.
+  ImGui.Spacing();
+  __poly_imgui_sec_open();
+
+  if (ImGui.CollapsingHeader("Actor")) {
+    ImGui.Spacing();
+    __poly_imgui_actor_sec(_ed, _entry);
+    ImGui.Spacing();
+  }
+
   ImGui.Spacing();
   __poly_imgui_sec_open();
 
@@ -868,14 +896,6 @@ function __poly_imgui_spawn_sec(_ed, _entry) {
     if (__poly_imgui_section_meta("Animations", string(_clips) + " clips")) __poly_imgui_prefab_anim_sec(_ed, _entry);
   }
 
-  ImGui.Spacing();
-  __poly_imgui_sec_open();
-
-  if (ImGui.CollapsingHeader("Actor")) {
-    ImGui.Spacing();
-    __poly_imgui_actor_sec(_ed, _entry);
-    ImGui.Spacing();
-  }
 }
 
 function __poly_imgui_prefab_physics(_ed, _entry) {
@@ -1253,14 +1273,15 @@ function __poly_imgui_vars_sec(_ed, _node, _en) {
       ImGui.SameLine();
       ImGui.PushID(_id);
 
-      if (ImGui.SmallButton("Revert")) {
+      // Same icon button as the History rows, so "go back to the default"
+      // reads the same everywhere.
+      if (__poly_imgui_icon_btn("##var_revert", "Remove this instance override and use the prefab default.", false, "R", "sprPolygonEditorIconRotate", 15, 15)) {
         var _before2 = __poly_history_snap(_ed);
 
         if (is_struct(_en.data[$ "vars"]) && variable_struct_exists(_en.data.vars, _s.name)) variable_struct_remove(_en.data.vars, _s.name);
         if (_before2 != undefined) __poly_history_commit(_ed, _before2, "Revert variable: " + _s.name);
       }
 
-      if (ImGui.IsItemHovered()) ImGui.SetTooltip("Remove this instance override and use the prefab default.");
       ImGui.PopID();
     }
   }

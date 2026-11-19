@@ -308,7 +308,8 @@ function __poly_imgui_inspector(_ed) {
       __poly_imgui_spawn_sec(_ed, _lib);
     } else {
       ImGui.TextDisabled("No selection");
-      ImGui.Text("Click an object or drag a model in.");
+      // Breathing room between the empty-selection hint and Physics World.
+      ImGui.Dummy(0, 14);
       __poly_imgui_world_sec(_ed);
     }
   } else if (__poly_imgui_sel_body(_ed, _n)) {

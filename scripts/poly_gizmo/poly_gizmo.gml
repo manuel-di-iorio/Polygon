@@ -551,12 +551,6 @@ function __poly_gizmo_calibrate_ring(_ed, _vp, _g, _pivot, _mx, _my) {
   }
 }
 
-// Formats a vector as X/Y/Z for history tooltips.
-function __poly_fmt_vec3(_v) {
-  if (_v == undefined) return "0/0/0";
-  return string_format(_v.x, 0, 2) + "/" + string_format(_v.y, 0, 2) + "/" + string_format(_v.z, 0, 2);
-}
-
 // History label + detail for the current transform tool.
 function __poly_gizmo_hist_info(_ed) {
   var _tool = _ed.giz.tool;
@@ -579,20 +573,30 @@ function __poly_gizmo_hist_info(_ed) {
   else _label = _verb + " " + string(_n) + " instances";
 
   var _detail = _label;
+  var _has_starts = _n > 0 && is_array(_ed.giz.starts) && array_length(_ed.giz.starts) == _n;
 
-  if (_tool == PolygonEditorTool.Translate && _n > 0 && is_array(_ed.giz.starts) && array_length(_ed.giz.starts) == _n) {
+  if (_has_starts && _tool == PolygonEditorTool.Translate) {
     if (_n == 1) {
-      _detail = _label + " from " + __poly_fmt_vec3(_ed.giz.starts[0].pos) + " to " + __poly_fmt_vec3(_nodes[0].getLocalPosition());
+      _detail = _label + " from " + __poly_fmt_xyz(_ed.giz.starts[0].pos) + " to " + __poly_fmt_xyz(_nodes[0].getLocalPosition());
     } else {
       var _parts = "";
 
-      for (var _j = 0; _j < _n; _j++) {
-        if (_j > 0) _parts += "; ";
-        _parts += _names[_j] + " from " + __poly_fmt_vec3(_ed.giz.starts[_j].pos) + " to " + __poly_fmt_vec3(_nodes[_j].getLocalPosition());
-      }
+      for (var _j = 0; _j < _n; _j++) _parts += ((_j > 0) ? "; " : "") + _names[_j] + " from " + __poly_fmt_xyz(_ed.giz.starts[_j].pos) + " to " + __poly_fmt_xyz(_nodes[_j].getLocalPosition());
 
       _detail = _parts;
     }
+  } else if (_has_starts && _tool == PolygonEditorTool.Scale) {
+    if (_n == 1) {
+      _detail = _label + " from " + __poly_fmt_xyz(_ed.giz.starts[0].sca) + " to " + __poly_fmt_xyz(_nodes[0].getLocalScale());
+    } else {
+      var _parts2 = "";
+
+      for (var _k = 0; _k < _n; _k++) _parts2 += ((_k > 0) ? "; " : "") + _names[_k] + " from " + __poly_fmt_xyz(_ed.giz.starts[_k].sca) + " to " + __poly_fmt_xyz(_nodes[_k].getLocalScale());
+
+      _detail = _parts2;
+    }
+  } else if (_tool == PolygonEditorTool.Rotate && abs(_ed.giz.total_ang) > 0.0009) {
+    _detail = _label + " by " + __poly_fmt_value(round(radtodeg(_ed.giz.total_ang) * 10) / 10) + " deg";
   }
 
   return [_label, _detail];

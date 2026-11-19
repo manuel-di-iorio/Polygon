@@ -17,6 +17,63 @@ function __poly_history_stacks(_ed) {
   if (!is_array(_ed.redo)) _ed.redo = [];
 }
 
+// Formats a Vec3 or [x,y,z] array as "x/y/z" for History entry details.
+function __poly_fmt_xyz(_v) {
+  if (_v == undefined) return "0/0/0";
+
+  if (is_array(_v)) {
+    if (array_length(_v) < 3) return "0/0/0";
+    return string_format(_v[0], 0, 2) + "/" + string_format(_v[1], 0, 2) + "/" + string_format(_v[2], 0, 2);
+  }
+
+  return string_format(_v.x, 0, 2) + "/" + string_format(_v.y, 0, 2) + "/" + string_format(_v.z, 0, 2);
+}
+
+// Formats one value for History entry details ("1.5", "on"/"off", "name",
+// "a/b/c").
+function __poly_fmt_value(_v) {
+  if (_v == undefined) return "-";
+  if (is_bool(_v)) return _v ? "on" : "off";
+
+  if (is_array(_v)) {
+    var _s = "";
+
+    for (var _i = 0, _n = array_length(_v); _i < _n; _i++) _s += ((_i > 0) ? "/" : "") + __poly_fmt_value(_v[_i]);
+    return _s;
+  }
+
+  if (is_real(_v)) {
+    if (floor(_v) == _v) return string(_v);
+    return string_format(_v, 0, 3);
+  }
+
+  if (is_string(_v)) return "\"" + _v + "\"";
+  return string(_v);
+}
+
+// Builds the "from A to B" detail of a move-like action. Entries are
+// { name, from, to }; the label already names the single-instance case.
+function __poly_history_move_detail(_moved, _label) {
+  if (!is_array(_moved) || array_length(_moved) == 0) return _label;
+
+  if (array_length(_moved) == 1) return _label + " from " + __poly_fmt_xyz(_moved[0].from) + " to " + __poly_fmt_xyz(_moved[0].to);
+  var _s = "";
+
+  for (var _i = 0, _n = array_length(_moved); _i < _n; _i++) _s += ((_i > 0) ? "; " : "") + _moved[_i].name + " from " + __poly_fmt_xyz(_moved[_i].from) + " to " + __poly_fmt_xyz(_moved[_i].to);
+  return _s;
+}
+
+// Joins instance names for a History detail line (bounded length).
+function __poly_history_names_detail(_names) {
+  var _n = is_array(_names) ? array_length(_names) : 0;
+  var _max = 8;
+  var _s = "";
+
+  for (var _i = 0; _i < min(_n, _max); _i++) _s += ((_i > 0) ? ", " : "") + string(_names[_i]);
+  if (_n > _max) _s += ", +" + string(_n - _max) + " more";
+  return _s;
+}
+
 // Replaces non-finite reals inside a snapshot payload.
 // json_stringify writes NaN/Infinity as bare tokens, json_parse rejects them:
 // one unreadable entry would make every undo/redo of the session a no-op.
@@ -245,6 +302,9 @@ function __poly_history_apply(_ed, _from, _to) {
 
   var _cur = __poly_history_snap(_ed);
   _cur.label = __poly_history_entry_label(_peek.entry);
+  var _peek_detail = __poly_history_entry_detail(_peek.entry);
+
+  if (_peek_detail != "") _cur.detail = _peek_detail;
   array_pop(_from);
   array_push(_to, _cur);
   var _report = __poly_rebuild(_ed, _peek.data);
