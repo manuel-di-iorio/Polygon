@@ -90,7 +90,7 @@ function demo_destroy() {
 // world so new/changed bodies are registered. Player, camera and visual keep
 // their nodes, so their references stay valid.
 function demo_on_close() {
-  // Reset & exit hands over no scene: the live game is already as it was.
+  // Close Editor hands over no scene: the live game is already as it was.
   if (!is_struct(poly_scene_snapshot())) return;
   poly_sync_live();
   if (demo_physics != undefined) demo_physics.destroy();

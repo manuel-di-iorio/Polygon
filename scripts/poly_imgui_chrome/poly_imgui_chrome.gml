@@ -239,18 +239,24 @@ function __poly_ui_file() {
   return "polygon_ui.json";
 }
 
-// Saves view cube offset and first-build flag to file.
+// Saves view cube offset, first-build flag and models icon scale to file.
 function __poly_ui_save(_ed) {
   if (_ed == undefined) return;
   var _dock_init = (is_struct(_ed.imgui) && variable_struct_exists(_ed.imgui, "dock_init") && _ed.imgui.dock_init == true)
     || (variable_struct_exists(_ed, "dock_init") && _ed.dock_init == true);
+  var _scale = 30;
+
+  if (is_struct(_ed.imgui) && variable_struct_exists(_ed.imgui, "models_scale") && is_real(_ed.imgui.models_scale)) {
+    _scale = clamp(_ed.imgui.models_scale, 0, 100);
+  }
+
   __poly_write_text_file(
     working_directory + __poly_ui_file(),
-    json_stringify({ cube_off: _ed.cube_off, dock_init: _dock_init }, true)
+    json_stringify({ cube_off: _ed.cube_off, dock_init: _dock_init, models_scale: _scale }, true)
   );
 }
 
-// Loads view cube offset and first-build flag from file.
+// Loads view cube offset, first-build flag and models icon scale from file.
 function __poly_ui_load(_ed) {
   if (_ed == undefined) return;
   var _path = working_directory + __poly_ui_file();
@@ -273,6 +279,10 @@ function __poly_ui_load(_ed) {
     if (is_struct(_ed.imgui)) _ed.imgui.dock_init = true;
   }
 
+  if (is_struct(_ed.imgui) && variable_struct_exists(_data, "models_scale") && is_real(_data.models_scale)) {
+    _ed.imgui.models_scale = clamp(_data.models_scale, 0, 100);
+  }
+
   if (!variable_struct_exists(_data, "cube_off")) return;
   var _off = _data.cube_off;
 
@@ -292,7 +302,7 @@ function __poly_ui_load(_ed) {
 
 // Draws the File menu, returning pending actions.
 function __poly_menu_file(_ed) {
-  var _pending = { do_new: false, do_load: false, do_saveas: false, do_play: false, do_reset: false };
+  var _pending = { do_new: false, do_load: false, do_saveas: false, do_play: false, do_close: false };
 
   if (!ImGui.BeginMenu("File")) return _pending;
   ImGui.TextDisabled(_ed.scene_file != "" ? __poly_base_name(_ed.scene_file) : "(unsaved scene)");
@@ -305,7 +315,20 @@ function __poly_menu_file(_ed) {
 
   if (ImGui.MenuItem("Play", __poly_bind_label(_ed.cfg.keys, "play"))) _pending.do_play = true;
   ImGui.Separator();
-  if (ImGui.MenuItem("Reset & exit...", __poly_bind_label(_ed.cfg.keys, "close"))) _pending.do_reset = true;
+
+  // MCP bridge (local relay). While a connection is in progress the entry is
+  // shown disabled (plain text, like the scene name above): it cannot be
+  // clicked again until the link settles.
+  var _link = __poly_ai_link(_ed);
+
+  if (_link == 1 || _link == 2) {
+    ImGui.TextDisabled("Connecting MCP...");
+  } else if (ImGui.MenuItem(_link == 3 ? "Disconnect MCP" : "Connect MCP")) {
+    __poly_ai_enable(_link != 3);
+  }
+
+  ImGui.Separator();
+  if (ImGui.MenuItem("Close Editor", __poly_bind_label(_ed.cfg.keys, "close"))) _pending.do_close = true;
   ImGui.EndMenu();
   return _pending;
 }
@@ -433,7 +456,8 @@ function __poly_menu_do(_ed, _file) {
   if (_file.do_load) __poly_confirm_ask(_ed, "load");
   if (_file.do_saveas) __poly_scene_dlg_open(_ed, "save", undefined);
   if (_file.do_play) _ed[$ "pending_play"] = true;
-  if (_file.do_reset) _ed.confirm = { action: "reset", open: true };
+  // Clean scene: close at once, otherwise ask Save / Don't save / Cancel.
+  if (_file.do_close) __poly_confirm_ask(_ed, "close_editor");
 }
 
 // Tries to pad the menu bar via FramePadding (Dear ImGui StyleVar 11).
@@ -443,15 +467,16 @@ function __poly_menu_pad_pop() {
   ImGui.PopStyleVar();
 }
 
-// Draws the AI bridge toggle + link status at the right end of the menu bar.
+// Draws the MCP link status at the right end of the menu bar. The bridge
+// toggle itself lives in File > Connect / Disconnect MCP.
 function __poly_menu_ai(_ed) {
   var _ai = __poly_ai_state(_ed);
   var _w = ImGui.GetWindowWidth();
   var _st = __poly_ai_link(_ed);
 
   if (_st != 0) {
-    var _txt = _st == 3 ? "Connected" : (_st == 2 ? "Reconnecting.." : "Connecting to AI..");
-    ImGui.SameLine(max(0, _w - 60 - 8 - ImGui.CalcTextWidth(_txt)));
+    var _txt = _st == 3 ? "Connected" : (_st == 2 ? "Reconnecting.." : "Connecting to MCP..");
+    ImGui.SameLine(max(0, _w - 8 - ImGui.CalcTextWidth(_txt)));
 
     if (_st == 3) {
       ImGui.PushStyleColor(ImGuiCol.Text, c_green, 1);
@@ -461,15 +486,11 @@ function __poly_menu_ai(_ed) {
       ImGui.Text(_txt);
     }
   } else if (_ai.notice != "" && current_time < _ai.notice_until) {
-    ImGui.SameLine(max(0, _w - 60 - 8 - ImGui.CalcTextWidth(_ai.notice)));
+    ImGui.SameLine(max(0, _w - 8 - ImGui.CalcTextWidth(_ai.notice)));
     ImGui.PushStyleColor(ImGuiCol.Text, c_red, 1);
     ImGui.Text(_ai.notice);
     __poly_imgui_pop(1);
   }
-
-  ImGui.SameLine(max(0, _w - 60));
-
-  if (__poly_imgui_tool_btn("MCP bridge: connect/disconnect the relay", "MCP", _ai.on, 0, 0)) __poly_ai_enable(!_ai.on);
 }
 
 // Draws the Play button centered in the menu bar.

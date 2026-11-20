@@ -506,23 +506,6 @@ function __poly_scene_row_menu(_ed, _meta, _node, _idx, _pending) {
   ImGui.EndPopup();
 }
 
-// Draws the hierarchy status bar ("N items"). Measures its own height so
-// the rows child can reserve exactly that much space next frame.
-function __poly_hier_status(_ed, _shown, _total) {
-  var _y0 = ImGui.GetCursorPosY();
-  ImGui.Separator();
-
-  if (_shown == _total) {
-    ImGui.TextDisabled(string(_shown) + (_shown == 1 ? " item" : " items"));
-  } else {
-    ImGui.TextDisabled(string(_shown) + " of " + string(_total) + " items");
-  }
-
-  var _h = ImGui.GetCursorPosY() - _y0;
-
-  if (is_real(_h) && _h > 0 && is_struct(_ed.imgui)) _ed.imgui.hier_status_h = _h;
-}
-
 // Draws filterable scene list with selection actions.
 function __poly_imgui_scene_list(_ed) {
   var _ui = _ed.imgui;
@@ -598,7 +581,6 @@ function __poly_imgui_scene_list(_ed) {
   if (_ed.rt == undefined) {
     ImGui.TextDisabled("No scene");
     _ed.hier_rect = undefined;
-    __poly_hier_status(_ed, 0, 0);
     return;
   }
 
@@ -613,17 +595,10 @@ function __poly_imgui_scene_list(_ed) {
   var _pairs = __poly_root_pairs(_ed);
   var _rows = __poly_scene_filter(_ed, _pairs, __poly_sel_set(_ed), _ui.show_kind, string_lower(_ui.scene_filter));
   var _n = array_length(_rows);
-  var _total = array_length(_pairs);
-  // Reserve bottom space for the status bar: exact measured height once
-  // known, compact estimate on the first frame.
-  var _status_h = ImGui.GetTextLineHeight() + 10;
 
-  if (variable_struct_exists(_ui, "hier_status_h") && is_real(_ui.hier_status_h) && _ui.hier_status_h > 0) _status_h = _ui.hier_status_h;
-
-  if (!ImGui.BeginChild("##hierarchy_node_rows", 0, -_status_h, ImGuiChildFlags.None)) {
+  if (!ImGui.BeginChild("##hierarchy_node_rows", 0, 0, ImGuiChildFlags.None)) {
     ImGui.EndChild();
     __poly_scene_list_commit(_ed, _pending.ren, _pending.foc, _pending.dup, _pending.del, _pending.cop, _pending.cut, _pending.pas);
-    __poly_hier_status(_ed, _n, _total);
     return;
   }
 
@@ -652,6 +627,5 @@ function __poly_imgui_scene_list(_ed) {
   __poly_hier_rect_step(_ed);
 
   ImGui.EndChild();
-  __poly_hier_status(_ed, _n, _total);
   __poly_scene_list_commit(_ed, _pending.ren, _pending.foc, _pending.dup, _pending.del, _pending.cop, _pending.cut, _pending.pas);
 }

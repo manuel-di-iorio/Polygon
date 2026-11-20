@@ -97,7 +97,7 @@ if (!poly_is_active()) poly_enable();
 if (!poly_is_active()) my_game_step();
 ```
 
-Close it with **Play** (F5, the toolbar button or the centered button in the menu bar): the editor closes with no prompt and the edits stay in the running game. **File → Reset & exit...** (Ctrl+W) is the other way out: it asks first, then drops the edits and leaves the game exactly as it was when the editor opened.
+Close it with **Play** (F5, the toolbar button or the centered button in the menu bar): the editor closes with no prompt and the edits stay in the running game. **File → Close Editor** (Ctrl+W) is the other way out: it closes at once when the scene has no unsaved changes, otherwise it asks (Save / Don't save / Cancel), then drops the edits and leaves the game exactly as it was when the editor opened.
 
 ### Adapter fields
 
@@ -107,7 +107,7 @@ Close it with **Play** (F5, the toolbar button or the centered button in the men
 | `cam`      | Gameplay camera node, used to seed the editor camera. |
 | `assets`   | Struct `{ assetKey: { model, on_create?, variables? } }`. The key is the stable asset id used in scene files (usually the load path); the file name (no path, no extension) is used as display text everywhere. `on_create` is an optional per-model hook, called after the global one (hooks run with the editor instance as `self`, so pass `method(id, fn)` when the hook uses your game instance's variables). `variables` (or `vars`) declares custom variables from code (see [Custom variables](#custom-variables)). |
 | `on_create` | `function(node, assetId, model, id, vars)`. Called for every spawned node: global hook first, then the per-model `on_create` from the library entry. `assetId` is the stable key (same string as in files); `model` is the resolved library model; `vars` is the resolved custom-variable map (optional last argument, so 4-argument hooks keep working). Walk the subtree: the model root lives inside the wrapper. |
-| `on_close` | Called after the editor closes (Play and Reset & exit). The edited scene is published in memory: consume it with `poly_scene_snapshot()` and/or push it into the running game with `poly_sync_live()`. Nothing is saved and nothing is prompted; on a reset exit nothing is published (`poly_scene_snapshot()` returns `undefined`, `poly_sync_live()` does nothing). Hooks run with the **editor instance** as `self`: bind them with `method(id, my_on_close)` when they need your game instance's variables. |
+| `on_close` | Called after the editor closes (Play and Close Editor). The edited scene is published in memory: consume it with `poly_scene_snapshot()` and/or push it into the running game with `poly_sync_live()`. Nothing is saved and nothing is prompted; on a reset exit nothing is published (`poly_scene_snapshot()` returns `undefined`, `poly_sync_live()` does nothing). Hooks run with the **editor instance** as `self`: bind them with `method(id, my_on_close)` when they need your game instance's variables. |
 | `keys`     | Optional struct that remaps editor shortcuts. Each entry is an array of element structs `{ key, mouse?, modifier? }`, e.g. `save: [ { key: vk_control, modifier: true }, { key: ord("S") } ]` and `cam_fly: [ { key: mb_right, mouse: true } ]`. Every shortcut and camera control is remappable, including nudging and the mouse-driven camera gestures. Unknown names are ignored. See "Remapping shortcuts". |
 | `on_compose` | `function(surf, w, h)`. Optional viewport post-processing: called with the scene surface as target, after the 3D render (post-AA) and before overlays compose (they stay sharp). Copy `surf` to your own scratch, apply your shader back onto `surf`, and leave the target on `surf`. Runs on re-render, not every frame. |
 
@@ -153,7 +153,7 @@ The cursor wraps at window edges during camera and gizmo drags. Every input abov
 | `Ctrl+Z` / `Ctrl+Y` (or `Ctrl+Shift+Z`) | Undo / Redo |
 | `\` | Toggle snap on/off |
 | `Ctrl+\` | Push selection to grid (undoable) |
-| `Ctrl+W` | Reset & exit: close and go back to the game as it was (confirms first) |
+| `Ctrl+W` | Close Editor: close and go back to the game as it was (confirms only when there are unsaved changes) |
 | `F9` | FPS overlay |
 
 ### Remapping shortcuts
@@ -344,7 +344,7 @@ function my_on_close() {
 }
 ```
 
-**Reset & exit...** (File menu, or Ctrl+W) is the opposite exit: it confirms first, closes the editor and leaves the live game exactly as it was when the editor opened — the edits are simply dropped. The editor only ever edits its own mirror, so nothing has to be restored; the close publishes nothing (`poly_scene_snapshot()` returns `undefined`, `poly_sync_live()` does nothing), which is also how an `on_close` that only consumes the snapshot knows to skip its work.
+**Close Editor** (File menu, or Ctrl+W) is the opposite exit: it confirms only when the scene is dirty (Save / Don't save / Cancel), closes the editor and leaves the live game exactly as it was when the editor opened — the edits are simply dropped. The editor only ever edits its own mirror, so nothing has to be restored; the close publishes nothing (`poly_scene_snapshot()` returns `undefined`, `poly_sync_live()` does nothing), which is also how an `on_close` that only consumes the snapshot knows to skip its work.
 
 `poly_sync_live()` only touches roots the editor tracked: game-owned nodes (controller, static colliders, camera follow, skybox) are left alone. Deleting an instance in the editor deletes its live node on sync, so the game must not keep references to nodes it lets the editor delete. New nodes spawn with their editor id (`__PolygonEditor__N`). If the config has no `scene`, sync does nothing and Play simply closes.
 
@@ -499,7 +499,7 @@ pointing at the address `127.0.0.1:5192`.
 
     If it says, that the port is already occupied, then maybe the server is already running or there is another process on that port.
 
-3. In the editor, click the **AI** button in the menu bar. The status shows *Connecting*, *Connected* or *Reconnecting*.
+3. In the editor, choose **File > Connect MCP** (it becomes *Disconnect MCP* once linked). The status at the right end of the menu bar shows *Connecting*, *Connected* or *Reconnecting*.
 
 Available tools (23, all prefixed `poly_`):
 

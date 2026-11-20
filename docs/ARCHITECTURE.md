@@ -70,8 +70,9 @@ wired to `oEditor` events
     is carried by `__poly_set_active(_ed, false, reason)`: `"play"`
     publishes the scene, `"reset"` publishes nothing (`close_data` stays
     `undefined`). `poly_play()` (toolbar / menu bar / File → Play / F5)
-    closes with no prompt; `__poly_reset_exit()` (File → Reset & exit...
-    / Ctrl+W) asks first and closes with reason `"reset"`.
+    closes with no prompt; `__poly_reset_exit()` (File → Close Editor /
+    Ctrl+W) closes with reason `"reset"`, asking first only when the scene
+    is dirty (Save / Don't save / Cancel).
 - `poly_step()` (`poly_step.gml`): `__poly_step(dt)` then AI step then
   `__poly_imgui_draw`. `__poly_step` order (`poly_core.gml`):
   1. window/GUI sizes, F9 FPS toggle, `__poly_view_sync`;
@@ -453,7 +454,9 @@ toolbar → FPS → animation preview → modals.
 - Menu bar (`poly_imgui_chrome.gml`): brand, File (scene basename +
   New/Save/Save-As/Load/Close with dirty confirms), Create (lights
   cap 8, cameras, singleton env, audio source), View (window toggles, grid, reset
-  layout), Help (issues link, About), AI bridge status + toggle.
+  layout), Help (issues link, About), Play, MCP bridge toggle in File
+  (Connect / Disconnect MCP, disabled while connecting) plus the MCP
+  link status at the right end.
 - Toolbar: View/Move/Rotate/Scale, Pivot/Center, World/Local, snap
   toggle + grid/size popup, Unlit/Shaded, Home, AA combo
   (`AA Off/FXAA/SMAA/SSAA`), visibility eye menu (hidden objects,
@@ -478,7 +481,8 @@ toolbar → FPS → animation preview → modals.
   with a rotate icon that asks for confirmation and jumps back to that
   point (`history_jump`), plus the redo stack with a right-arrow row
   (`history_redo_to`). Empty-state text when both stacks are empty.
-- Models (`poly_imgui_assets.gml`): Cards/List views, search filter,
+- Models (`poly_imgui_assets.gml`): icon-scale slider (at the minimum
+  the grid becomes a flat list), search filter,
   drag-into-viewport placement with live preview node, background-
   click deselect.
 - Scene panel: the rendered surface + hover tracking; FPS overlay

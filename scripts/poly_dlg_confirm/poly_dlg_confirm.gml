@@ -11,30 +11,6 @@ function __poly_imgui_confirm(_ed) {
     return;
   }
 
-  // Reset & exit: no save offered, the edits are simply dropped.
-  if (_dlg.action == "reset") {
-    var _rbegun = __poly_modal_begin(_ed, "Reset & exit", 400, 92, _dlg);
-
-    if (!_rbegun) {
-      __poly_modal_end();
-      return;
-    }
-
-    ImGui.Text("Go back to the live game as it was when");
-    ImGui.Text("you opened the editor? The edits are dropped.");
-
-    if (ImGui.Button("Discard & exit", 0, 0)) {
-      _ed.confirm = undefined;
-      __poly_reset_exit(_ed);
-    }
-
-    ImGui.SameLine();
-
-    if (ImGui.Button("Cancel", 0, 0)) _ed.confirm = undefined;
-    __poly_modal_end();
-    return;
-  }
-
   var _begun = __poly_modal_begin(_ed, "Unsaved changes", 340, 90, _dlg);
 
   if (!_begun) {
@@ -45,6 +21,7 @@ function __poly_imgui_confirm(_ed) {
   static _what_by_action = {
     "new": "creating a new scene",
     load: "loading a new scene",
+    close_editor: "closing the editor",
   };
   var _what = variable_struct_exists(_what_by_action, _dlg.action) ? _what_by_action[$ _dlg.action] : "exiting";
   ImGui.Text("Do you want to save changes");

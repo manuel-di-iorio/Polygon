@@ -242,6 +242,9 @@ function __poly_confirm_do(_ed, _action) {
     __poly_scene_dlg_open(_ed, "load");
   } else if (_action == "close") {
     __poly_set_active(_ed, false);
+  } else if (_action == "close_editor") {
+    // Close the editor leaving the live scene as it was when it opened.
+    __poly_reset_exit(_ed);
   }
 }
 

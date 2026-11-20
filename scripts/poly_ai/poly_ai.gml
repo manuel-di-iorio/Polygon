@@ -2,7 +2,7 @@
 //
 // The relay (other/mcp-relay, Node) listens on 127.0.0.1:5192. The game
 // connects as a TCP client ONLY while the editor is active and the bridge
-// is on (AI toolbar button). No socket is ever opened otherwise,
+// is on (File > Connect MCP). No socket is ever opened otherwise,
 // so Polygon behaves exactly as before with no AI client attached.
 //
 // Wire protocol v1: compact JSON + "\n" (LF), UTF-8, both directions.
@@ -45,7 +45,7 @@ function __poly_ai_log_rx(_ed, _msg) {
 // ---------------------------------------------------------------------------
 
 // Enables or disables the AI bridge (default off). Editor-internal: toggled
-// from the AI button in the menu bar. When on, the editor connects to the
+// from File > Connect / Disconnect MCP. When on, the editor connects to the
 // relay at 127.0.0.1:_port while active.
 function __poly_ai_enable(_on = true, _port = 5192) {
   var _ed = __poly_inst();
@@ -113,7 +113,7 @@ function __poly_ai_failed(_ed, _why) {
   if (!_ai.ever && _ai.retry_tries >= 3) {
     _ai.on = false;
     __poly_ai_disconnect(_ed);
-    _ai.notice = "AI Server not available";
+    _ai.notice = "MCP Server not available";
     _ai.notice_until = current_time + 10000;
     __poly_ai_log("relay unavailable after 3 attempts");
     __poly_console_log(_ed, "MCP unavailable (relay unreachable after 3 attempts)");

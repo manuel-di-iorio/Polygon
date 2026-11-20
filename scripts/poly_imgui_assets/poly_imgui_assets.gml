@@ -55,11 +55,11 @@ function __poly_imgui_safe(_method, _fallback) {
 function __poly_imgui_asset_list(_ed) {
   var _ui = _ed.imgui;
 
-  if (!variable_struct_exists(_ui, "models_view")) _ui.models_view = "cards";
+  if (!variable_struct_exists(_ui, "models_scale")) _ui.models_scale = 30;
   var _avail = ImGui.GetContentRegionAvailX();
-  // The filter spans the whole row and the two fixed-width view buttons
-  // (46 px each plus spacing) stay on the same line at its end.
-  var _filter_w = max(80, _avail - 110);
+  // The filter spans the row and the scale slider stays on the same line
+  // at its end.
+  var _filter_w = max(80, _avail - 118);
   ImGui.SetNextItemWidth(_filter_w);
   if (!variable_struct_exists(_ui, "models_focus_search")) _ui.models_focus_search = false;
   var _want_search = _ui.models_focus_search == true;
@@ -67,15 +67,31 @@ function __poly_imgui_asset_list(_ed) {
   _ui.filter = __poly_imgui_text_hint("##filter", "Filter models...", _ui.filter, _want_search);
   ImGui.SameLine();
 
-  if (__poly_imgui_small_btn("List", _ui.models_view == "list")) _ui.models_view = "list";
-  ImGui.SameLine();
+  // Icon scale, Unity style: smaller icons, at the minimum step a flat list.
+  ImGui.SetNextItemWidth(max(64, _avail - _filter_w - 8));
+  // Hide the value text drawn inside the slider: only the handle and the
+  // filled track should show.
+  var _prev_scale = _ui.models_scale;
 
-  if (__poly_imgui_small_btn("Cards", _ui.models_view == "cards")) _ui.models_view = "cards";
+  ImGui.PushStyleColor(ImGuiCol.Text, c_white, 0);
+  _ui.models_scale = clamp(ImGui.SliderInt("##models_scale", _ui.models_scale, 0, 100), 0, 100);
+  __poly_imgui_pop(1);
+
+  // Persist the scale in polygon_ui.json once the drag is released: the value
+  // stops changing on the release frame, so keep a pending flag until then.
+  if (_ui.models_scale != _prev_scale) _ui.models_scale_dirty = true;
+
+  if (variable_struct_exists(_ui, "models_scale_dirty") && _ui.models_scale_dirty == true && !mouse_check_button(mb_left)) {
+    _ui.models_scale_dirty = false;
+    __poly_ui_save(_ed);
+  }
+
+  __poly_imgui_tip_delayed("models_scale", "Icon scale. At the minimum the models are shown as a list.", ImGui.IsItemHovered());
   ImGui.Separator();
   var _flt = string_lower(_ui.filter);
 
-  if (_ui.models_view == "cards") {
-    __poly_imgui_asset_cards(_ed, _flt);
+  if (_ui.models_scale > 4) {
+    __poly_imgui_asset_cards(_ed, _flt, _ui.models_scale);
     __poly_models_bg_step(_ed);
     return;
   }
@@ -128,32 +144,13 @@ function __poly_models_bg_step(_ed) {
   __poly_sel_clear(_ed);
 }
 
-// Draws small button with active highlight.
-function __poly_imgui_small_btn(_label, _active) {
-  return __poly_imgui_small_btn_w(_label, _active, 46);
-}
-
-// Draws small button with active highlight and custom width.
-function __poly_imgui_small_btn_w(_label, _active, _w) {
-  var _pushed = 0;
-
-  if (_active) {
-    ImGui.PushStyleColor(ImGuiCol.Button, make_colour_rgb(47, 111, 237), 1);
-    _pushed++;
-  }
-
-  var _hit = ImGui.Button(_label, _w, 0);
-  __poly_imgui_pop(_pushed);
-  return _hit;
-}
-
 // ---------------------------------------------------------------------------
 // Cards view
 // ---------------------------------------------------------------------------
 
-// Draws assets in grid card layout.
-function __poly_imgui_asset_cards(_ed, _flt) {
-  var _card = 60;
+// Draws assets in grid card layout at the given icon scale.
+function __poly_imgui_asset_cards(_ed, _flt, _scale) {
+  var _card = round(30 + clamp(_scale, 0, 100));
   var _gap = 12;
   var _avail = ImGui.GetContentRegionAvailX();
   var _cols = max(1, floor((_avail + _gap) / (_card + _gap)));

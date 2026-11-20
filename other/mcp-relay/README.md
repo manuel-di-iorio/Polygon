@@ -18,8 +18,8 @@ If the editor is unreachable, tools fail explicitly.
 ## Requirements
 
 - Node.js 18+ (only to run the relay, not the game).
-- A game run with the editor open and the bridge enabled from the AI button
-  in the menu bar (default port 5192).
+- A game run with the editor open and the bridge enabled from
+  **File > Connect MCP** (default port 5192).
 
 ## Install
 

@@ -29,7 +29,7 @@ function poly_scene_snapshot() {
   var _ed = __poly_inst();
 
   if (_ed == undefined) return undefined;
-  // Reset & exit: the live scene was never touched, so there is nothing to hand over.
+  // Close Editor (reset exit): the live scene was never touched, so there is nothing to hand over.
   if (_ed[$ "close_reason"] == "reset") return undefined;
   if (is_struct(_ed[$ "close_data"])) return _ed.close_data;
   return __poly_close_data_build(_ed);

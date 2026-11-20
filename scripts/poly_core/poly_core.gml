@@ -496,6 +496,8 @@ function __poly_state_imgui() {
     win_scene: { open: true },
     win_console: { open: false },
     reset_layout: false,
+    models_scale: 30,
+    models_scale_dirty: false,
     filter: "",
     scene_filter: "",
     console: [],
