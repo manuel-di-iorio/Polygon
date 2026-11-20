@@ -129,6 +129,46 @@ function __poly_imgui_pop(_n) {
   for (var _i = 0; _i < _n; _i++) ImGui.PopStyleColor();
 }
 
+// Checks whether any modal dialog is currently open.
+function __poly_modal_active(_ed) {
+  if (_ed == undefined) return false;
+  if (_ed.confirm != undefined) return true;
+  if (variable_struct_exists(_ed, "delete_confirm") && _ed.delete_confirm != undefined) return true;
+  if (variable_struct_exists(_ed, "hist_confirm") && _ed.hist_confirm != undefined) return true;
+  if (_ed.about != undefined) return true;
+  if (_ed.scene_dlg != undefined) return true;
+  return false;
+}
+
+// Requests focus for the next window (binding exposes it only dynamically).
+function __poly_imgui_focus_next() {
+  var _focus = ImGui[$ "SetNextWindowFocus"];
+
+  if (_focus != undefined) method(ImGui, _focus)();
+}
+
+// Draws the dim behind the modal dialogs. Dialogs are plain ImGui windows, so
+// ImGui never dims the editor for them: this full-screen window does it. It is
+// submitted right before the dialogs, so it sits above the editor panels while
+// the dialogs (submitted after and focused last) stay on top of the veil.
+// Focus is requested only on the first frame: focusing it every frame would
+// clear the active item (e.g. the scene name InputText).
+function __poly_imgui_modal_veil(_ed, _focus) {
+  static _flags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoDocking;
+  ImGui.SetNextWindowPos(0, 0, ImGuiCond.Always);
+  ImGui.SetNextWindowSize(_ed.gw, _ed.gh, ImGuiCond.Always);
+  ImGui.SetNextWindowBgAlpha(0.8);
+  ImGui.PushStyleColor(ImGuiCol.WindowBg, c_black, 1);
+  ImGui.PushStyleVar(3, 0); // ImGuiStyleVar.WindowRounding (raw index).
+  ImGui.PushStyleVar(4, 0); // ImGuiStyleVar.WindowBorderSize (raw index).
+  if (_focus) __poly_imgui_focus_next();
+  ImGui.Begin("##poly_modal_veil", undefined, _flags);
+  ImGui.End();
+  ImGui.PopStyleVar();
+  ImGui.PopStyleVar();
+  ImGui.PopStyleColor();
+}
+
 // Opens a centered, fixed-size modal window (title colors included).
 // Returns ImGui.Begin result; caller must always call __poly_modal_end,
 // even when Begin returns false.
@@ -143,9 +183,7 @@ function __poly_modal_begin(_ed, _title, _w, _h, _handle) {
   ImGui.PushStyleColor(ImGuiCol.TitleBgActive, _title_bg, 1);
   // These are plain windows, not ImGui popups, so nothing keeps them above
   // the editor panels drawn behind them: ask for focus every frame.
-  var _focus = ImGui[$ "SetNextWindowFocus"];
-
-  if (_focus != undefined) method(ImGui, _focus)();
+  __poly_imgui_focus_next();
   return ImGui.Begin(_title, _handle, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize);
 }
 

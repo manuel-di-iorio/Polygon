@@ -57,8 +57,9 @@ function __poly_imgui_asset_list(_ed) {
 
   if (!variable_struct_exists(_ui, "models_view")) _ui.models_view = "cards";
   var _avail = ImGui.GetContentRegionAvailX();
-  var _filter_w = min(170, max(80, _avail - 108));
-  ImGui.SameLine(max(0, _avail - (_filter_w + 108)));
+  // The filter spans the whole row and the two fixed-width view buttons
+  // (46 px each plus spacing) stay on the same line at its end.
+  var _filter_w = max(80, _avail - 110);
   ImGui.SetNextItemWidth(_filter_w);
   if (!variable_struct_exists(_ui, "models_focus_search")) _ui.models_focus_search = false;
   var _want_search = _ui.models_focus_search == true;

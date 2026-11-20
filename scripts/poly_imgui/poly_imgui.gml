@@ -61,6 +61,15 @@ function __poly_imgui_draw(_ed) {
 
 // Draws whichever modal dialogs are open.
 function __poly_imgui_modals(_ed) {
+  static _veil_was = false;
+
+  if (!__poly_modal_active(_ed)) {
+    _veil_was = false;
+    return;
+  }
+
+  __poly_imgui_modal_veil(_ed, !_veil_was);
+  _veil_was = true;
   if (_ed.confirm != undefined) __poly_imgui_confirm(_ed);
   if (variable_struct_exists(_ed, "delete_confirm") && _ed.delete_confirm != undefined) __poly_imgui_delete_confirm(_ed);
   if (variable_struct_exists(_ed, "hist_confirm") && _ed.hist_confirm != undefined) __poly_imgui_history_confirm(_ed);
