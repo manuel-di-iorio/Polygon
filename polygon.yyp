@@ -173,6 +173,7 @@
     {"id":{"name":"sprPolygonEditorIconPlus","path":"sprites/sprPolygonEditorIconPlus/sprPolygonEditorIconPlus.yy",},},
     {"id":{"name":"sprPolygonEditorIconPointLight","path":"sprites/sprPolygonEditorIconPointLight/sprPolygonEditorIconPointLight.yy",},},
     {"id":{"name":"sprPolygonEditorIconPointLightVec","path":"sprites/sprPolygonEditorIconPointLightVec/sprPolygonEditorIconPointLightVec.yy",},},
+    {"id":{"name":"sprPolygonEditorIconRevert","path":"sprites/sprPolygonEditorIconRevert/sprPolygonEditorIconRevert.yy",},},
     {"id":{"name":"sprPolygonEditorIconRotate","path":"sprites/sprPolygonEditorIconRotate/sprPolygonEditorIconRotate.yy",},},
     {"id":{"name":"sprPolygonEditorIconScale","path":"sprites/sprPolygonEditorIconScale/sprPolygonEditorIconScale.yy",},},
     {"id":{"name":"sprPolygonEditorIconShaded","path":"sprites/sprPolygonEditorIconShaded/sprPolygonEditorIconShaded.yy",},},

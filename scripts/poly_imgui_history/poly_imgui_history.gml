@@ -74,6 +74,19 @@ function __poly_history_row_tip_full(_verb, _label, _detail, _steps) {
   return _tip;
 }
 
+// Draws the row label on the left and returns the X offset for the
+// right-aligned action button. The label is truncated so it never runs under
+// the button.
+function __poly_imgui_history_row_label(_label, _tip, _tip_key, _btn_w) {
+  var _avail = ImGui.GetContentRegionAvailX();
+  var _label_w = max(0, _avail - _btn_w - 8);
+
+  ImGui.AlignTextToFramePadding();
+  ImGui.TextUnformatted(__poly_imgui_trunc_text(_label, _label_w));
+  __poly_imgui_tip_delayed(_tip_key, _tip, ImGui.IsItemHovered());
+  return max(0, _avail - _btn_w);
+}
+
 // Draws one restorable undo row (newest first).
 function __poly_imgui_history_undo_row(_ed, _index, _count) {
   ImGui.PushID(_index);
@@ -81,20 +94,20 @@ function __poly_imgui_history_undo_row(_ed, _index, _count) {
   var _steps = max(1, _count - _index);
   var _detail = __poly_history_entry_detail(_ed.undo[_index]);
   var _tip = __poly_history_row_tip_full("Undo", _label, _detail, _steps);
+  // 15px image + the default FramePadding.x (4) on both sides.
+  var _btn_w = 15 + 8;
+  var _btn_x = __poly_imgui_history_row_label(_label, _tip, "hist_undo_text", _btn_w);
+
+  ImGui.SameLine(_btn_x);
   var _hit = __poly_imgui_icon_btn(
     "##hist_undo",
     _tip,
     false,
     "U",
-    "sprPolygonEditorIconRotate",
+    "sprPolygonEditorIconRevert",
     15,
     15
   );
-
-  ImGui.SameLine();
-  ImGui.AlignTextToFramePadding();
-  ImGui.TextUnformatted(_label);
-  __poly_imgui_tip_delayed("hist_undo_text", _tip, ImGui.IsItemHovered());
 
   if (_hit) {
     _ed.hist_confirm = {
@@ -117,13 +130,14 @@ function __poly_imgui_history_redo_row(_ed, _index, _count) {
   var _steps = max(1, _count - _index);
   var _detail = __poly_history_entry_detail(_ed.redo[_index]);
   var _tip = __poly_history_row_tip_full("Redo", _label, _detail, _steps);
+  // ArrowButton is square, sized by the frame height.
+  var _btn_w = ImGui.GetFrameHeight();
+  var _btn_x = __poly_imgui_history_row_label(_label, _tip, "hist_redo_text", _btn_w);
+
+  ImGui.SameLine(_btn_x);
   var _hit = ImGui.ArrowButton("##hist_redo", ImGuiDir.Right);
 
   __poly_imgui_tip_delayed("hist_redo_btn", _tip, ImGui.IsItemHovered());
-  ImGui.SameLine();
-  ImGui.AlignTextToFramePadding();
-  ImGui.TextUnformatted(_label);
-  __poly_imgui_tip_delayed("hist_redo_text", _tip, ImGui.IsItemHovered());
 
   if (_hit) {
     _ed.hist_confirm = {

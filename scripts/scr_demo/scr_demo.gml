@@ -49,6 +49,7 @@ function demo_create() {
   demo_player_controller = undefined;
   demo_player_spawn = undefined;
   demo_player_visual_local = undefined;
+  demo_terrain_visual = undefined;
   demo_player_vertical_speed = 0.0;
   demo_coyote_time = 0.15;
   demo_coyote_timer = 0.0;
@@ -114,6 +115,11 @@ function demo_on_close() {
   if (is_struct(_snap)) {
     poly_sync_live();
 
+    // Play starts from the scene the editor just pushed: remember the player
+    // pose so the next F1 returns to this pre-play state instead of the
+    // original demo spawn (the player may have been moved in the editor).
+    if (demo_player != undefined) demo_player_spawn = demo_player.getLocalPosition().clone();
+
     // The editor adopted the game's world settings on open, so what it hands
     // back is authoritative: keep the settings for the rebuilt world.
     var _world = _snap[$ "physics"];
@@ -159,8 +165,8 @@ function demo_rebuild_physics() {
   }
 }
 
-// Restores the pose the demo starts with (spawn point, facing, idle animation,
-// chase camera), so the editor mirrors the authored scene instead of whatever
+// Restores the pose play started from (player position, facing, idle animation,
+// chase camera), so the editor mirrors the pre-play scene instead of whatever
 // transient gameplay state it finds: pressing F1 mid-jump used to import the
 // scene with the player floating in mid-air. Call it before poly_enable().
 function demo_reset_gameplay() {
@@ -189,6 +195,11 @@ function demo_reset_gameplay() {
 
   demo_cam_pos = demo_camera_target_position(demo_player_spawn);
   demo_place_camera();
+
+  // Flush the restored transforms before the skybox follows the camera and the
+  // editor imports the live scene: without this the skybox and the editor would
+  // read the camera's pre-reset world position.
+  demo_scene.update(0);
   demo_sync_skybox();
 }
 
@@ -400,16 +411,25 @@ function demo_build_props() {
     }
   }
 
-  // The demo's walkable terrain is a simple static physics slab; no render mesh
-  // or editor-side physics data is needed for a flat ground surface.
-  var _ground_node = demo_scene.createNode("GameplayGround");
-  _ground_node.setLocalPosition(new GM3D_Vec3(0.0, -0.2, 0.0));
+  // The walkable ground is a simple static disc hung on the terrain visual, so
+  // the editor sees the same collider the game simulates (a flat floor needs no
+  // triangle mesh). Falls back to its own node when the terrain did not load.
+  var _ground_node = demo_terrain_visual;
+  var _ground_offset = new GM3D_Vec3(0.0, -0.18, 0.0);
+
+  if (_ground_node == undefined) {
+    _ground_node = demo_scene.createNode("GameplayGround");
+    _ground_node.setLocalPosition(new GM3D_Vec3(0.0, -0.2, 0.0));
+    _ground_offset = new GM3D_Vec3();
+  }
+
   var _ground_body = new GM3D_PhysicsBodyComponent();
   _ground_body.setMotionType(GM3D_EPhysicsMotionType.Static);
   _ground_body.setLayer(GM3D_EPhysicsLayer.Static);
   var _ground_shape = new GM3D_PhysicsShapeComponent();
   _ground_shape.setShapeType(GM3D_EPhysicsShapeType.Cylinder);
   _ground_shape.setHalfExtents(new GM3D_Vec3(15.0, 0.2, 15.0));
+  _ground_shape.setLocalOffset(_ground_offset);
   _ground_shape.setFriction(0.85);
   _ground_node.addComponent(_ground_body);
   _ground_node.addComponent(_ground_shape);
@@ -534,66 +554,50 @@ function demo_spawn_prop(_prop) {
 
   if (variable_struct_exists(_prop, "collider") && _prop.collider) {
     var _kind = variable_struct_exists(_prop, "colliderKind") ? _prop.colliderKind : "box";
-    var _yaw = (variable_struct_exists(_prop, "yaw") && is_real(_prop.yaw)) ? _prop.yaw : 0.0;
-    demo_add_model_collider(_node, _res.model, demo_vec3(_prop.pos, [ 0, 0, 0 ]), demo_scale3(_prop), _kind, _yaw);
+    demo_add_model_collider(_node, _res.model, demo_scale3(_prop), _kind);
   }
 
   return _node;
 }
 
-// Adds a static collider from the source model bounds. Box/wall/blocker
-// colliders live on their own gameplay node, so collision stays independent of
-// the editor's per-object physics data and avoids expensive triangle meshes; the
-// mesh kind uses the visual node itself, which is what the editor can show
-// (importing the split ones onto the visuals would duplicate bodies on Play).
-function demo_add_model_collider(_visual, _src, _position, _scale, _kind = "box", _yaw = 0.0) {
+// Adds a static collider to the prop's own visual node. The editor's live import
+// reads physics from the node it tracks, so the body lives here: the prop shows
+// up as physical in the editor and Play re-applies the same body instead of
+// adding a second one.
+//
+// The box is measured on the mesh: a box centred on the node origin with the
+// largest half-size of the bounds on each axis, so it always contains the model
+// and never needs a shape offset (an offset would drift with the node scale).
+// Half-extents are world sizes divided by the node scale at the end, because
+// GM3D shapes follow the node transform.
+function demo_add_model_collider(_visual, _src, _scale, _kind = "box") {
   var _bounds = _src.getBoundingBox();
   if (_bounds == undefined) return undefined;
   var _min = _bounds.min;
   var _max = _bounds.max;
-  var _center = new GM3D_Vec3(
-    (_min.x + _max.x) * 0.5 * _scale.x,
-    (_min.y + _max.y) * 0.5 * _scale.y,
-    (_min.z + _max.z) * 0.5 * _scale.z
-  );
   var _half = new GM3D_Vec3(
-    max(abs(_max.x - _min.x) * 0.5 * _scale.x, 0.08),
-    max(abs(_max.y - _min.y) * 0.5 * _scale.y, 0.08),
-    max(abs(_max.z - _min.z) * 0.5 * _scale.z, 0.08)
+    max(max(_max.x, -_min.x) * _scale.x, 0.08),
+    max(max(_max.y, -_min.y) * _scale.y, 0.08),
+    max(max(_max.z, -_min.z) * _scale.z, 0.08)
   );
-  var _body_node = demo_scene.createNode("Collider_" + string(_visual.name));
 
   if (_kind == "wall") {
-    // Tall invisible boxes use the model footprint but rise well above the
-    // maximum jump, so trees and rocks cannot become platforms.
-    var _wall_half_height = max(_half.y, 4.0);
-    var _wall_bottom = _position.y + _min.y * _scale.y;
-    _body_node.setLocalPosition(new GM3D_Vec3(
-      _position.x + _center.x,
-      _wall_bottom + _wall_half_height,
-      _position.z + _center.z
-    ));
-    _half.y = _wall_half_height;
+    // Invisible box: the tree footprint, high enough that no jump can land on
+    // it (the part that sinks below the ground is harmless).
+    _half.y = max(_half.y, 4.0);
   } else if (_kind == "blocker") {
-    // The fox should block the player without becoming a jumpable perch.
-    // Keep the box grounded, widen its footprint slightly, and extend it above
-    // the maximum character jump.
-    var _blocker_half_height = max(_half.y, 1.5);
-    var _blocker_bottom = _position.y + _min.y * _scale.y;
-    _body_node.setLocalPosition(new GM3D_Vec3(
-      _position.x + _center.x,
-      _blocker_bottom + _blocker_half_height,
-      _position.z + _center.z
-    ));
+    // The fox blocks the player without becoming a jumpable perch: keep its
+    // footprint (never thinner than the minimum) and make it tall enough that
+    // the maximum jump cannot clear it from the ground.
     _half.x = max(_half.x, 0.25);
-    _half.y = _blocker_half_height;
+    _half.y = max(_half.y, 1.5);
     _half.z = max(_half.z, 0.25);
-  } else if (_kind == "mesh") {
-    // Use the model's own mesh as the collider (static bodies only).
-    _body_node = _visual;
-  } else {
-    _body_node.setLocalPosition(new GM3D_Vec3(_position.x + _center.x, _position.y + _center.y, _position.z + _center.z));
   }
+
+  var _sx = max(abs(_scale.x), 0.0001);
+  var _sy = max(abs(_scale.y), 0.0001);
+  var _sz = max(abs(_scale.z), 0.0001);
+  var _half_local = new GM3D_Vec3(_half.x / _sx, _half.y / _sy, _half.z / _sz);
 
   var _body = new GM3D_PhysicsBodyComponent();
   _body.setMotionType(GM3D_EPhysicsMotionType.Static);
@@ -601,17 +605,18 @@ function demo_add_model_collider(_visual, _src, _position, _scale, _kind = "box"
   var _shape = new GM3D_PhysicsShapeComponent();
 
   if (_kind == "mesh") {
+    // The model's own mesh as the collider (static bodies only), centered on the
+    // node: no box offset to apply.
     _shape.setShapeType(GM3D_EPhysicsShapeType.Mesh);
   } else {
     _shape.setShapeType(GM3D_EPhysicsShapeType.Box);
-    _shape.setHalfExtents(_half);
-    if (_yaw != 0.0) _shape.setLocalRotation(demo_yaw_quat(_yaw));
+    _shape.setHalfExtents(_half_local);
   }
 
   _shape.setFriction(0.8);
-  _body_node.addComponent(_body);
-  _body_node.addComponent(_shape);
-  return _body_node;
+  _visual.addComponent(_body);
+  _visual.addComponent(_shape);
+  return _visual;
 }
 
 function demo_build_player() {

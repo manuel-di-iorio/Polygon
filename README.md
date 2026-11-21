@@ -97,6 +97,8 @@ if (!poly_is_active()) poly_enable();
 if (!poly_is_active()) my_game_step();
 ```
 
+The editor mirrors the live scene as it is when it opens. If gameplay moves objects (the player, physics props), restore the pre-play pose before `poly_enable()`: otherwise pressing F1 mid-jump imports the scene with the player floating in mid-air.
+
 Close it with **Play** (F5, the toolbar button or the centered button in the menu bar): the editor closes with no prompt and the edits stay in the running game. **File → Close Editor** (Ctrl+W) is the other way out: it closes at once when the scene has no unsaved changes, otherwise it asks (Save / Don't save / Cancel), then drops the edits and leaves the game exactly as it was when the editor opened.
 
 ### Adapter fields
