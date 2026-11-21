@@ -29,6 +29,9 @@ function __poly_create_rt(_src) {
   if (variable_struct_exists(_src, "cam")) _rtc.cam = _src.cam;
   if (variable_struct_exists(_src, "editor_camera_z_offset")) _rtc.editor_camera_z_offset = _src.editor_camera_z_offset;
   if (variable_struct_exists(_src, "editor_camera_yaw_offset")) _rtc.editor_camera_yaw_offset = _src.editor_camera_yaw_offset;
+  // Settings of the game-owned physics world, adopted on every enable (never the
+  // world object itself: the editor only reads the values it needs).
+  if (variable_struct_exists(_src, "physics_world")) _rtc.physics_world = _src.physics_world;
   if (variable_struct_exists(_src, "scene")) _rtc.live_scene = _src.scene;
   return _rtc;
 }
@@ -411,6 +414,14 @@ function __poly_activate(_ed) {
   _ed.load_job = undefined;
   _ed.close_data = undefined;
   _ed.close_reason = "";
+  // The game owns the physics world: when the config carries its settings, the
+  // editor mirrors them, so the Physics World panel and the per-object Physics
+  // sections describe the world that will actually simulate this scene instead
+  // of the editor's own defaults.
+  if (variable_struct_exists(_ed.rt, "physics_world") && is_struct(_ed.rt.physics_world)) {
+    _ed.world = __poly_world_data(_ed.rt.physics_world);
+  }
+
   __poly_view_save(_ed);
   __poly_view_sync(_ed);
   __poly_import_live(_ed);

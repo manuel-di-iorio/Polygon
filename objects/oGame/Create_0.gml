@@ -32,6 +32,10 @@ if (variable_struct_exists(assets, _hero)) {
 var config = {
   scene: demo_scene,
   cam: demo_cam,
+  // The game owns the physics world: hand its settings to the editor so the
+  // Physics World panel (gravity, step, substeps, capacity) and the per-object
+  // Physics sections describe the world that actually simulates the scene.
+  physics_world: demo_physics_settings,
   editor_camera_z_offset: 8.1,
   editor_camera_yaw_offset: 180.0,
   // Hooks are called from the editor instance: bind them to oGame so they can

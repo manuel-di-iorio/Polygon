@@ -54,12 +54,14 @@ wired to `oEditor` events
 
 - `poly_create(config)` (`poly_create.gml`): wraps the adapter into `rt`
   (`__poly_create_rt` copies only `scene→live_scene`, `cam`, `assets`,
-  `on_create/on_close/on_compose` - never instances), builds the `_ed`
+  `on_create/on_close/on_compose`, `physics_world` - never instances), builds the `_ed`
   state, registers library assets, applies `keys` shortcut overrides
   (`__poly_keys_apply`), seeds the view camera.
 - `poly_enable/disable` → `__poly_set_active` (`poly_core.gml`):
   flips `active`/`global.poly_active`.
-  - Activate: save view sizes → `__poly_import_live` (destroy tracked
+  - Activate: adopt the config's `physics_world` settings when present
+    (`__poly_world_data`; the editor never holds the live world object) →
+    save view sizes → `__poly_import_live` (destroy tracked
     roots, clear registry, adopt every live root, ensure
     camera/sun/env) → grid/sky ensure, mute scene cameras, seed viewcam,
     clear selection+history, `scene_file=""`, snapshot `open_snapshot`.

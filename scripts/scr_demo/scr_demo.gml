@@ -25,14 +25,30 @@ function demo_create() {
   demo_cam_pitch = 14.0;
   demo_cam_follow_distance = 4.1;
   demo_cam_follow_speed = 14.0;
-  demo_physics = new GM3D_PhysicsWorld(demo_scene, {
-    maxBodies: 64,
+  // Single description of the game's physics world: the runtime world is built
+  // from it, and the same struct goes to the editor (config.physics_world), so
+  // the Physics World panel shows the world that actually simulates the scene.
+  demo_physics_settings = {
+    gravity: [ 0.0, -22.0, 0.0 ],
     fixedTimeStep: 1 / 60,
     maxSubSteps: 4,
+    maxBodies: 64,
+    enabled: true,
+  };
+  demo_physics = new GM3D_PhysicsWorld(demo_scene, {
+    maxBodies: demo_physics_settings.maxBodies,
+    fixedTimeStep: demo_physics_settings.fixedTimeStep,
+    maxSubSteps: demo_physics_settings.maxSubSteps,
   });
-  demo_physics.setGravity(new GM3D_Vec3(0.0, -22.0, 0.0));
+  demo_physics.setGravity(new GM3D_Vec3(
+    demo_physics_settings.gravity[0],
+    demo_physics_settings.gravity[1],
+    demo_physics_settings.gravity[2]
+  ));
   demo_player = undefined;
   demo_player_controller = undefined;
+  demo_player_spawn = undefined;
+  demo_player_visual_local = undefined;
   demo_player_vertical_speed = 0.0;
   demo_coyote_time = 0.15;
   demo_coyote_timer = 0.0;
@@ -85,29 +101,95 @@ function demo_destroy() {
   demo_renderer = undefined;
 }
 
-// Editor close hook (Play): push the edited scene into the running game
-// without saving anything, then rebuild the game-owned physics
-// world so new/changed bodies are registered. Player, camera and visual keep
-// their nodes, so their references stay valid.
+// Editor close hook (Play and Close Editor): Play first pushes the edited
+// scene into the running game, including the Physics World values edited in the
+// Inspector. Either way the game-owned physics world is then rebuilt so every
+// body (the player included) is re-registered at the node positions the game
+// currently has. Player, camera and visual keep their nodes, so their
+// references stay valid.
 function demo_on_close() {
+  var _snap = poly_scene_snapshot();
+
   // Close Editor hands over no scene: the live game is already as it was.
-  if (!is_struct(poly_scene_snapshot())) return;
-  poly_sync_live();
+  if (is_struct(_snap)) {
+    poly_sync_live();
+
+    // The editor adopted the game's world settings on open, so what it hands
+    // back is authoritative: keep the settings for the rebuilt world.
+    var _world = _snap[$ "physics"];
+
+    if (is_struct(_world)) {
+      demo_physics_settings.gravity = [ _world.gravity[0], _world.gravity[1], _world.gravity[2] ];
+      demo_physics_settings.fixedTimeStep = _world.fixedTimeStep;
+      demo_physics_settings.maxSubSteps = _world.maxSubSteps;
+      demo_physics_settings.maxBodies = _world.maxBodies;
+      demo_physics_settings.enabled = _world.enabled;
+    }
+  }
+
+  demo_rebuild_physics();
+}
+
+// Rebuilds the game-owned physics world from the scene's current node poses.
+// Needed after an editor session: the game does not step while the editor is
+// open, so the world's bodies are stale, and demo_reset_gameplay() moved the
+// player node without touching the world.
+function demo_rebuild_physics() {
+  if (demo_scene == undefined) return;
   if (demo_physics != undefined) demo_physics.destroy();
 
   demo_physics = new GM3D_PhysicsWorld(demo_scene, {
-    maxBodies: 64,
-    fixedTimeStep: 1 / 60,
-    maxSubSteps: 4,
+    maxBodies: demo_physics_settings.maxBodies,
+    fixedTimeStep: demo_physics_settings.fixedTimeStep,
+    maxSubSteps: demo_physics_settings.maxSubSteps,
   });
-  demo_physics.setGravity(new GM3D_Vec3(0.0, -22.0, 0.0));
+  demo_physics.setGravity(new GM3D_Vec3(
+    demo_physics_settings.gravity[0],
+    demo_physics_settings.gravity[1],
+    demo_physics_settings.gravity[2]
+  ));
   demo_physics.syncScene();
 
   if (demo_player != undefined) {
     demo_physics.addCharacter(demo_player);
     demo_physics.setCharacterVelocity(demo_player, new GM3D_Vec3());
     demo_physics.setCharacterStickToGroundEnabled(demo_player, false);
+    // Play re-applies the editor's physics block, which rebuilds the component.
+    demo_player_controller = demo_player.findCharacterControllerComponent();
   }
+}
+
+// Restores the pose the demo starts with (spawn point, facing, idle animation,
+// chase camera), so the editor mirrors the authored scene instead of whatever
+// transient gameplay state it finds: pressing F1 mid-jump used to import the
+// scene with the player floating in mid-air. Call it before poly_enable().
+function demo_reset_gameplay() {
+  if (demo_player == undefined || demo_player_spawn == undefined) return;
+
+  demo_player_vertical_speed = 0.0;
+  demo_coyote_timer = 0.0;
+  demo_player_turn_velocity = 0.0;
+  demo_player_facing = 0.0;
+  demo_cam_yaw = demo_player_facing;
+
+  demo_player.setLocalPosition(demo_player_spawn);
+
+  // The visual is a child of the controller: its pose is local to it.
+  if (demo_player_visual != undefined) {
+    if (demo_player_visual_local != undefined) demo_player_visual.setLocalPosition(demo_player_visual_local);
+    demo_player_visual.setLocalRotation(demo_yaw_quat(demo_player_facing + 180.0));
+  }
+
+  if (demo_player_anim != undefined) {
+    demo_player_anim.setTime(0.0);
+    demo_player_anim.play(demo_player_anim_idle, true);
+    demo_player_anim.setSpeed(1.0);
+    demo_player_anim_current = demo_player_anim_idle;
+  }
+
+  demo_cam_pos = demo_camera_target_position(demo_player_spawn);
+  demo_place_camera();
+  demo_sync_skybox();
 }
 
 // Updates demo scene animation.
@@ -179,14 +261,6 @@ function demo_step() {
     }
 
     demo_player_anim.setSpeed((_anim_target == demo_player_anim_walk) ? 1.25 : 1.0);
-  }
-
-  if (demo_player_visual != undefined) {
-    demo_player_visual.setLocalPosition(new GM3D_Vec3(
-      _player_pos.x,
-      _player_pos.y + demo_player_visual_offset_y,
-      _player_pos.z
-    ));
   }
 
   // TDS chase camera orbits independently while tracking the player position.
@@ -467,8 +541,11 @@ function demo_spawn_prop(_prop) {
   return _node;
 }
 
-// Adds a static box from the source model bounds. This keeps gameplay collision
-// independent of editor metadata and avoids expensive triangle meshes.
+// Adds a static collider from the source model bounds. Box/wall/blocker
+// colliders live on their own gameplay node, so collision stays independent of
+// the editor's per-object physics data and avoids expensive triangle meshes; the
+// mesh kind uses the visual node itself, which is what the editor can show
+// (importing the split ones onto the visuals would duplicate bodies on Play).
 function demo_add_model_collider(_visual, _src, _position, _scale, _kind = "box", _yaw = 0.0) {
   var _bounds = _src.getBoundingBox();
   if (_bounds == undefined) return undefined;
@@ -551,7 +628,28 @@ function demo_build_player() {
   var _spawn_y = _support_top + 0.3 + 0.55 + 0.35;
   // Keep the capsule fully inside the platform footprint at startup.
   var _spawn = new GM3D_Vec3(-0.55, _spawn_y, 0.0);
-  demo_player = demo_scene.createNode("PlayerController");
+  demo_player_spawn = _spawn.clone();
+  var _character = demo_load_model("kenney_mini-characters/character-female-b.glb");
+  // The controller is the single node the game moves, so name it after the
+  // model root: the editor's live-scene importer matches a root node to a
+  // library prefab by model root name, which is what makes the player appear as
+  // one editable character (model + character collider). Moving that node in
+  // the editor then moves the real player instead of only its visual.
+  var _player_name = "PlayerController";
+
+  if (_character != undefined) {
+    var _source_nodes = _character.model.getNodes();
+
+    if (is_array(_source_nodes)) {
+      for (var _i = 0, _n = array_length(_source_nodes); _i < _n; _i++) {
+        if (_source_nodes[_i] == undefined || _source_nodes[_i].parent != undefined) continue;
+        if (is_string(_source_nodes[_i].name) && _source_nodes[_i].name != "") _player_name = _source_nodes[_i].name;
+        break;
+      }
+    }
+  }
+
+  demo_player = demo_scene.createNode(_player_name);
   demo_player.setLocalPosition(_spawn);
   demo_player_controller = new GM3D_CharacterControllerComponent();
   demo_player_controller.setRadius(0.3);
@@ -567,31 +665,22 @@ function demo_build_player() {
   demo_physics.setCharacterVelocity(demo_player, new GM3D_Vec3());
   demo_physics.setCharacterStickToGroundEnabled(demo_player, false);
 
-  var _character = demo_load_model("kenney_mini-characters/character-female-b.glb");
   demo_player_visual = undefined;
+  demo_player_visual_local = undefined;
   demo_player_visual_offset_y = -(0.3 + 0.55);
   demo_player_anim = undefined;
 
   if (_character != undefined) {
-    // Keep the gameplay pivot at the controller origin and offset the model
-    // locally so turning cannot swing an off-centre asset around in an orbit.
-    // The editor's live-scene importer matches prefab roots by model root name,
-    // so name this pivot after the source root instead of a custom label.
-    var _visual_root_name = "PlayerVisualPivot";
-    var _source_nodes = _character.model.getNodes();
-
-    if (is_array(_source_nodes)) {
-      for (var _i = 0, _n = array_length(_source_nodes); _i < _n; _i++) {
-        if (_source_nodes[_i] == undefined || _source_nodes[_i].parent != undefined) continue;
-        if (is_string(_source_nodes[_i].name) && _source_nodes[_i].name != "") _visual_root_name = _source_nodes[_i].name;
-        break;
-      }
-    }
-
-    demo_player_visual = demo_scene.createNode(_visual_root_name);
-    var _model_root = _character.model.spawnInto(demo_scene, demo_player_visual);
+    // The model hangs under the controller: the capsule stays centered on the
+    // controller origin, the pivot below only carries the model offset, and
+    // turning rotates the pivot around the model centre instead of orbiting an
+    // off-centre asset.
+    var _pivot = demo_scene.createNode(_player_name + "_Visual");
+    demo_player.addChild(_pivot);
+    var _model_root = _character.model.spawnInto(demo_scene, _pivot);
 
     if (_model_root != undefined) {
+      demo_player_visual = _pivot;
       var _character_bounds = _character.model.getBoundingBox();
       var _model_center_x = 0.0;
       var _model_center_z = 0.0;
@@ -602,11 +691,12 @@ function demo_build_player() {
         _model_center_z = (_character_bounds.min.z + _character_bounds.max.z) * 0.5;
       }
 
-      demo_player_visual.setLocalPosition(new GM3D_Vec3(_spawn.x, 0.250, _spawn.z));
-      demo_player_visual.setLocalScale(new GM3D_Vec3(1.0));
+      demo_player_visual_local = new GM3D_Vec3(0.0, demo_player_visual_offset_y, 0.0);
+      _pivot.setLocalPosition(demo_player_visual_local);
+      _pivot.setLocalScale(new GM3D_Vec3(1.0));
       _model_root.setLocalPosition(new GM3D_Vec3(-_model_center_x, 0.0, -_model_center_z));
-      demo_on_create(demo_player_visual, _character.path, _character.model);
-      demo_player_anim = demo_find_anim(demo_player_visual);
+      demo_on_create(_pivot, _character.path, _character.model);
+      demo_player_anim = demo_find_anim(_pivot);
 
       if (demo_player_anim != undefined && _character.model.animationCount > 0) {
         demo_player_anim_idle = demo_find_anim_index(_character.model, "idle");
@@ -617,13 +707,13 @@ function demo_build_player() {
         demo_player_anim_current = demo_player_anim_idle;
       }
 
-      demo_player_visual.setLocalRotation(demo_yaw_quat(demo_player_facing + 180.0));
+      _pivot.setLocalRotation(demo_yaw_quat(demo_player_facing + 180.0));
     }
   }
 
   // Start at the same follow target used by demo_step, avoiding a camera sweep
   // from the old spawn-side position across the player.
-  demo_cam_pos = demo_camera_target_position(_spawn, 0.0);
+  demo_cam_pos = demo_camera_target_position(_spawn);
   demo_cam.setLocalPosition(demo_cam_pos);
 }
 
